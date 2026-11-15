@@ -1,0 +1,42 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Decision Note metadata
+type: object
+additionalProperties: false
+required:
+    - status
+    - category
+properties:
+    status:
+        type: string
+        description: Superseded means partially covered; archived means fully covered.
+        enum:
+            - proposed
+            - implemented
+            - rejected
+            - superseded
+            - archived
+    category:
+        type: string
+        description: Add category names directly to this whitelist when needed.
+        pattern: '\S'
+        enum:
+            - repository
+    superseded_by:
+        type: array
+        description: Covering Notes in the same directory; real dates and reference semantics are checked separately.
+        minItems: 1
+        maxItems: 12
+        items:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}-[^/\\]+\.(zh|en)\.md$'
+if:
+    properties:
+        status:
+            enum:
+                - superseded
+                - archived
+    required:
+        - status
+then:
+    required:
+        - superseded_by

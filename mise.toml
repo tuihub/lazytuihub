@@ -1,0 +1,61 @@
+[settings]
+idiomatic_version_file_enable_tools = ["dotnet", "node", "pnpm"]
+
+[doctor.checks.dotnet]
+description = ".NET SDK {{ read_json(path='global.json')['sdk']['version'] }} is available"
+run = "dotnet --version"
+hint = "Run `mise install dotnet` to install the SDK declared in global.json."
+
+[doctor.checks.node]
+description = "Node.js {{ read_json(path='package.json')['devEngines']['runtime']['version'] }} is available"
+run = '''node -e "process.exit(process.versions.node === '{{ read_json(path="package.json")["devEngines"]["runtime"]["version"] }}' ? 0 : 1)"'''
+hint = "Run `mise install node` to install the Node.js version declared in package.json."
+
+[doctor.checks.pnpm]
+description = "pnpm is available"
+depends = "node"
+run = "mise which pnpm --version && pnpm --version"
+hint = "Run `mise install pnpm` to install the package manager declared in package.json."
+
+[tasks.build]
+description = "Build the application"
+run = "dotnet build LazyTuiHub.slnx"
+
+[tasks."check:code"]
+description = "Build and check C# code"
+depends = ["build"]
+run = "dotnet format LazyTuiHub.slnx --verify-no-changes --no-restore"
+
+[tasks."check:markdown"]
+description = "Check Markdown"
+run = "pnpm run lint:markdown"
+
+[tasks."check:notes"]
+description = "Check note transitions and frozen content against Git"
+run = "node .agents/scripts/check-note-history.mjs"
+
+[tasks."check:commit"]
+description = "Check a commit message against Conventional Commits"
+run = "node .agents/scripts/commits.mjs check"
+
+[tasks."setup:hooks"]
+description = "Enable this repository's Git commit-message hook"
+run = "node .agents/scripts/commits.mjs setup"
+
+[tasks.check]
+description = "Run all checks"
+depends = ["check:code", "check:markdown", "check:notes", "check:commit"]
+
+[tasks.run]
+description = "Run the application"
+run = "dotnet run --project src/LazyTuiHub/LazyTuiHub.csproj"
+
+[tasks."format:code"]
+description = "Format C# code"
+run = "dotnet format LazyTuiHub.slnx"
+
+[tasks.notes]
+description = "List and filter agent notes"
+run = "node .agents/scripts/filter-frontmatter.mjs .agents/notes"
+output = "interleave"
+quiet = true
