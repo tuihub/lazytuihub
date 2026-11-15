@@ -6,6 +6,7 @@ go = "1.27.3"
 protoc = "36.2"
 "go:github.com/googleapis/api-linter/v2/cmd/api-linter" = "2.4.1"
 "go:github.com/google/gnostic/cmd/protoc-gen-openapi" = "0.7.0"
+"go:github.com/rhysd/actionlint/cmd/actionlint" = "1.7.12"
 
 [vars]
 aip_repository = "https://github.com/aip-dev/google.aip.dev.git"
@@ -96,6 +97,18 @@ run = "node .agents/scripts/check-file-sizes.mjs"
 [tasks."test:lint"]
 description = "Verify lint gates, thresholds, and test isolation"
 run = "node --test .agents/tests/csharp-lint.test.mjs .agents/tests/check-file-sizes.test.mjs"
+
+[tasks."test:tools"]
+description = "Run development tooling tests"
+run = 'node --test ".agents/tests/*.test.mjs"'
+
+[tasks."check:workflows"]
+description = "Check GitHub Actions workflow syntax and semantics"
+run = "actionlint"
+
+[tasks."check:ci"]
+description = "Check the committed snapshot without development-history gates"
+depends = ["check:files", "check:markdown", "check:code", "demo:api", "test:tools", "check:workflows"]
 
 [tasks."check:markdown"]
 description = "Check Markdown"

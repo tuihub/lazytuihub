@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout snapshot
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install project tools
+        uses: jdx/mise-action@v5
+      - name: Install Node dependencies
+        run: mise exec -- pnpm install --frozen-lockfile
+      - name: Restore .NET tools
+        run: mise exec -- dotnet tool restore
+      - name: Prepare AIP references
+        run: mise run setup:aip
+      - name: Check snapshot
+        run: mise run check:ci
+
+  platform:
+    name: Platform (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - name: Checkout snapshot
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install project tools
+        uses: jdx/mise-action@v5
+      - name: Install Node dependencies
+        run: mise exec -- pnpm install --frozen-lockfile
+      - name: Restore .NET tools
+        run: mise exec -- dotnet tool restore
+      - name: Build
+        run: mise run build
+      - name: Compare local and HTTP calls
+        run: mise run demo:api

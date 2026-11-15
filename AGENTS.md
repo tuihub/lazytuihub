@@ -1,5 +1,11 @@
 # Project conventions
 
+## Engineering trade-offs
+
+Use the [defensive-review skill](.agents/skills/defensive-review/SKILL.md) when choosing or reviewing defensive measures. The [repository defensive-posture Note](.agents/notes/2026-11-16-defensive-posture.en.md) is the policy source for validation, limits, compatibility, dependencies, tests, tooling, and automation. Follow actual trust boundaries, failure consequences, explicit agreements, and maintenance cost. Preserve existing explicit gates; additional conservatism needs a concrete project basis.
+
+Maintain that policy through complete replacement Notes: implement a full successor, archive the previous Note without rewriting its body, and update the skill and entry-point links together. A proposed successor does not replace the current effective policy.
+
 ## Tools and environment
 
 Use mise to manage development tools and tasks on macOS, Windows, and Linux. Install mise using the [official installation guide](https://mise.jdx.dev/installing-mise.html).
@@ -27,6 +33,12 @@ Use the [API design skill](.agents/skills/api-design/SKILL.md) when designing or
 Proto is the source of transport contracts and API reference content. Write interface explanations and examples in Proto comments. Run `mise run generate:api` after contract changes and `mise run check:api` to verify Google rules and generated artifacts. Use `mise run demo:api` to compare local calls with the generated HTTP client.
 
 `docs/api/` is entirely generated English Markdown, an explicit exception to bilingual pairing. Keep all other Markdown and file-size checks. Generation owns the complete directory and removes stale pages; do not add handwritten files there. Put handwritten development instructions in `docs/development/`. This pipeline does not deploy a documentation website.
+
+## Continuous integration
+
+The [CI workflow](.github/workflows/ci.yml) checks main-branch snapshots. Run `mise run check:ci` to reproduce its quality job locally; `mise run check:workflows` validates workflow definitions. CI uses snapshot checks rather than local commit-message or Note-history gates. The local `mise run check` entry point retains those development checks.
+
+The separate [CodeQL workflow](.github/workflows/codeql.yml) analyzes supported repository languages and uploads security results. The [CI Note](.agents/notes/2026-11-16-github-ci.en.md) records its coverage, compatibility limits, and pending runner validation.
 
 ## Commits
 

@@ -1,4 +1,4 @@
-import {mkdir, readFile, readdir, rm, writeFile} from 'node:fs/promises';
+import {lstat, mkdir, readFile, readdir, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createOpenApiMarkdownRenderer} from '@scalar/openapi-to-markdown';
 
@@ -57,6 +57,9 @@ export async function renderApiDocs(document, sources) {
 export async function updateApiDocs(directory, pages, mode) {
     let entries;
     try {
+        if ((await lstat(directory)).isSymbolicLink()) {
+            throw new Error('The generated API documentation directory must not be a symlink.');
+        }
         entries = await readdir(directory, {recursive: true, withFileTypes: true});
     } catch (error) {
         if (error.code !== 'ENOENT') throw error;

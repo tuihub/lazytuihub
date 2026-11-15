@@ -1,0 +1,5 @@
+name: Repository security
+
+paths:
+  - .agents/scripts
+  - .github/workflows

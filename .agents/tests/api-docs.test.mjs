@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
+import {mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -72,4 +72,20 @@ test('checks detect edited, missing, extra, and obsolete pages without rewriting
     await updateApiDocs(directory, reduced, 'check');
     await assert.rejects(readFile(operation), {code: 'ENOENT'});
     await assert.rejects(readFile(path.join(directory, '.handwritten.md')), {code: 'ENOENT'});
+});
+
+test('a linked output root cannot delete or overwrite files outside generated documentation', async (t) => {
+    const temporary = await mkdtemp(path.join(os.tmpdir(), 'api-docs-link-'));
+    t.after(() => rm(temporary, {recursive: true, force: true}));
+    const outside = path.join(temporary, 'outside');
+    const directory = path.join(temporary, 'api');
+    await mkdir(outside);
+    await writeFile(path.join(outside, 'keep.md'), '# User-owned file\n');
+    await symlink(outside, directory, 'junction');
+    const pages = new Map([['index.md', '# API\n']]);
+    for (const mode of ['check', 'generate']) {
+        await assert.rejects(updateApiDocs(directory, pages, mode), /directory must not be a symlink/);
+        assert.equal(await readFile(path.join(outside, 'keep.md'), 'utf8'), '# User-owned file\n');
+        assert.deepEqual(await readdir(outside), ['keep.md']);
+    }
 });
