@@ -2,7 +2,5 @@
   <PropertyGroup>
     <LangVersion>15.0</LangVersion>
     <Nullable>enable</Nullable>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 </Project>

@@ -17,14 +17,48 @@ depends = "node"
 run = "mise which pnpm --version && pnpm --version"
 hint = "Run `mise install pnpm` to install the package manager declared in package.json."
 
+[doctor.checks.csharpier]
+description = "The repository-local CSharpier tool is available"
+depends = "dotnet"
+run = "dotnet csharpier --version"
+hint = "Run `mise exec -- dotnet tool restore`."
+
+[doctor.checks.jscpd]
+description = "The product duplication checker is available"
+depends = "pnpm"
+run = "pnpm exec jscpd --version"
+hint = "Run `mise exec -- pnpm install --frozen-lockfile`."
+
 [tasks.build]
 description = "Build the application"
 run = "dotnet build LazyTuiHub.slnx"
 
 [tasks."check:code"]
-description = "Build and check C# code"
-depends = ["build"]
-run = "dotnet format LazyTuiHub.slnx --verify-no-changes --no-restore"
+description = "Check C# analyzers, formatting, and duplication"
+depends = ["check:analyzers", "check:format", "check:duplicates"]
+
+[tasks."check:analyzers"]
+description = "Build with analyzer warnings enforced"
+depends = ["check:files"]
+run = "dotnet build LazyTuiHub.slnx --no-incremental -warnaserror"
+
+[tasks."check:format"]
+description = "Check C# formatting"
+depends = ["check:files"]
+run = "dotnet csharpier check ."
+
+[tasks."check:duplicates"]
+description = "Check duplicate product C#"
+depends = ["check:files"]
+run = "pnpm exec jscpd"
+
+[tasks."check:files"]
+description = "Reject repository files larger than 1 MiB"
+run = "node .agents/scripts/check-file-sizes.mjs"
+
+[tasks."test:lint"]
+description = "Verify lint gates, thresholds, and test isolation"
+run = "node --test .agents/tests/csharp-lint.test.mjs .agents/tests/check-file-sizes.test.mjs"
 
 [tasks."check:markdown"]
 description = "Check Markdown"
@@ -52,7 +86,7 @@ run = "dotnet run --project src/LazyTuiHub/LazyTuiHub.csproj"
 
 [tasks."format:code"]
 description = "Format C# code"
-run = "dotnet format LazyTuiHub.slnx"
+run = "dotnet csharpier format ."
 
 [tasks.notes]
 description = "List and filter agent notes"

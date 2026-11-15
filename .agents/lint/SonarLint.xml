@@ -1,0 +1,32 @@
+<AnalysisInput>
+  <Settings>
+    <Setting>
+      <Key>sonar.cs.analyzeGeneratedCode</Key>
+      <Value>false</Value>
+    </Setting>
+  </Settings>
+  <Rules>
+    <Rule>
+      <Key>S1541</Key>
+      <Parameters>
+        <Parameter>
+          <Key>maximumFunctionComplexityThreshold</Key>
+          <Value>30</Value>
+        </Parameter>
+      </Parameters>
+    </Rule>
+    <Rule>
+      <Key>S3776</Key>
+      <Parameters>
+        <Parameter>
+          <Key>threshold</Key>
+          <Value>20</Value>
+        </Parameter>
+        <Parameter>
+          <Key>propertyThreshold</Key>
+          <Value>20</Value>
+        </Parameter>
+      </Parameters>
+    </Rule>
+  </Rules>
+</AnalysisInput>

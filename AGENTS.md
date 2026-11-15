@@ -13,6 +13,7 @@ Run `mise doctor project` to inspect the current environment. It reports problem
 ```sh
 mise install
 mise exec -- pnpm install --frozen-lockfile
+mise exec -- dotnet tool restore
 mise run check
 ```
 
@@ -30,6 +31,8 @@ Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.
 - `tests/`: Product tests, organized as separate projects from product logic.
 - `docs/`: Current documentation for users and developers. Keep the latest content on the main branch; do not create a versioned documentation tree.
 - `.agents/`: Development tools, their tests, and dated decision history.
+
+Tracked files and non-ignored new files must not exceed 1 MiB (1,048,576 bytes). Run `mise run check:files` to check this limit. Oversized files fail validation instead of being skipped by other checkers.
 
 ## Notes
 

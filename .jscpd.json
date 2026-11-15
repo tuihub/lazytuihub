@@ -1,0 +1,12 @@
+{
+  "path": ["src"],
+  "format": ["csharp"],
+  "minTokens": 150,
+  "minLines": 1,
+  "threshold": 0,
+  "mode": "weak",
+  "ignoreIdentifiers": true,
+  "ignoreLiterals": true,
+  "ignore": ["**/bin/**", "**/obj/**", "**/*.g.cs", "**/*.g.i.cs", "**/*.generated.cs", "**/*.designer.cs"],
+  "reporters": ["console", "threshold"]
+}

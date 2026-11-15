@@ -38,11 +38,12 @@ category: repository
 ```sh
 mise install
 mise exec -- pnpm install --frozen-lockfile
+mise exec -- dotnet tool restore
 mise doctor project
 mise run check
 ```
 
-Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm，并报告修复建议，不下载工具、安装包或修复环境。安装通过显式操作完成。
+Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm、CSharpier、jscpd，并报告修复建议，不下载工具、安装包或修复环境。安装通过显式操作完成。
 
 当前任务接口如下：
 
@@ -50,7 +51,12 @@ Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm，并报告修复建�
 | - | - |
 | `build` | 构建解决方案。 |
 | `run` | 运行应用。 |
-| `check:code` | 先构建，再只读检查 C# 格式和分析器，不写回修改。 |
+| `check:code` | 聚合文件大小、产品分析器、C# 格式和重复代码检查，不写回修改。 |
+| `check:files` | 拒绝超过 1 MiB 的已跟踪文件及未被忽略的新文件。 |
+| `check:analyzers` | 构建并将已选分析器的 warning 视为检查失败。 |
+| `check:format` | 只读检查 C# 格式。 |
+| `check:duplicates` | 检查手写产品 C# 的重复代码。 |
+| `test:lint` | 验证 lint 门禁、阈值、测试隔离和文件大小边界；不默认加入 check。 |
 | `check:markdown` | 执行 remark 管线。 |
 | `check:notes` | 对照 Git 检查 Note 快照变化与冻结内容。 |
 | `check:commit` | 校验 HEAD 或显式输入的提交消息。 |
@@ -69,6 +75,8 @@ Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm，并报告修复建�
 - `.agents/` 放开发辅助和带日期的决策历史。可执行辅助逻辑放 `.agents/scripts/`，对应测试独立放在 [.agents/tests/](../tests/)。
 - 根配置保留在各工具要求的原生发现位置。这些文件承担入口和共享配置职责，不构成将辅助实现放出 `.agents/` 的理由。
 
+已跟踪文件及未被 Git 忽略的新文件不得超过 1 MiB（1,048,576 字节）。`check:files` 在代码分析、格式和重复检查前拒绝超限文件，不通过扩大扫描上限或静默跳过来放行。
+
 只有真实、可复用的工作流才值得创建 Skill。不预建技能骨架、笔记、索引或空文档结构；已有辅助脚本保持单一实现，不因 Skill 再复制一份。
 
 ## 提交消息
@@ -81,7 +89,7 @@ Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm，并报告修复建�
 
 ## C# 校验
 
-通过 [Directory.Build.props](../../Directory.Build.props) 和 [.editorconfig](../../.editorconfig) 配置 SDK 自带的 Roslyn 分析器与 `dotnet format`。已启用 nullable 分析、.NET 分析器和构建时的代码风格检查。
+通过 [Directory.Build.props](../../Directory.Build.props)、[Directory.Build.targets](../../Directory.Build.targets)、[.editorconfig](../../.editorconfig) 和[产品诊断集](../lint/product.globalconfig)配置 C# 检查。共享语言和 nullable 设置保留在根配置，项目身份可用后再区分产品与测试规则。[C# lint Note](2026-11-15-csharp-lint.zh.md)记录具体规则、工具分工和验证边界。
 
 首版显式诊断门禁取自已核对的 ASP.NET Core、Aspire、.NET Runtime、CommunityToolkit 生产规则交集：
 
@@ -90,9 +98,9 @@ Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm，并报告修复建�
 | CA1821 | error | 移除空析构器。 |
 | CA2200 | error | 重抛异常时保留原始堆栈信息。 |
 
-其他 SDK 默认规则继续生效。此基线没有启用全部分析器、将所有警告整体升级为错误，或增加第三方 C# 分析器包。共同出现的文件头诊断尚未采用，因为本仓尚未约定自己的文件头模板，也不复制上游版权文字。
+产品项目使用 SDK Recommended、安全类别的更广规则集，以及 Meziantou、Sonar 的补充检查。分析器包固定版本并设为 PrivateAssets=all。普通 build 保留开发构建行为，check:code 将已选规则的 warning 视为失败。CSharpier 使用本地工具清单管理，接管 C# 格式；jscpd 通过 pnpm 管理，只扫描手写产品代码。文件头模板尚未约定，不复制上游版权文字。
 
-手写 C# 范围包含未来的产品测试。生成源码不作为人工清理风格的对象，但仍必须通过编译；生成身份不能豁免编译正确性。
+测试项目不加载产品分析器及诊断集，保留编译、nullable 和格式要求；测试框架确定后选择专用分析器。长度、复杂度、魔法数、重复代码和产品性能建议不作为测试门禁。生成源码不作为人工清理风格的对象，但仍必须通过编译；生成身份不能豁免编译正确性。测试运行时间约束留在执行层，当前 lint 不包含超时策略。
 
 ## Markdown 校验
 

@@ -9,8 +9,12 @@ indent_size = 4
 trim_trailing_whitespace = true
 
 [*.cs]
-dotnet_diagnostic.CA1821.severity = error
-dotnet_diagnostic.CA2200.severity = error
+max_line_length = 120
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_diagnostic.IDE0055.severity = none
+MA0051.maximum_lines_per_method = 100
+MA0051.maximum_statements_per_method = 50
 
 [*.{json,slnx,csproj,props,targets,xml}]
 indent_size = 2

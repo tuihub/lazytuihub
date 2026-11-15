@@ -38,11 +38,12 @@ Use mise for development tools and tasks on all three modern operating systems. 
 ```sh
 mise install
 mise exec -- pnpm install --frozen-lockfile
+mise exec -- dotnet tool restore
 mise doctor project
 mise run check
 ```
 
-Doctor checks the currently available .NET SDK, Node.js, and pnpm and reports repair suggestions. It does not download tools, install packages, or repair the environment. Installation is an explicit operation.
+Doctor checks the currently available .NET SDK, Node.js, pnpm, CSharpier, and jscpd and reports repair suggestions. It does not download tools, install packages, or repair the environment. Installation is an explicit operation.
 
 The current task interfaces are:
 
@@ -50,7 +51,12 @@ The current task interfaces are:
 | - | - |
 | `build` | Build the solution. |
 | `run` | Run the application. |
-| `check:code` | Build, then verify C# formatting and analyzers without writing changes. |
+| `check:code` | Aggregate file sizes, product analyzers, C# formatting, and duplication without rewriting source. |
+| `check:files` | Reject tracked and non-ignored new files larger than 1 MiB. |
+| `check:analyzers` | Build and enforce warnings from selected analyzers. |
+| `check:format` | Verify C# formatting without rewriting. |
+| `check:duplicates` | Check duplication in handwritten product C#. |
+| `test:lint` | Verify gates, thresholds, test isolation, and file-size boundaries; outside the default check chain. |
 | `check:markdown` | Run the remark pipeline. |
 | `check:notes` | Compare Note snapshots and frozen content against Git. |
 | `check:commit` | Validate HEAD or an explicit commit-message input. |
@@ -69,6 +75,8 @@ Use `mise run <task>` and consult `mise tasks ls`; the task definitions remain a
 - `.agents/` holds development assistance and dated decision history. Executable helpers live in `.agents/scripts/`; their tests live separately in [.agents/tests/](../tests/).
 - Root configuration remains in the native discovery locations required by its tools. Those files are entry points and shared configuration, not a reason to move auxiliary implementation out of `.agents/`.
 
+Tracked files and non-ignored new files must not exceed 1 MiB (1,048,576 bytes). check:files rejects oversized files before code analysis, formatting, and duplication. Widening scan limits or silently skipping files does not satisfy this requirement.
+
 Create skills only for an actual reusable workflow. Do not pre-create skill skeletons, notes, indexes, or empty documentation structures. Existing helpers remain their single executable implementation rather than being copied into skills.
 
 ## Commit messages
@@ -81,7 +89,7 @@ On a fresh checkout, the `prepare` lifecycle in [package.json](../../package.jso
 
 ## C# validation
 
-Use the SDK's Roslyn analyzers and `dotnet format`, configured through [Directory.Build.props](../../Directory.Build.props) and [.editorconfig](../../.editorconfig). Nullable analysis, .NET analyzers, and code-style enforcement during build are enabled.
+Configure C# checks through [Directory.Build.props](../../Directory.Build.props), [Directory.Build.targets](../../Directory.Build.targets), [.editorconfig](../../.editorconfig), and the [product diagnostic set](../lint/product.globalconfig). Root configuration retains shared language and nullable settings, while product and test policies are selected after project identity is available. The [C# lint Note](2026-11-15-csharp-lint.en.md) records detailed rules, tool responsibilities, and validation boundaries.
 
 The first explicit diagnostic gates are the common production-rule intersection reviewed across ASP.NET Core, Aspire, .NET Runtime, and CommunityToolkit:
 
@@ -90,9 +98,9 @@ The first explicit diagnostic gates are the common production-rule intersection 
 | CA1821 | error | Remove empty finalizers. |
 | CA2200 | error | Rethrow exceptions without losing the original stack details. |
 
-Other SDK defaults remain in effect. This baseline does not enable every analyzer, globally turn every warning into an error, or add a third-party C# analyzer package. A shared file-header diagnostic was not adopted because the repository has not chosen its own header template; upstream copyright text is not copied.
+Product projects use SDK Recommended, a broader security set, and supplementary Meziantou and Sonar checks. Analyzer versions are pinned with PrivateAssets=all. Ordinary build retains development behavior, while check:code fails on warnings from selected rules. CSharpier manages C# formatting through a local tool manifest; jscpd is managed by pnpm and scans handwritten product code only. No file-header template has been selected, and upstream copyright text is not copied.
 
-Handwritten C# includes future product tests. Generated source is not a target for manual style cleanup, but it must still compile; generation is not an exemption from compilation correctness.
+Test projects do not load product analyzers or the product diagnostic set. Compilation, nullable, and formatting remain; dedicated analyzers follow the eventual framework choice. Length, complexity, magic numbers, duplication, and product performance suggestions are not test gates. Generated source is not a target for manual style cleanup, but must still compile. Test duration belongs to the execution layer; lint has no timeout policy.
 
 ## Markdown validation
 

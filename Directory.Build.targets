@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisLevelSecurity>latest-all</AnalysisLevelSecurity>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <PackageReference Include="Meziantou.Analyzer" Version="3.0.340" PrivateAssets="all" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" PrivateAssets="all" />
+    <EditorConfigFiles Include="$(MSBuildThisFileDirectory).agents/lint/product.globalconfig" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory).agents/lint/SonarLint.xml" />
+  </ItemGroup>
+</Project>
