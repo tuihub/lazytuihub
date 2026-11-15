@@ -4,3 +4,4 @@
 *.slnx
 *.targets
 *.xml
+**/*.g.cs

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: implemented
 category: repository
 ---
 # Repository initialization agreements
@@ -8,7 +8,7 @@ English | [中文](2026-11-15-repository-initialization.zh.md)
 
 ## Purpose
 
-This first formal Note records the repository's initialization baseline and the reasons for its boundaries. It remains proposed for review even where the configuration already exists. Product targets and unresolved choices below are not claims that those features have been implemented.
+This first formal Note records the repository's implemented and checked initialization baseline and the reasons for its boundaries. The implemented status applies to repository infrastructure. Product targets and unresolved choices below are not claims that those features have been implemented.
 
 Design the project from scratch without consulting the older business implementation in another repository of the organization. DeepSeek Harness informs the discussion of documentation maintenance; its templates, directory taxonomy, quotas, and consistency sidecars are not adopted as a package.
 
@@ -16,7 +16,7 @@ The executable sources of current behavior are the configuration and scripts lin
 
 ## Product scope and identity
 
-C# is the primary product language. The intended application supports UI operation on current macOS, Windows, and Linux, and headless operation on all target operating systems. Its client and server belong to one application and interact inside the same process; the server also exposes remote calls to other processes. The UI framework, remote transport, and detailed component boundaries remain undecided. The initial executable does not yet implement these product capabilities.
+C# is the primary product language. The intended application supports UI operation on current macOS, Windows, and Linux, and headless operation on all target operating systems. Its client and server belong to one application and interact inside the same process; the server also exposes remote calls to other processes. Proto contracts, HTTP/JSON transcoding, and the Hello World local and remote example are connected as recorded in the [protocol Note](2026-11-15-protobuf-api-contract.en.md). UI, complete business behavior, authentication, and further component boundaries remain unimplemented or undecided.
 
 Development must work natively on modern macOS, Windows, and Linux; Windows development does not require WSL. Windows 7 and Windows XP are conditional deployment targets under investigation. Virtual machines, host-side assistance, and explicit external dependencies are acceptable for that work. They must preserve one product architecture rather than becoming a separately developed application. This does not require installing the modern development SDK on XP and does not promise an implemented compatibility solution.
 
@@ -35,15 +35,18 @@ Use mise for development tools and tasks on all three modern operating systems. 
 
 [mise.toml](../../mise.toml) enables native version-file discovery instead of duplicating these pins. The [initial C# project](../../src/LazyTuiHub/LazyTuiHub.csproj) targets `net11.0`. pnpm is the package manager, and [pnpm-lock.yaml](../../pnpm-lock.yaml) is the single JavaScript dependency lockfile.
 
+mise additionally pins Go, protoc, Google API Linter, and protoc-gen-openapi for protocol development; the product remains C#. NSwag shares the root dotnet-tools.json manifest with CSharpier. setup:aip prepares the official AIP originals as a local reference checkout, with repository and adopted commit declared only in mise.toml.
+
 ```sh
 mise install
 mise exec -- pnpm install --frozen-lockfile
 mise exec -- dotnet tool restore
+mise run setup:aip
 mise doctor project
 mise run check
 ```
 
-Doctor checks the currently available .NET SDK, Node.js, pnpm, CSharpier, and jscpd and reports repair suggestions. It does not download tools, install packages, or repair the environment. Installation is an explicit operation.
+Doctor checks the .NET SDK, Node.js, pnpm, CSharpier, jscpd, protocol compiler and generation tools, and the official AIP checkout's origin, commit, and worktree state. It reports repair suggestions without downloading tools, installing packages, or repairing the environment. Installation and reference preparation are explicit operations.
 
 The current task interfaces are:
 
@@ -59,9 +62,16 @@ The current task interfaces are:
 | `test:lint` | Verify gates, thresholds, test isolation, and file-size boundaries; outside the default check chain. |
 | `check:markdown` | Run the remark pipeline. |
 | `check:notes` | Compare Note snapshots and frozen content against Git. |
+| `setup:aip` | Prepare the official AIP checkout at the adopted commit without overwriting local edits. |
+| `restore:api` | Restore common Proto and compilation dependencies for contracts. |
+| `generate:api` | Explicitly generate OpenAPI, the HTTP client, and the Markdown reference from Proto. |
+| `check:proto` | Run Google API Linter's default enabled rules. |
+| `check:generated` | Regenerate temporarily and compare derived artifacts without rewriting source. |
+| `check:api` | Aggregate Proto and generated-artifact checks. |
+| `demo:api` | Compare in-process and generated-client HTTP calls for Hello World. |
 | `check:commit` | Validate HEAD or an explicit commit-message input. |
 | `setup:hooks` | Re-register the repository-local commit-message hook when needed. |
-| `check` | Aggregate the four check tasks. |
+| `check` | Aggregate code, API, Markdown, Note history, and commit-message checks. |
 | `format:code` | Apply C# formatting changes. |
 | `notes` | List or filter frontmatter in the flat Notes directory. |
 
@@ -89,7 +99,7 @@ On a fresh checkout, the `prepare` lifecycle in [package.json](../../package.jso
 
 ## C# validation
 
-Configure C# checks through [Directory.Build.props](../../Directory.Build.props), [Directory.Build.targets](../../Directory.Build.targets), [.editorconfig](../../.editorconfig), and the [product diagnostic set](../lint/product.globalconfig). Root configuration retains shared language and nullable settings, while product and test policies are selected after project identity is available. The [C# lint Note](2026-11-15-csharp-lint.en.md) records detailed rules, tool responsibilities, and validation boundaries.
+Configure C# checks through [Directory.Build.props](../../Directory.Build.props), [Directory.Build.targets](../../Directory.Build.targets), [.editorconfig](../../.editorconfig), and the [product diagnostic set](../lint/product.globalconfig). Root configuration retains shared language and nullable settings, while project identity selects product and test policies. The [C# lint Note](2026-11-15-csharp-lint.en.md) records detailed rules, tool responsibilities, and validation boundaries.
 
 The first explicit diagnostic gates are the common production-rule intersection reviewed across ASP.NET Core, Aspire, .NET Runtime, and CommunityToolkit:
 
@@ -114,17 +124,19 @@ Markdownlint is not part of this pipeline. Prettier and a general formatting or 
 
 ## Bilingual documents and ignore rules
 
-All Markdown documents admitted by the remark scan use same-directory, same-basename `.zh.md` and `.en.md` pairs. The [bilingual helper](../scripts/remark-bilingual-structure.mjs) compares heading levels and order, plus code-block language counts. It does not compare translated text, heading slugs, code contents, paragraph counts, or line counts, and it does not force code-block ordering or list/table equality.
+Markdown documents admitted by the remark scan use same-directory, same-basename `.zh.md` and `.en.md` pairs, with the explicit exceptions below. The [bilingual helper](../scripts/remark-bilingual-structure.mjs) compares heading levels and order, plus code-block language counts. It does not compare translated text, heading slugs, code contents, paragraph counts, or line counts, and it does not force code-block ordering or list/table equality.
 
 [.remarkignore](../../.remarkignore) is the independent documentation ignore file. The nearest file supplies the ignore rules; the helper does not merge all ancestor files or consult Git ignore settings. If either language file is ignored, the pair is skipped, including when an ignored partner is absent.
 
 `AGENTS.md` and `SKILL.md` are explicitly exempt from bilingual naming and pairing because their tools require those names. They still pass the other remark rules. Ordinary `README.md` files do not inherit that exemption.
 
+The entire `docs/api/` directory contains generated English Markdown, explicitly exempt from bilingual naming and pairing. The root remark configuration scopes this exception to that directory; other Markdown rules and the 1 MiB file limit remain active. API comments live in Proto, generation owns all reference pages, and handwritten development guides remain bilingual outside `docs/api/`. The [protocol Note](2026-11-15-protobuf-api-contract.en.md) records the generation pipeline. Documentation website deployment is outside API work.
+
 [.gitignore](../../.gitignore) starts from the official Dotnet.gitignore template with repository tooling and operating-system entries. Git ignore and documentation ignore have separate responsibilities.
 
 ## Decision Notes and lifecycle
 
-Keep Notes flat in `.agents/notes/` as `YYYY-MM-DD-topic.zh.md` and `.en.md`. The first-proposed date, topic, and language stay in the filename. The [Note metadata schema](../schemas/note-metadata.yaml), a Draft-07 JSON Schema written in YAML, is the single source for permitted fields, required fields, value constraints, and the category whitelist. Unknown fields are rejected; add categories directly to the schema enum when needed. There is no cross-language metadata-equality gate. This first pair remains proposed with category repository.
+Keep Notes flat in `.agents/notes/` as `YYYY-MM-DD-topic.zh.md` and `.en.md`. The first-proposed date, topic, and language stay in the filename. The [Note metadata schema](../schemas/note-metadata.yaml), a Draft-07 JSON Schema written in YAML, is the single source for permitted fields, required fields, value constraints, and the category whitelist. Unknown fields are rejected; add categories directly to the schema enum when needed. There is no cross-language metadata-equality gate. This Note has category repository.
 
 The [maintain-notes skill](../skills/maintain-notes/SKILL.md) describes the complete workflow and the semantic judgments that agents must make. The working lifecycle is:
 
@@ -141,7 +153,7 @@ Superseded means partially covered; archived means fully covered. The existing `
 
 Agents must keep implemented Notes and the uncovered portions of superseded Notes accurate. Before archiving, the referenced collection must collectively cover every fact, decision, constraint, exception, and described code behavior in the source. This includes the facts, constraints, and coverage scope inherited from older Notes. A successor may be fully archived while its partial ancestors remain unchanged: `A superseded -> B archived -> C superseded -> D implemented` is valid. Preserve archived references and trace their effective successors rather than rewriting ancestor links. The targets must represent actual implementation. A valid reference graph cannot prove semantic coverage or current truth; agents review these and create replacements instead of rewriting frozen bodies.
 
-The [Git snapshot checker](../scripts/check-note-history.mjs) compares the actual working tree with HEAD or an explicit baseline. It checks reachable snapshot changes, not every intermediate edit or every historical commit. A proposed Note may be edited and reach any later reachable state between snapshots. A newly seen file may first appear in any valid state; no separate proposed commit is required. An unborn repository has an empty baseline. This does not prove the initial working process or history before the chosen baseline. The gate is wired into `check:notes`. This Note remains proposed.
+The [Git snapshot checker](../scripts/check-note-history.mjs) compares the actual working tree with HEAD or an explicit baseline. It checks reachable snapshot changes, not every intermediate edit or every historical commit. A proposed Note may be edited and reach any later reachable state between snapshots. A newly seen file may first appear in any valid state; no separate proposed commit is required. An unborn repository has an empty baseline. This does not prove the initial working process or history before the chosen baseline. The gate is wired into `check:notes`.
 
 Write Notes for lasting decisions and trade-offs, not automatically for every change. No centralized index, lifecycle/category directory tree, age-based deletion quota, sidecar hash, or repeated change log is introduced.
 
@@ -177,4 +189,4 @@ During this initialization, the coordinating agent discusses plans and decisions
 
 ## Open decisions and current limits
 
-UI implementation, remote transport, conditional legacy-Windows support, C# test framework, affected-check selection, and additional document/configuration lint tools remain open. The repository currently provides the initial executable and the infrastructure described above, not the completed client/server product. This proposed record does not settle those remaining choices or advance itself to implemented.
+UI implementation, reliability and identity policy for business APIs, conditional legacy-Windows support, C# test framework, affected-check selection, and additional document/configuration lint tools remain open. The repository provides the Hello World protocol example and infrastructure described above, not the completed client/server product. Those later choices are outside the initialization baseline's completion scope and remain subject to design and validation as concrete needs arise.

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: implemented
 category: repository
 ---
 # 仓库初始化约定
@@ -8,7 +8,7 @@ category: repository
 
 ## 目的
 
-这是仓库的第一份正式 Note，记录初始化基线及其边界背后的理由。部分配置已经存在，这份记录仍保持 proposed，供后续审阅。下文的产品目标和待定选择不代表对应功能已经实现。
+这是仓库的第一份正式 Note，记录已落地并完成检查的初始化基线及其边界背后的理由。implemented 表示仓库基础设施已落实，下文的产品目标和待定选择不代表对应功能已经实现。
 
 项目从零设计，不参考同组织其他仓库中较旧的业务实现。DeepSeek Harness 用于参考文档维护机制，不成套引入它的模板、目录分类、配额或一致性 sidecar。
 
@@ -16,7 +16,7 @@ category: repository
 
 ## 产品范围与身份
 
-产品以 C# 为主要语言。目标是在当前 macOS、Windows、Linux 上提供 UI，并在所有目标操作系统上提供无头运行模式。客户端和服务端属于同一应用，在同进程内直接交互；服务端同时向其他进程提供远程调用接口。UI 框架、远程传输和详细组件边界尚未确定，初始可执行项目尚未实现这些产品能力。
+产品以 C# 为主要语言。目标是在当前 macOS、Windows、Linux 上提供 UI，并在所有目标操作系统上提供无头运行模式。客户端和服务端属于同一应用，在同进程内直接交互；服务端同时向其他进程提供远程调用接口。当前已接通 Proto 契约、HTTP/JSON 转码和 Hello World 的本地与远程调用样例，见[协议 Note](2026-11-15-protobuf-api-contract.zh.md)。UI、完整业务、身份认证和进一步的组件边界尚未实现或确定。
 
 开发环境原生支持现代 macOS、Windows、Linux，Windows 开发不要求 WSL。Windows 7、Windows XP 属于仍在研究的有条件部署目标，可以限定虚拟机、宿主辅助和明确的外部依赖。兼容方案应维持同一产品架构，避免成为独立开发的另一个应用。这不要求在 XP 上安装现代开发 SDK，也不承诺兼容实现已经存在。
 
@@ -35,15 +35,18 @@ category: repository
 
 [mise.toml](../../mise.toml) 启用原生版本文件发现，不重复声明这些版本。[初始 C# 项目](../../src/LazyTuiHub/LazyTuiHub.csproj)以 `net11.0` 为目标。包管理器使用 pnpm，[pnpm-lock.yaml](../../pnpm-lock.yaml) 是唯一的 JavaScript 依赖锁文件。
 
+协议开发另由 mise 固定 Go、protoc、Google API Linter 和 protoc-gen-openapi；产品仍使用 C#。NSwag 与 CSharpier 共用根 dotnet-tools.json 工具清单。官方 AIP 原文通过 setup:aip 准备为本地参考副本，其仓库与采用提交只在 mise.toml 中声明。
+
 ```sh
 mise install
 mise exec -- pnpm install --frozen-lockfile
 mise exec -- dotnet tool restore
+mise run setup:aip
 mise doctor project
 mise run check
 ```
 
-Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm、CSharpier、jscpd，并报告修复建议，不下载工具、安装包或修复环境。安装通过显式操作完成。
+Doctor 只检查 .NET SDK、Node.js、pnpm、CSharpier、jscpd、协议编译与生成工具，以及官方 AIP 副本的来源、提交和工作树状态，并报告修复建议，不下载工具、安装包或修复环境。安装和原文准备通过显式操作完成。
 
 当前任务接口如下：
 
@@ -59,9 +62,16 @@ Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm、CSharpier、jscpd，
 | `test:lint` | 验证 lint 门禁、阈值、测试隔离和文件大小边界；不默认加入 check。 |
 | `check:markdown` | 执行 remark 管线。 |
 | `check:notes` | 对照 Git 检查 Note 快照变化与冻结内容。 |
+| `setup:aip` | 准备固定提交的官方 AIP 原文，不覆盖本地修改。 |
+| `restore:api` | 还原契约项目的公共 Proto 和编译依赖。 |
+| `generate:api` | 从 Proto 显式生成 OpenAPI、HTTP 客户端和 Markdown 参考文档。 |
+| `check:proto` | 执行 Google API Linter 的默认启用规则。 |
+| `check:generated` | 临时重新生成并比较派生产物，不写回源文件。 |
+| `check:api` | 聚合 Proto 与生成差异检查。 |
+| `demo:api` | 比较 Hello World 的进程内与生成客户端 HTTP 调用。 |
 | `check:commit` | 校验 HEAD 或显式输入的提交消息。 |
 | `setup:hooks` | 需要时重新注册本仓的提交消息 hook。 |
-| `check` | 聚合四项检查任务。 |
+| `check` | 聚合代码、API、Markdown、Note 历史和提交消息检查。 |
 | `format:code` | 写回 C# 格式化修改。 |
 | `notes` | 列出或筛选平铺 Notes 目录中的 frontmatter。 |
 
@@ -89,7 +99,7 @@ Doctor 只检查当前可用的 .NET SDK、Node.js、pnpm、CSharpier、jscpd，
 
 ## C# 校验
 
-通过 [Directory.Build.props](../../Directory.Build.props)、[Directory.Build.targets](../../Directory.Build.targets)、[.editorconfig](../../.editorconfig) 和[产品诊断集](../lint/product.globalconfig)配置 C# 检查。共享语言和 nullable 设置保留在根配置，项目身份可用后再区分产品与测试规则。[C# lint Note](2026-11-15-csharp-lint.zh.md)记录具体规则、工具分工和验证边界。
+通过 [Directory.Build.props](../../Directory.Build.props)、[Directory.Build.targets](../../Directory.Build.targets)、[.editorconfig](../../.editorconfig) 和[产品诊断集](../lint/product.globalconfig)配置 C# 检查。共享语言和 nullable 设置保留在根配置，通过项目身份区分产品与测试规则。[C# lint Note](2026-11-15-csharp-lint.zh.md)记录具体规则、工具分工和验证边界。
 
 首版显式诊断门禁取自已核对的 ASP.NET Core、Aspire、.NET Runtime、CommunityToolkit 生产规则交集：
 
@@ -114,17 +124,19 @@ Markdown 只使用 remark 一个生态。[根管线](../../.remarkrc.json)组合
 
 ## 双语文档与忽略规则
 
-所有进入 remark 扫描范围的 Markdown 文档使用同目录、同 basename 的 `.zh.md` 和 `.en.md` 配对。[双语辅助脚本](../scripts/remark-bilingual-structure.mjs)比较标题层级与顺序，以及代码块语言的数量，不比较译文、标题 slug、代码内容、段落数或行数，也不强制代码块顺序、列表或表格相同。
+进入 remark 扫描范围的 Markdown 文档使用同目录、同 basename 的 `.zh.md` 和 `.en.md` 配对，下文列出明确例外。[双语辅助脚本](../scripts/remark-bilingual-structure.mjs)比较标题层级与顺序，以及代码块语言的数量，不比较译文、标题 slug、代码内容、段落数或行数，也不强制代码块顺序、列表或表格相同。
 
 [.remarkignore](../../.remarkignore) 是独立的文档忽略文件。使用离文件最近的一份规则，辅助脚本不合并所有祖先规则，也不读取 Git 忽略配置。任一语言文件被忽略就跳过整对，包括被忽略的伙伴文件尚不存在的情况。
 
 工具要求固定名称的 `AGENTS.md`、`SKILL.md` 已显式豁免双语命名与配对，仍然执行其他 remark 规则。普通 `README.md` 不继承该豁免。
 
+`docs/api/` 整个目录只包含生成的英文 Markdown，明确豁免双语命名与配对。根 remark 配置将例外限定在该目录，其他 Markdown 规则和 1 MiB 文件上限继续生效。API 注释维护在 Proto 中，生成器负责全部参考页面；手写开发指南在 `docs/api/` 外继续双语配对。[协议 Note](2026-11-15-protobuf-api-contract.zh.md)记录生成链路，文档网页部署不属于 API 工作范围。
+
 [.gitignore](../../.gitignore)以官方 Dotnet.gitignore 模板为基础，并加入本仓工具和操作系统相关条目。Git 忽略与文档忽略各自承担职责。
 
 ## 决策 Notes 与生命周期
 
-Note 平铺在 `.agents/notes/`，命名为 `YYYY-MM-DD-topic.zh.md` 和 `.en.md`，首次提出日期、主题和语言保留在文件名中。[Note 元数据 schema](../schemas/note-metadata.yaml) 使用 YAML 编写的标准 Draft-07 JSON Schema，是允许字段、必填字段、值约束与类别白名单的唯一格式来源。未知字段会被拒绝；需要新增类别时直接扩展 schema 枚举。没有跨语言元数据相等门禁。首对记录继续保持 proposed，category 为 repository。
+Note 平铺在 `.agents/notes/`，命名为 `YYYY-MM-DD-topic.zh.md` 和 `.en.md`，首次提出日期、主题和语言保留在文件名中。[Note 元数据 schema](../schemas/note-metadata.yaml) 使用 YAML 编写的标准 Draft-07 JSON Schema，是允许字段、必填字段、值约束与类别白名单的唯一格式来源。未知字段会被拒绝；需要新增类别时直接扩展 schema 枚举。没有跨语言元数据相等门禁。本 Note 的 category 为 repository。
 
 [maintain-notes skill](../skills/maintain-notes/SKILL.md) 描述完整工作过程及 Agent 必须作出的语义判断。工作过程中的生命周期为：
 
@@ -141,7 +153,7 @@ superseded 表示部分内容被覆盖，archived 表示全部内容被覆盖。
 
 Agent 必须保证 implemented Note 和 superseded Note 尚未被覆盖的部分准确。转为 archived 前，引用集合必须合计覆盖原文的全部事实、决定、约束、例外及代码行为描述，其中也包括它从更旧 Note 承接的事实、约束与覆盖范围。后继可以完整归档，部分覆盖的祖先保持不变：`A superseded -> B archived -> C superseded -> D implemented` 合法。保留已冻结的归档引用并追踪实际后继，不为此改写祖先链接。目标必须对应实际实现。合法引用图无法证明语义覆盖或当前事实；Agent 负责判断，通过新的替代记录维护，不改写冻结正文。
 
-[Git 快照检查器](../scripts/check-note-history.mjs)对照 HEAD 或显式基准比较真实工作树，检查可达的快照变化，不追踪每次中间编辑或逐条重放历史提交。proposed 可以在两次快照间修改并到达任一后续可达状态。新文件首次进入比较时可以已经处于任一合法状态，不强制单独提交 proposed；尚无首次提交的仓库使用空基准。这无法证明最初的工作过程或所选基准之前的历史。门禁已接入 `check:notes`。此 Note 继续保持 proposed。
+[Git 快照检查器](../scripts/check-note-history.mjs)对照 HEAD 或显式基准比较真实工作树，检查可达的快照变化，不追踪每次中间编辑或逐条重放历史提交。proposed 可以在两次快照间修改并到达任一后续可达状态。新文件首次进入比较时可以已经处于任一合法状态，不强制单独提交 proposed；尚无首次提交的仓库使用空基准。这无法证明最初的工作过程或所选基准之前的历史。门禁已接入 `check:notes`。
 
 只为有长期价值的决策和取舍写 Note，不要求所有变更自动留档。不引入中央索引、状态或类别目录树、按年龄清理的配额、sidecar hash 或重复的变更流水账。
 
@@ -177,4 +189,4 @@ mise run notes --where status=proposed --where category=repository --json
 
 ## 待定选择与当前限制
 
-UI 实现、远程传输、有条件的旧 Windows 支持、C# 测试框架、受影响检查选择，以及额外的文档和配置 lint 工具仍待确定。当前仓库提供初始可执行项目和上述基础设施，尚未完成客户端/服务端产品。本 proposed 记录不替这些问题作决定，也不会自行转为 implemented。
+UI 实现、业务协议的可靠性与身份策略、有条件的旧 Windows 支持、C# 测试框架、受影响检查选择，以及额外的文档和配置 lint 工具仍待确定。当前仓库提供 Hello World 协议样例和上述基础设施，尚未完成客户端/服务端产品。这些后续选择不属于初始化基线的完成范围，继续按具体需求设计和验证。

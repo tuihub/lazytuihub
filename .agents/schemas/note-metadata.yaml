@@ -21,6 +21,7 @@ properties:
         pattern: '\S'
         enum:
             - repository
+            - architecture
     superseded_by:
         type: array
         description: Covering Notes in the same directory; real dates and reference semantics are checked separately.

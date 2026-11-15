@@ -1,0 +1,78 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: LazyTuiHub API
+    description: Generates greetings without changing application state.
+    version: v1
+paths:
+    /v1:generateGreeting:
+        post:
+            tags:
+                - GreetingService
+            description: |-
+                Generates a greeting for the requested recipient.
+
+                 Returns `Hello, recipient!`, substituting `World` when `recipient` is omitted
+                 or empty. Other values, including Unicode text, are used unchanged.
+                 This stateless computation does not read or modify persistent resources.
+                 Repeating the same request returns the same result and has no side effects.
+
+                 Example request:
+
+                 ```json
+                 {"recipient":"Ada"}
+                 ```
+
+                 Example successful response (HTTP 200):
+
+                 ```json
+                 {"message":"Hello, Ada!"}
+                 ```
+
+                 Example HTTP request, with `BASE_URL` set to the server's base URL:
+
+                 ```sh
+                 curl -X POST "${BASE_URL}/v1:generateGreeting" \
+                   -H 'Content-Type: application/json' \
+                   -d '{"recipient":"Ada"}'
+                 ```
+            operationId: GreetingService_GenerateGreeting
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GenerateGreetingRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenerateGreetingResponse'
+components:
+    schemas:
+        GenerateGreetingRequest:
+            type: object
+            properties:
+                recipient:
+                    type: string
+                    description: |-
+                        Optional. The recipient of the greeting. An omitted or empty value uses
+                         `World`. Non-empty values are used unchanged, including Unicode text.
+            description: Request for GenerateGreeting.
+        GenerateGreetingResponse:
+            type: object
+            properties:
+                message:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        Output only. The generated greeting in the form `Hello, recipient!`.
+                         When the request omits `recipient` or supplies an empty value, this is
+                         `Hello, World!`.
+            description: Response for GenerateGreeting.
+tags:
+    - name: GreetingService

@@ -2,6 +2,11 @@
   "version": 1,
   "isRoot": true,
   "tools": {
+    "nswag.consolecore": {
+      "version": "14.8.0",
+      "commands": ["nswag"],
+      "rollForward": true
+    },
     "csharpier": {
       "version": "1.4.0",
       "commands": [

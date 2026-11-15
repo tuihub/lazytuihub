@@ -14,10 +14,19 @@ Run `mise doctor project` to inspect the current environment. It reports problem
 mise install
 mise exec -- pnpm install --frozen-lockfile
 mise exec -- dotnet tool restore
+mise run setup:aip
 mise run check
 ```
 
 Use `mise run <task>` to build and run the application, run checks, or format C# code. Task definitions live in `mise.toml`; use `mise tasks ls` to list the available commands.
+
+## API development
+
+Use the [API design skill](.agents/skills/api-design/SKILL.md) when designing or changing Proto contracts, HTTP mappings, or API behavior. The [API development guide](docs/development/api-design.en.md) covers the adopted standard and development workflow; consult relevant official AIP originals from the local checkout prepared by `mise run setup:aip`. Its upstream revision is declared in `mise.toml`.
+
+Proto is the source of transport contracts and API reference content. Write interface explanations and examples in Proto comments. Run `mise run generate:api` after contract changes and `mise run check:api` to verify Google rules and generated artifacts. Use `mise run demo:api` to compare local calls with the generated HTTP client.
+
+`docs/api/` is entirely generated English Markdown, an explicit exception to bilingual pairing. Keep all other Markdown and file-size checks. Generation owns the complete directory and removes stale pages; do not add handwritten files there. Put handwritten development instructions in `docs/development/`. This pipeline does not deploy a documentation website.
 
 ## Commits
 

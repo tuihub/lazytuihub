@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="src/LazyTuiHub/LazyTuiHub.csproj" />
+  <Project Path="src/LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
+  <Project Path="src/LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
 </Solution>

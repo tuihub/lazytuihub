@@ -7,6 +7,7 @@ const checkedFileSets = new WeakMap();
 export default function remarkBilingualStructure(options, fileSet) {
     const processor = this;
     const unpairedFiles = new Set(options?.unpairedFiles || []);
+    const unpairedPaths = ignore().add(options?.unpairedPaths || []);
     let checkedPairs;
 
     if (fileSet) {
@@ -36,7 +37,9 @@ export default function remarkBilingualStructure(options, fileSet) {
             ? ignoreFile.matcher.ignores(path.relative(ignoreFile.directory, candidate))
             : false;
 
-        if (isIgnored(filePath) || unpairedFiles.has(path.basename(filePath))) return;
+        const relativePath = path.relative(file.cwd, filePath).split(path.sep).join('/');
+        if (isIgnored(filePath) || unpairedFiles.has(path.basename(filePath))
+            || (!relativePath.startsWith('../') && unpairedPaths.ignores(relativePath))) return;
 
         const language = /\.(zh|en)\.md$/.exec(filePath);
         if (!language) {

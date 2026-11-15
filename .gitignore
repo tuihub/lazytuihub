@@ -65,6 +65,9 @@ nunit-*.xml
 # Node.js tooling
 node_modules/
 
+# Official development references, prepared by mise run setup:aip.
+.agents/references/
+
 # Operating system files
 .DS_Store
 Thumbs.db

@@ -1,6 +1,16 @@
 [settings]
 idiomatic_version_file_enable_tools = ["dotnet", "node", "pnpm"]
 
+[tools]
+go = "1.27.3"
+protoc = "36.2"
+"go:github.com/googleapis/api-linter/v2/cmd/api-linter" = "2.4.1"
+"go:github.com/google/gnostic/cmd/protoc-gen-openapi" = "0.7.0"
+
+[vars]
+aip_repository = "https://github.com/aip-dev/google.aip.dev.git"
+aip_revision = "2ccc61a4e09882bdd63aea1a42dceebc37bf3bd5"
+
 [doctor.checks.dotnet]
 description = ".NET SDK {{ read_json(path='global.json')['sdk']['version'] }} is available"
 run = "dotnet --version"
@@ -28,6 +38,33 @@ description = "The product duplication checker is available"
 depends = "pnpm"
 run = "pnpm exec jscpd --version"
 hint = "Run `mise exec -- pnpm install --frozen-lockfile`."
+
+[doctor.checks.api-linter]
+description = "Google API Linter is available"
+run = "api-linter --version"
+hint = "Run `mise install`."
+
+[doctor.checks.protoc]
+description = "The Proto compiler is available"
+run = "protoc --version"
+hint = "Run `mise install`."
+
+[doctor.checks.openapi-generator]
+description = "The Proto to OpenAPI generator is available"
+run = "mise which protoc-gen-openapi"
+hint = "Run `mise install`."
+
+[doctor.checks.nswag]
+description = "The repository-local NSwag tool is available"
+depends = "dotnet"
+run = "dotnet nswag version"
+hint = "Run `mise exec -- dotnet tool restore`."
+
+[doctor.checks.aip]
+description = "Official AIP references match the project revision"
+depends = "node"
+run = "node .agents/scripts/setup-aip.mjs {{vars.aip_repository}} {{vars.aip_revision}} --check"
+hint = "Run `mise run setup:aip`."
 
 [tasks.build]
 description = "Build the application"
@@ -78,11 +115,11 @@ run = "node .agents/scripts/commits.mjs setup"
 
 [tasks.check]
 description = "Run all checks"
-depends = ["check:code", "check:markdown", "check:notes", "check:commit"]
+depends = ["check:code", "check:api", "check:markdown", "check:notes", "check:commit"]
 
 [tasks.run]
 description = "Run the application"
-run = "dotnet run --project src/LazyTuiHub/LazyTuiHub.csproj"
+run = "dotnet run --project src/LazyTuiHub/LazyTuiHub.csproj --"
 
 [tasks."format:code"]
 description = "Format C# code"
@@ -93,3 +130,35 @@ description = "List and filter agent notes"
 run = "node .agents/scripts/filter-frontmatter.mjs .agents/notes"
 output = "interleave"
 quiet = true
+
+[tasks."setup:aip"]
+description = "Prepare the pinned official AIP reference checkout"
+run = "node .agents/scripts/setup-aip.mjs {{vars.aip_repository}} {{vars.aip_revision}}"
+
+[tasks."restore:api"]
+description = "Restore Proto contract dependencies"
+run = "dotnet restore src/LazyTuiHub.Api/LazyTuiHub.Api.csproj"
+
+[tasks."generate:api"]
+description = "Generate OpenAPI, the HTTP client, and Markdown reference from Proto"
+depends = ["restore:api"]
+run = "node .agents/scripts/api.mjs generate"
+
+[tasks."check:proto"]
+description = "Check Proto contracts with Google API Linter"
+depends = ["restore:api"]
+run = "node .agents/scripts/api.mjs lint"
+
+[tasks."check:generated"]
+description = "Check that generated API artifacts match Proto"
+depends = ["restore:api"]
+run = "node .agents/scripts/api.mjs check"
+
+[tasks."check:api"]
+description = "Check API contracts and generated artifacts"
+depends = ["check:proto", "check:generated"]
+
+[tasks."demo:api"]
+description = "Run Hello World through local and generated HTTP clients"
+depends = ["check:api"]
+run = "dotnet run --project src/LazyTuiHub -- --demo true"

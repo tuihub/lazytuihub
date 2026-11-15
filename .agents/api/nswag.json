@@ -1,0 +1,13 @@
+{
+  "className": "GreetingHttpClient",
+  "namespace": "LazyTuiHub.Client",
+  "additionalNamespaceUsages": ["LazyTuiHub.Api.Greeting.V1"],
+  "generateDtoTypes": false,
+  "generateClientInterfaces": false,
+  "generateOptionalParameters": true,
+  "generateNullableReferenceTypes": true,
+  "jsonLibrary": "SystemTextJson",
+  "useBaseUrl": false,
+  "injectHttpClient": true,
+  "disposeHttpClient": false
+}

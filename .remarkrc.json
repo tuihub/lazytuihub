@@ -11,7 +11,8 @@
     [
       "./.agents/scripts/remark-bilingual-structure.mjs",
       {
-        "unpairedFiles": ["AGENTS.md", "SKILL.md"]
+        "unpairedFiles": ["AGENTS.md", "SKILL.md"],
+        "unpairedPaths": ["/docs/api/"]
       }
     ],
     [

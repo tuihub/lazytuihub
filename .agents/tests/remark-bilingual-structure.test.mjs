@@ -22,10 +22,11 @@ async function fixture(t, files) {
     return directory;
 }
 
-function lint(directory, files = ['.'], {unpairedFiles, plugins = []} = {}) {
-    const bilingual = unpairedFiles
-        ? `${plugin}=unpairedFiles:${JSON.stringify(unpairedFiles)}`
-        : plugin;
+function lint(directory, files = ['.'], {unpairedFiles, unpairedPaths, plugins = []} = {}) {
+    const options = Object.entries({unpairedFiles, unpairedPaths})
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => `${key}:${JSON.stringify(value)}`).join(',');
+    const bilingual = options ? `${plugin}=${options}` : plugin;
     const result = spawnSync(process.execPath, [
         cli, '--no-config', '--ext', 'md', '--frail', '--no-stdout', '--no-color',
         '--use', gfm, '--use', frontmatter, '--use', bilingual,
@@ -161,6 +162,33 @@ test('native interface exemptions retain the other remark rules', async (t) => {
     });
     assert.equal(result.status, 1, result.output);
     assert.match(result.output, /fenced-code-flag/);
+    assert.match(result.output, /heading-increment/);
+    assert.doesNotMatch(result.output, /filename\s+bilingual|missing-partner\s+bilingual/);
+});
+
+test('the English API exception is scoped to its root directory and retains Markdown checks', async (t) => {
+    const directory = await fixture(t, {
+        'docs/api/index.md': '# API\n',
+        'docs/api/models/Message.md': '# Message\n',
+        'docs/development/guide.en.md': '# Guide\n',
+        'other/docs/api/index.md': '# Other API\n'
+    });
+    const options = {unpairedFiles: ['AGENTS.md'], unpairedPaths: ['/docs/api/']};
+    let result = lint(directory, ['docs/api'], options);
+    assert.equal(result.status, 0, result.output);
+    result = lint(directory, ['docs/development/guide.en.md'], options);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /missing-partner\s+bilingual/);
+    result = lint(directory, ['other/docs/api/index.md'], options);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /filename\s+bilingual/);
+
+    await writeFile(path.join(directory, 'docs/api/index.md'), '# API\n\n### Skipped heading\n');
+    result = lint(directory, ['docs/api'], {
+        ...options,
+        plugins: [fileURLToPath(import.meta.resolve('remark-lint-heading-increment'))]
+    });
+    assert.equal(result.status, 1, result.output);
     assert.match(result.output, /heading-increment/);
     assert.doesNotMatch(result.output, /filename\s+bilingual|missing-partner\s+bilingual/);
 });
