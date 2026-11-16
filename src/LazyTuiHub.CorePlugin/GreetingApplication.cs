@@ -1,7 +1,7 @@
 using LazyTuiHub.Api;
 using LazyTuiHub.Api.Greeting.V1;
 
-namespace LazyTuiHub.Application;
+namespace LazyTuiHub.CorePlugin;
 
 internal sealed class GreetingApplication : IGreetingApi
 {

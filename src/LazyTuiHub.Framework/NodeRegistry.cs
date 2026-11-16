@@ -19,6 +19,15 @@ public sealed class NodeRegistry
             throw new ArgumentException($"Node type already registered: {descriptor.Type}.", nameof(descriptor));
     }
 
+    public void Import(NodeRegistry source)
+    {
+        var duplicate = source.nodes.Keys.FirstOrDefault(nodes.ContainsKey);
+        if (duplicate is not null)
+            throw new ArgumentException($"Node type already registered: {duplicate}.", nameof(source));
+        foreach (var (key, value) in source.nodes)
+            nodes.Add(key, value);
+    }
+
     internal RegisteredNode Get(string type) =>
         nodes.TryGetValue(type, out var node)
             ? node

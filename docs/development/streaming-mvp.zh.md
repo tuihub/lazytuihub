@@ -14,10 +14,12 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。首轮本地运行
 | - | - |
 | [Framework](../../src/LazyTuiHub.Framework/) | 通用数据关联、节点／端口注册、计划、异步交付、同步输入对齐、扇出、反压与取消。 |
 | [节点库](../../src/LazyTuiHub.Nodes/) | 定时器、HTTP fetch、有类型的输出消费者和常见源／转换／消费辅助，通过普通核心注册接入。 |
-| [RSS](../../src/LazyTuiHub.Rss/) | 订阅、RSS/Atom 解析、文章存储、查询和已读状态。 |
-| [Host](../../src/LazyTuiHub/) | 组合模块、CLI、后台刷新及协议适配。 |
+| [插件装配](../../src/LazyTuiHub.Plugins/) | 可信 DLL 装配、声明及意图保留、工作流管理、任务与 hook 调用。 |
+| [核心插件](../../src/LazyTuiHub.CorePlugin/) | 发行清单要求的问候功能及内置节点注册。 |
+| [RSS 插件](../../src/LazyTuiHub.Rss/) | 订阅、解析、存储、查询、已读状态、API／CLI 适配及后台刷新。 |
+| [Host](../../src/LazyTuiHub/) | 启动、插件／工作流 CLI、共享 HTTP／DI 基础设施及生命周期。 |
 
-PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。RSS 在自己的表中保存业务字段，文章和通用关联在同一 SQLite 事务中提交。这些身份不同于同步输入 key，也不构成分布式对象存储。
+PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。RSS 通过 BusinessStorage 写业务表，返回数据身份和关联意图；框架登记元数据后在同一 SQLite 事务提交。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
 
 rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.parse、rss.store 和有类型的输出消费者。其他模块可以在解析后分支，不必修改运行器。阅读及其他直接 RSS 操作目前也经过工作流，让工作流成为可选能力仍待后续实现。本地和 HTTP 调用共享 IRssApi；字段、路由、分页、去重及错误见[生成的 API 参考](../api/index.md)。
 
@@ -25,7 +27,7 @@ rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.p
 
 NodeRegistry.Register 接收具名、有类型的输入／输出声明和一个异步执行函数，每类端口可以为任意数量，包括零。连线记录 source、sourcePort、target、targetPort，数据类型与交付方式必须严格一致，object 不作为接收任意类型的端口。输出可以未连接，每个已声明输入需要生产者。
 
-PipelinePlanner 生成 PipelinePlan，绑定节点实现、端口连接、本地放置和缓冲容量。当前后端要求 DAG，所有节点放在 local。创建／保存图时检查计划，运行定义时生成新计划，也可直接执行已有计划。资源清单、远程放置及远程传输尚未实现。
+PipelinePlanner 生成 PipelinePlan，绑定节点实现、端口连接、本地放置和缓冲容量。当前后端要求 DAG，所有节点放在 local。保存时返回可执行性诊断，同时保留不可用节点及原始参数／连线；执行要求有效计划，运行定义时生成新计划，也可直接执行已有计划。资源清单、远程放置及远程传输尚未实现。
 
 ## 流式与同步交付
 
@@ -54,44 +56,64 @@ demo:rss 自建本地 RSS fixture、临时 SQLite 和 HTTP 服务，验证本地
 ## 使用 RSS 工作区
 
 ```sh
-mise run run -- --rss help
-mise run run -- --database ./artifacts/rss/workspace.db --rss add --feed-url https://example.com/feed.xml --title Example
-mise run run -- --database ./artifacts/rss/workspace.db --rss feeds
-mise run run -- --database ./artifacts/rss/workspace.db --rss refresh --name feeds/FEED_ID
-mise run run -- --database ./artifacts/rss/workspace.db --rss articles --unread true
-mise run run -- --database ./artifacts/rss/workspace.db --rss read --name feeds/FEED_ID/articles/ARTICLE_ID
+mise run run -- --command rss --action help
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action feeds
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action articles --unread true
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action read --name feeds/FEED_ID/articles/ARTICLE_ID
 ```
 
 将 feed URI 替换成实际地址。add 返回订阅名称，articles 返回文章名称和后续分页 token，通过 --page-token 继续查询。read 标记已读并输出 Proto JSON，不执行 HTML。
 
-不传 --database 时，工作区位于系统 LocalApplicationData 下的 LazyTuiHub/workspace.db。启动 HTTP 服务同时启动后台刷新，首次创建图时默认周期为 15 分钟，可用 --refresh-interval 00:05:00 修改；已有图定义保留。定时器积压采用 PeriodicTimer 合并，不重放每个错过的时刻。刷新失败记录日志，在下一周期重试。
+不传 --database 时，工作区位于系统 LocalApplicationData 下的 LazyTuiHub/workspace.db。启动 HTTP 服务同时启动可用且所需工作流能生成计划的插件任务，首次创建图时默认周期为 15 分钟，可用 --refresh-interval 00:05:00 修改；已有图定义保留。定时器积压采用 PeriodicTimer 合并，不重放每个错过的时刻。刷新失败记录日志，在下一周期重试。
 
 ```sh
 mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:5080
 ```
 
+## 冷启动插件
+
+宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将 core、rss 入口 DLL 及依赖描述放入对应目录。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。
+
+```sh
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action inspect --plugin rss
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action disable --plugin rss
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action enable --plugin rss
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
+```
+
+修改在重启后生效。list 分别展示保存的启用意图、文件可用性、激活结果和任务资格；inspect 包含保留的节点／端口／数据类型声明及不透明配置。RSS 配置可写为 {"refreshInterval":"00:05:00"}，未知字段保留。周期用于初始化新默认图及控制失败重试等待；已有定时器周期需修改图内节点参数，存储的图优先于新默认值。
+
+插件禁用或缺失时不提供业务命令／路由／节点，也不启动任务。图查看与编辑、关联、配置及插件诊断仍然可用，包括 core 缺失的情况。移走和放回 DLL 不改启用意图，不删除数据、已读状态、图、关联或任务声明。工作流缺少实现时停止执行并说明原因。--command workflow --action list 展示全部存储图及可执行性。归属来自保留声明或图中显式 pluginId，没有这些信息时保持未知。
+
+--command plugins --action cleanup 或 uninstall --plugin ID 显式调用可选 hook。禁用插件可在冷启动作为维护目标提供 hook，不激活业务能力。代码或 hook 缺失时报告错误；RSS 目前均未提供。框架接受 hook 完成，不证明业务清理完整。uninstall 不删除 DLL 或目录记录，禁用及缺失不自动调用任何清理 hook。
+
+插件实现 IApplicationPlugin.Configure(PluginRegistration)，贡献服务／节点／数据类型／默认工作流／命令／路由／任务，并在发行清单登记身份及入口 DLL／类型。requires 只列必要服务依赖，不从跨业务工作流连线推导。框架服务管理元数据，业务服务获得 IWorkflowExecutor。默认图仅在不存在时插入；任务声明所需工作流，自行决定重试并遵守宿主取消。实现缺失时仍保留声明，但活动队列、未齐同步输入及节点状态仍只在内存中。
+
 ## 查看和编辑图
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --rss nodes
-mise run run -- --database ./artifacts/rss/workspace.db --rss pipeline --pipeline-name rss.ingest
-mise run run -- --database ./artifacts/rss/workspace.db --rss plan --pipeline-name rss.ingest
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action nodes
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action definition --pipeline-name rss.ingest
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-name rss.ingest
 ```
 
-nodes 描述具名端口、载荷类型和交付方式；pipeline 输出可编辑的图 JSON；plan 展示放置和端口连线。连接的格式如下：
+nodes 描述已激活的具名端口、载荷类型和交付方式；definition 输出可编辑的图 JSON；plan 展示放置和端口连线。连接的格式如下：
 
 ```json
 { "source": "parse", "sourcePort": "output", "target": "store", "targetPort": "input" }
 ```
 
-将 pipeline 输出保存为 JSON 文件并编辑，再运行或保存。plan 和 run/watch 接受 --pipeline-file 或 --pipeline-name。save-pipeline 检查计划后按名称替换存储定义；当前运行保留自己的计划，后续运行读取新定义。--progress true 将节点和同步进度写入 stderr；Ctrl+C 取消 run/watch。
+将 definition 输出保存为 JSON 文件并编辑，再运行或保存。plan 和 run/watch 接受 --pipeline-file 或 --pipeline-name。save 按名称替换存储定义并报告可执行性，保留缺失节点和 pluginId 来源；plan 报告缺失实现和归属，执行要求有效计划；当前运行保留自己的计划，后续运行读取新定义。--progress true 将节点和同步进度写入 stderr；Ctrl+C 取消 run/watch。
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --rss plan --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --rss run --pipeline-file ./pipeline.json --progress true
-mise run run -- --database ./artifacts/rss/workspace.db --rss watch --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --rss save-pipeline --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --rss relations --feed-id FEED_ID
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-file ./pipeline.json
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action run --pipeline-file ./pipeline.json --progress true
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action watch --pipeline-file ./pipeline.json
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action save --pipeline-file ./pipeline.json
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action relations --data-type rss.feed --data-key FEED_ID
 ```
 
 ## 添加节点与当前边界

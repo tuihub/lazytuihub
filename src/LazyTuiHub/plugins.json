@@ -1,0 +1,15 @@
+[
+  {
+    "id": "core",
+    "name": "Core",
+    "assembly": "core/LazyTuiHub.CorePlugin.dll",
+    "entryType": "LazyTuiHub.CorePlugin.CoreLibraryPlugin",
+    "required": true
+  },
+  {
+    "id": "rss",
+    "name": "RSS Reader",
+    "assembly": "rss/LazyTuiHub.Rss.dll",
+    "entryType": "LazyTuiHub.Rss.RssPlugin"
+  }
+]

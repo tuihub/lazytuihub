@@ -3,7 +3,7 @@ using LazyTuiHub.Api;
 using LazyTuiHub.Api.Rss.V1;
 using RssContract = LazyTuiHub.Api.Rss.V1.RssService;
 
-namespace LazyTuiHub.Transport;
+namespace LazyTuiHub.Rss.Transport;
 
 internal sealed class RssService(IRssApi application) : RssContract.RssServiceBase
 {

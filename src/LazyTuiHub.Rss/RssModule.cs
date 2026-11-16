@@ -59,10 +59,11 @@ public static class RssModule
                 PipelineNode.Create(
                     "timer",
                     "builtin.timer",
-                    new { interval = refreshInterval.ToString("c", CultureInfo.InvariantCulture) }
+                    new { interval = refreshInterval.ToString("c", CultureInfo.InvariantCulture) },
+                    pluginId: "core"
                 ),
                 PipelineNode.Create("feeds", "rss.feed-requests"),
-                PipelineNode.Create("fetch", "builtin.http-fetch"),
+                PipelineNode.Create("fetch", "builtin.http-fetch", pluginId: "core"),
                 PipelineNode.Create("parse", "rss.parse"),
                 PipelineNode.Create("store", "rss.store"),
                 PipelineNode.Create(OutputNode, "rss.output-articles"),

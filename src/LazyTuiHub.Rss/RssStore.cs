@@ -10,9 +10,9 @@ public sealed class RssStore
 {
     private const string FeedParameter = "$feed";
     private const int ArticleIdHexLength = 32;
-    private readonly SqliteDatabase database;
+    private readonly BusinessStorage database;
 
-    public RssStore(SqliteDatabase database)
+    public RssStore(BusinessStorage database)
     {
         this.database = database;
         using var connection = database.Open();
@@ -41,49 +41,51 @@ public sealed class RssStore
         command.ExecuteNonQuery();
     }
 
-    public FeedRecord Subscribe(SubscribeFeed request)
-    {
-        using var connection = database.Open();
-        using var transaction = connection.BeginTransaction();
-        var displayName = string.IsNullOrEmpty(request.DisplayName) ? request.Url.Host : request.DisplayName;
-        var existing = ReadRequest(connection, transaction, request.RequestId);
-        if (existing is not null)
-        {
-            if (
-                !existing.Url.Equals(request.Url.AbsoluteUri, StringComparison.Ordinal)
-                || !existing.DisplayName.Equals(displayName, StringComparison.Ordinal)
-                || (!string.IsNullOrEmpty(request.Id) && !existing.Id.Equals(request.Id, StringComparison.Ordinal))
-            )
-                throw new RssConflictException(
-                    "REQUEST_ID_REUSED",
-                    "The request ID was already used for a different subscription."
+    public FeedRecord Subscribe(SubscribeFeed request) =>
+        database.Write(
+            (connection, transaction) =>
+            {
+                var displayName = string.IsNullOrEmpty(request.DisplayName) ? request.Url.Host : request.DisplayName;
+                var existing = ReadRequest(connection, transaction, request.RequestId);
+                if (existing is not null)
+                {
+                    if (
+                        !existing.Url.Equals(request.Url.AbsoluteUri, StringComparison.Ordinal)
+                        || !existing.DisplayName.Equals(displayName, StringComparison.Ordinal)
+                        || (
+                            !string.IsNullOrEmpty(request.Id)
+                            && !existing.Id.Equals(request.Id, StringComparison.Ordinal)
+                        )
+                    )
+                        throw new RssConflictException(
+                            "REQUEST_ID_REUSED",
+                            "The request ID was already used for a different subscription."
+                        );
+                    return new BusinessChange<FeedRecord>(existing, [existing.Reference], []);
+                }
+                var feed = new FeedRecord(
+                    string.IsNullOrEmpty(request.Id) ? Guid.NewGuid().ToString("D") : request.Id,
+                    request.Url.AbsoluteUri,
+                    displayName
                 );
-            return existing;
-        }
-        var feed = new FeedRecord(
-            string.IsNullOrEmpty(request.Id) ? Guid.NewGuid().ToString("D") : request.Id,
-            request.Url.AbsoluteUri,
-            displayName
+                using var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = """
+                    INSERT INTO rss_feeds(id, url, display_name, request_id) VALUES ($id, $url, $title, $request)
+                    ON CONFLICT DO NOTHING
+                    """;
+                command.Parameters.AddWithValue("$id", feed.Id);
+                command.Parameters.AddWithValue("$url", feed.Url);
+                command.Parameters.AddWithValue("$title", feed.DisplayName);
+                command.Parameters.AddWithValue(
+                    "$request",
+                    string.IsNullOrEmpty(request.RequestId) ? DBNull.Value : request.RequestId
+                );
+                if (command.ExecuteNonQuery() == 0)
+                    throw new RssConflictException("FEED_EXISTS", "A subscription with that ID or URL already exists.");
+                return new BusinessChange<FeedRecord>(feed, [feed.Reference], []);
+            }
         );
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = """
-            INSERT INTO rss_feeds(id, url, display_name, request_id) VALUES ($id, $url, $title, $request)
-            ON CONFLICT DO NOTHING
-            """;
-        command.Parameters.AddWithValue("$id", feed.Id);
-        command.Parameters.AddWithValue("$url", feed.Url);
-        command.Parameters.AddWithValue("$title", feed.DisplayName);
-        command.Parameters.AddWithValue(
-            "$request",
-            string.IsNullOrEmpty(request.RequestId) ? DBNull.Value : request.RequestId
-        );
-        if (command.ExecuteNonQuery() == 0)
-            throw new RssConflictException("FEED_EXISTS", "A subscription with that ID or URL already exists.");
-        DataCatalog.Register(connection, transaction, feed.Reference);
-        transaction.Commit();
-        return feed;
-    }
 
     public IEnumerable<FeedRecord> ReadFeeds(FeedSelection selection)
     {
@@ -105,44 +107,46 @@ public sealed class RssStore
             );
     }
 
-    public ArticleRecord Save(ArticleDraft article)
-    {
-        using var connection = database.Open();
-        using var transaction = connection.BeginTransaction();
-        var id = Convert.ToHexStringLower(
-            SHA256.HashData(Encoding.UTF8.GetBytes($"{article.FeedId}\0{article.EntryId}"))
-        )[..ArticleIdHexLength];
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = """
-            INSERT INTO rss_articles(id, feed_id, entry_id, title, url, content, published_at)
-            VALUES ($id, $feed, $entry, $title, $url, $content, $published)
-            ON CONFLICT(feed_id, entry_id) DO UPDATE SET
-                title = excluded.title, url = excluded.url, content = excluded.content,
-                published_at = excluded.published_at
-            RETURNING sequence, is_read
-            """;
-        command.Parameters.AddWithValue("$id", id);
-        command.Parameters.AddWithValue(FeedParameter, article.FeedId);
-        command.Parameters.AddWithValue("$entry", article.EntryId);
-        command.Parameters.AddWithValue("$title", article.Title);
-        command.Parameters.AddWithValue("$url", article.Url);
-        command.Parameters.AddWithValue("$content", article.Content);
-        command.Parameters.AddWithValue(
-            "$published",
-            (object?)article.PublishedAt?.ToString("O", CultureInfo.InvariantCulture) ?? DBNull.Value
+    public ArticleRecord Save(ArticleDraft article) =>
+        database.Write(
+            (connection, transaction) =>
+            {
+                var id = Convert.ToHexStringLower(
+                    SHA256.HashData(Encoding.UTF8.GetBytes($"{article.FeedId}\0{article.EntryId}"))
+                )[..ArticleIdHexLength];
+                using var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = """
+                    INSERT INTO rss_articles(id, feed_id, entry_id, title, url, content, published_at)
+                    VALUES ($id, $feed, $entry, $title, $url, $content, $published)
+                    ON CONFLICT(feed_id, entry_id) DO UPDATE SET
+                        title = excluded.title, url = excluded.url, content = excluded.content,
+                        published_at = excluded.published_at
+                    RETURNING sequence, is_read
+                    """;
+                command.Parameters.AddWithValue("$id", id);
+                command.Parameters.AddWithValue(FeedParameter, article.FeedId);
+                command.Parameters.AddWithValue("$entry", article.EntryId);
+                command.Parameters.AddWithValue("$title", article.Title);
+                command.Parameters.AddWithValue("$url", article.Url);
+                command.Parameters.AddWithValue("$content", article.Content);
+                command.Parameters.AddWithValue(
+                    "$published",
+                    (object?)article.PublishedAt?.ToString("O", CultureInfo.InvariantCulture) ?? DBNull.Value
+                );
+                ArticleRecord saved;
+                using (var reader = command.ExecuteReader())
+                {
+                    reader.Read();
+                    saved = new(reader.GetInt64(0), id, article, reader.GetBoolean(1));
+                }
+                return new BusinessChange<ArticleRecord>(
+                    saved,
+                    [saved.Reference],
+                    [new(new("rss.feed", article.FeedId), saved.Reference, "contains")]
+                );
+            }
         );
-        ArticleRecord saved;
-        using (var reader = command.ExecuteReader())
-        {
-            reader.Read();
-            saved = new(reader.GetInt64(0), id, article, reader.GetBoolean(1));
-        }
-        DataCatalog.Register(connection, transaction, saved.Reference);
-        DataCatalog.Relate(connection, transaction, new(new("rss.feed", article.FeedId), saved.Reference, "contains"));
-        transaction.Commit();
-        return saved;
-    }
 
     public IEnumerable<ArticleRecord> ReadArticles(ArticleQuery query)
     {

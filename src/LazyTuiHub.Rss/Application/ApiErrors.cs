@@ -5,7 +5,7 @@ using Grpc.Core;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Rss;
 
-namespace LazyTuiHub.Application;
+namespace LazyTuiHub.Rss.Application;
 
 internal static partial class ApiErrors
 {

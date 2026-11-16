@@ -6,10 +6,10 @@ using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Rss;
 using Microsoft.AspNetCore.DataProtection;
 
-namespace LazyTuiHub.Application;
+namespace LazyTuiHub.Rss.Application;
 
 public sealed class RssApplication(
-    RssWorkspace workspace,
+    RssOperations workspace,
     IDataProtectionProvider protection,
     ILogger<RssApplication> logger
 ) : IRssApi

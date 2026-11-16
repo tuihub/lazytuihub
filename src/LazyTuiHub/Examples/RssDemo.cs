@@ -2,8 +2,7 @@ using LazyTuiHub.Api;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Framework;
-using LazyTuiHub.Nodes;
-using LazyTuiHub.Rss;
+using LazyTuiHub.Plugins;
 
 namespace LazyTuiHub.Examples;
 
@@ -21,15 +20,26 @@ public static class RssDemo
                 Path.Combine(directory, "workspace.db"),
             ]);
             app.MapGet("/fixture.xml", () => Results.Text(FeedXml, "application/rss+xml"));
-            var workspace = app.Services.GetRequiredService<RssWorkspace>();
+            var workspace = app.Services.GetRequiredService<WorkflowRuntime>();
             var headlines = 0;
-            StreamNodes.Sink<ArticleDraft>(workspace.Registry, "demo.headlines", "another-business", (_, _, _) =>
-            {
-                Interlocked.Increment(ref headlines);
-                return ValueTask.CompletedTask;
-            });
-            var ingestion = workspace.Pipelines.Get("rss.ingest");
-            workspace.Pipelines.Save(
+            var articleType = workspace
+                .Registry.Descriptors.Single(node => string.Equals(node.Type, "rss.parse", StringComparison.Ordinal))
+                .Outputs.Single()
+                .DataType;
+            workspace.Registry.Register(
+                new("demo.headlines", "another-business", [new("input", articleType, PortDelivery.Streaming)], []),
+                async (context, token) =>
+                {
+                    await foreach (var input in context.ReadEventsAsync())
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (input is StreamInput)
+                            Interlocked.Increment(ref headlines);
+                    }
+                }
+            );
+            var ingestion = workspace.Get("rss.ingest");
+            workspace.Save(
                 ingestion with
                 {
                     Nodes = [.. ingestion.Nodes, PipelineNode.Create("headlines", "demo.headlines")],

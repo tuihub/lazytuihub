@@ -4,6 +4,8 @@
   <Project Path="src/LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
   <Project Path="src/LazyTuiHub.Framework/LazyTuiHub.Framework.csproj" />
   <Project Path="src/LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
+  <Project Path="src/LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
+  <Project Path="src/LazyTuiHub.CorePlugin/LazyTuiHub.CorePlugin.csproj" />
   <Project Path="src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
   <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
 </Solution>

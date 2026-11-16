@@ -1,22 +1,17 @@
 using LazyTuiHub.Framework;
 using LazyTuiHub.Rss;
 
-namespace LazyTuiHub.Application;
+namespace LazyTuiHub.Rss.Application;
 
-internal sealed partial class RssRefreshWorker(RssWorkspace workspace, ILogger<RssRefreshWorker> logger)
-    : BackgroundService
+internal sealed partial class RssRefreshWorker(RssOperations workspace, ILogger<RssRefreshWorker> logger)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task RunAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await workspace.Runner.RunAsync(
-                    workspace.Pipelines.Get("rss.ingest"),
-                    new PipelineContext(Continuous: true),
-                    stoppingToken
-                );
+                await workspace.ExecuteAsync("rss.ingest", new PipelineContext(Continuous: true), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

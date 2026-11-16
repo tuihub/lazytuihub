@@ -3,7 +3,7 @@ using System.Text.Json;
 using Grpc.Core;
 using Microsoft.AspNetCore.DataProtection;
 
-namespace LazyTuiHub.Application;
+namespace LazyTuiHub.Rss.Application;
 
 internal sealed class PageTokens(IDataProtectionProvider provider)
 {

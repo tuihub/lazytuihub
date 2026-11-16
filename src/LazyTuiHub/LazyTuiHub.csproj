@@ -7,8 +7,18 @@
   <ItemGroup>
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
     <ProjectReference Include="../LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
-    <ProjectReference Include="../LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <ProjectReference Include="../LazyTuiHub.CorePlugin/LazyTuiHub.CorePlugin.csproj" ReferenceOutputAssembly="false" Private="false" />
     <PackageReference Include="Grpc.AspNetCore.Server" Version="2.85.0" />
     <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="11.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="plugins.json" Link="plugins/plugins.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LazyTuiHub.CorePlugin/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.CorePlugin.dll" Link="plugins/core/LazyTuiHub.CorePlugin.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LazyTuiHub.CorePlugin/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.CorePlugin.deps.json" Link="plugins/core/LazyTuiHub.CorePlugin.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LazyTuiHub.Rss/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Rss.dll" Link="plugins/rss/LazyTuiHub.Rss.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LazyTuiHub.Rss/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Rss.deps.json" Link="plugins/rss/LazyTuiHub.Rss.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

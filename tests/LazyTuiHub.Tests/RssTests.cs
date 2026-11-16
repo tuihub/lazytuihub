@@ -4,7 +4,9 @@ using System.Xml;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Nodes;
+using LazyTuiHub.Plugins;
 using LazyTuiHub.Rss;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace LazyTuiHub.Tests;
@@ -20,7 +22,9 @@ public sealed class RssTests
         try
         {
             var path = Path.Combine(directory, "workspace.db");
-            var workspace = new RssWorkspace(new(path), http, TimeSpan.FromMinutes(15));
+            await using var app = PluginTestHost.Create(path, http);
+            var workspace = app.Services.GetRequiredService<RssOperations>();
+            var workflows = app.Services.GetRequiredService<WorkflowRuntime>();
             var request = new SubscribeFeed(
                 string.Empty,
                 new("https://example.com/feed.xml"),
@@ -48,9 +52,11 @@ public sealed class RssTests
                 new ArticleSelection(feed.Id, article.Id),
                 cancellationToken: TestContext.Current.CancellationToken
             );
-            workspace.Pipelines.Save(workspace.Pipelines.Get("rss.ingest") with { BufferCapacity = 1 });
+            workflows.Save(workflows.Get("rss.ingest") with { BufferCapacity = 1 });
 
-            var restarted = new RssWorkspace(new(path), http, TimeSpan.FromMinutes(15));
+            await using var restartedApp = PluginTestHost.Create(path, http);
+            var restarted = restartedApp.Services.GetRequiredService<RssOperations>();
+            var restartedWorkflows = restartedApp.Services.GetRequiredService<WorkflowRuntime>();
             Assert.Equal(
                 feed,
                 Assert.Single(
@@ -73,8 +79,8 @@ public sealed class RssTests
             Assert.Equal(2, refreshed.Count);
             Assert.True(refreshed.Single(value => value.Id == article.Id).IsRead);
             Assert.Contains(refreshed, value => value.Article.Title == "Updated title");
-            Assert.Equal(2, restarted.Catalog.ReadRelations(feed.Reference).Count);
-            Assert.Equal(1, restarted.Pipelines.Get("rss.ingest").BufferCapacity);
+            Assert.Equal(2, restartedWorkflows.Catalog.ReadRelations(feed.Reference).Count);
+            Assert.Equal(1, restartedWorkflows.Get("rss.ingest").BufferCapacity);
             var conflict = await Assert.ThrowsAsync<PipelineExecutionException>(() =>
                 restarted.RunAsync<FeedRecord>(
                     "rss.subscribe",

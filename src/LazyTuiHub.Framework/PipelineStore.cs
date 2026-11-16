@@ -21,6 +21,18 @@ public sealed class PipelineStore(SqliteDatabase database)
         command.ExecuteNonQuery();
     }
 
+    public IReadOnlyList<PipelineDefinition> List()
+    {
+        using var connection = database.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT definition FROM pipelines ORDER BY name";
+        using var reader = command.ExecuteReader();
+        var result = new List<PipelineDefinition>();
+        while (reader.Read())
+            result.Add(JsonSerializer.Deserialize<PipelineDefinition>(reader.GetString(0), JsonOptions)!);
+        return result;
+    }
+
     public PipelineDefinition Get(string name)
     {
         using var connection = database.Open();

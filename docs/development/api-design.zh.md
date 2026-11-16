@@ -16,7 +16,7 @@
 
 业务规则、权限、事务和执行流程写在应用服务中。进程内调用直接进入该服务，远程入口只适配传输。按实际需要区分领域对象，不机械复制全部 DTO。
 
-当前实现以 [IGreetingApi](../../src/LazyTuiHub.Api/IGreetingApi.cs) 为共享调用边界。[GreetingApplication](../../src/LazyTuiHub/Application/GreetingApplication.cs) 直接实现该接口，[传输服务](../../src/LazyTuiHub/Transport/GreetingService.cs)将转码请求及取消信号交给它。生成 HTTP 客户端的[手写 partial](../../src/LazyTuiHub.Client/GreetingHttpClient.cs) 实现同一接口，配置 JSON 字段命名及相对路径。其中的 `./` 路径前缀防止自定义方法的冒号被解析为 URI scheme。
+当前实现以 [IGreetingApi](../../src/LazyTuiHub.Api/IGreetingApi.cs) 为共享调用边界。[GreetingApplication](../../src/LazyTuiHub.CorePlugin/GreetingApplication.cs) 直接实现该接口，[传输服务](../../src/LazyTuiHub.CorePlugin/GreetingService.cs)将转码请求及取消信号交给它。生成 HTTP 客户端的[手写 partial](../../src/LazyTuiHub.Client/GreetingHttpClient.cs) 实现同一接口，配置 JSON 字段命名及相对路径。其中的 `./` 路径前缀防止自定义方法的冒号被解析为 URI scheme。
 
 RSS MVP 新增 [IRssApi](../../src/LazyTuiHub.Api/IRssApi.cs)。应用服务执行共享管线，[客户端 partial](../../src/LazyTuiHub.Client/RssHttpClient.cs) 将资源名称与查询参数适配到生成方法。Proto 消息使用 Protobuf JSON 序列化，正确处理时间戳和 repeated 字段；生成器按配置的服务分别输出客户端。[MVP 指南](streaming-mvp.zh.md)说明模块组合及当前使用 ASP.NET Core 原生 HTTP 错误表示的明确例外，该例外不改变其他 AIP 要求。
 

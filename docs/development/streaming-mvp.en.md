@@ -14,10 +14,12 @@ Interaction uses CLI, in-process APIs, and generated HTTP clients. There is no v
 | - | - |
 | [Framework](../../src/LazyTuiHub.Framework/) | Generic data relationships, node/port registration, planning, asynchronous delivery, synchronized-input alignment, fan-out, backpressure, and cancellation. |
 | [Node library](../../src/LazyTuiHub.Nodes/) | Timer, HTTP fetch, typed output consumers, and helpers for common source/transform/sink patterns; uses ordinary core registration. |
-| [RSS](../../src/LazyTuiHub.Rss/) | Subscriptions, RSS/Atom parsing, article storage, queries, and read state. |
-| [Host](../../src/LazyTuiHub/) | Module composition, CLI, background refresh, and transport adaptation. |
+| [Plugins](../../src/LazyTuiHub.Plugins/) | Trusted DLL composition, retained declarations/intent, workflow management, and task/hook invocation. |
+| [Core plugin](../../src/LazyTuiHub.CorePlugin/) | Required distribution plugin for greetings and built-in node registration. |
+| [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, parsing, storage, queries, read state, API/CLI adapters, and background refresh. |
+| [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow CLI, shared HTTP/DI infrastructure, and lifecycle. |
 
-PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. RSS stores business fields in its own tables and commits article writes and generic relationships in one SQLite transaction. These identities are separate from synchronized-input keys and do not implement a distributed object store.
+PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. RSS writes its business tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits both in one SQLite transaction. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
 
 The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, rss.store, and a typed output consumer. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP calls share IRssApi; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
 
@@ -25,7 +27,7 @@ The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fet
 
 NodeRegistry.Register accepts typed, named input/output declarations and one asynchronous execution function. Each category may have any number of ports, including zero. Connections identify source, sourcePort, target, and targetPort. Type and delivery mode must match exactly; object is not a catch-all receiving port. Unused outputs may remain unconnected; every declared input needs a producer.
 
-PipelinePlanner creates a PipelinePlan containing bound node implementations, port connections, local placement, and buffering capacity. The current backend requires a DAG and assigns all nodes to local. Creating/saving definitions checks a plan; running a definition builds a fresh plan, while callers may also execute a previously created plan. Resource inventories, remote placement, and remote transport are not implemented.
+PipelinePlanner creates a PipelinePlan containing bound node implementations, port connections, local placement, and buffering capacity. The current backend requires a DAG and assigns all nodes to local. Saving returns feasibility diagnostics while retaining unavailable nodes and their original settings/connections; execution requires a valid plan; running a definition builds a fresh plan, while callers may also execute a previously created plan. Resource inventories, remote placement, and remote transport are not implemented.
 
 ## Streaming and synchronized delivery
 
@@ -54,44 +56,64 @@ demo:rss creates a local RSS fixture, temporary SQLite database, and HTTP servic
 ## Using an RSS workspace
 
 ```sh
-mise run run -- --rss help
-mise run run -- --database ./artifacts/rss/workspace.db --rss add --feed-url https://example.com/feed.xml --title Example
-mise run run -- --database ./artifacts/rss/workspace.db --rss feeds
-mise run run -- --database ./artifacts/rss/workspace.db --rss refresh --name feeds/FEED_ID
-mise run run -- --database ./artifacts/rss/workspace.db --rss articles --unread true
-mise run run -- --database ./artifacts/rss/workspace.db --rss read --name feeds/FEED_ID/articles/ARTICLE_ID
+mise run run -- --command rss --action help
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action feeds
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action articles --unread true
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action read --name feeds/FEED_ID/articles/ARTICLE_ID
 ```
 
 Replace the feed URI with a real address. add returns the subscription name; articles returns article names and a continuation token, accepted by --page-token. read marks the article read and prints Proto JSON without executing HTML.
 
-Without --database, the workspace is LazyTuiHub/workspace.db under system LocalApplicationData. Hosting HTTP starts background refresh. The initial graph uses a 15-minute interval, configurable with --refresh-interval 00:05:00 when first created; existing graph definitions are preserved. Timer backlog uses PeriodicTimer coalescing without replaying every missed tick. Refresh failures are logged and retried on the next interval.
+Without --database, the workspace is LazyTuiHub/workspace.db under system LocalApplicationData. Hosting HTTP starts available plugin tasks whose required workflows can plan. The initial graph uses a 15-minute interval, configurable with --refresh-interval 00:05:00 when first created; existing graph definitions are preserved. Timer backlog uses PeriodicTimer coalescing without replaying every missed tick. Refresh failures are logged and retried on the next interval.
 
 ```sh
 mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:5080
 ```
 
+## Cold-start plugins
+
+The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core and rss entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
+
+```sh
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action inspect --plugin rss
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action disable --plugin rss
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action enable --plugin rss
+mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
+```
+
+Changes apply on restart. list separates saved enablement, file availability, activation, and task eligibility; inspect includes retained node/port/data-type declarations and opaque settings. RSS settings may contain {"refreshInterval":"00:05:00"}; unknown fields survive. The interval initializes new default graphs and controls retry delay; edit an existing timer node's settings to change its cadence. Stored graphs take precedence over new defaults.
+
+Disabled/missing plugins expose no business commands/routes/nodes and start no tasks. Graph inspection/editing, relationships, settings, and plugin diagnostics remain available, including when core is missing. Removing and restoring a DLL does not change enabled intent or delete data, read state, graphs, relationships, or task declarations. A missing workflow implementation prevents execution and explains why. --command workflow --action list reports all saved graphs with feasibility. Missing declarations can identify owners from retained snapshots or a graph's explicit pluginId; otherwise ownership remains unknown.
+
+--command plugins --action cleanup or uninstall --plugin ID explicitly invokes the optional plugin hook. Disabled maintenance targets can provide hooks at cold startup without activating their capabilities. Missing code or absent hooks report an error; RSS currently provides neither. The framework accepts hook completion without proving business cleanup. uninstall does not remove DLLs or catalog records. No hook runs automatically on disablement or absence.
+
+To contribute a plugin, implement IApplicationPlugin.Configure(PluginRegistration), declare services/nodes/data types/default workflows/commands/routes/tasks, and add its identity and entry DLL/type to the distribution manifest. requires lists hard service dependencies; cross-business workflow edges remain separate. Framework services manage metadata; business services receive IWorkflowExecutor. Saved default graphs are inserted only when absent. Task declarations list required workflows; tasks own their retry behavior and honor host cancellation. Declaration snapshots survive missing implementations, but active queues, synchronized inputs, and node state are still volatile.
+
 ## Inspecting and editing graphs
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --rss nodes
-mise run run -- --database ./artifacts/rss/workspace.db --rss pipeline --pipeline-name rss.ingest
-mise run run -- --database ./artifacts/rss/workspace.db --rss plan --pipeline-name rss.ingest
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action nodes
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action definition --pipeline-name rss.ingest
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-name rss.ingest
 ```
 
-nodes describes named ports, payload types, and delivery modes; pipeline prints editable graph JSON; plan prints placement and port connections. A connection has this shape:
+nodes describes active named ports, payload types, and delivery modes; definition prints editable graph JSON; plan prints placement and port connections. A connection has this shape:
 
 ```json
 { "source": "parse", "sourcePort": "output", "target": "store", "targetPort": "input" }
 ```
 
-Save pipeline output to a JSON file and edit it, then run or save it. plan and run/watch accept --pipeline-file or --pipeline-name. save-pipeline checks a plan and replaces the stored definition by name. Active runs keep their plan; later runs use the new definition. --progress true writes node and synchronization progress to stderr. Ctrl+C cancels run/watch.
+Save definition output to a JSON file and edit it, then run or save it. plan and run/watch accept --pipeline-file or --pipeline-name. save replaces the stored definition by name and reports feasibility, preserving missing nodes and pluginId provenance. plan reports missing implementations and owners; execution requires a valid plan. Active runs keep their plan; later runs use the new definition. --progress true writes node and synchronization progress to stderr. Ctrl+C cancels run/watch.
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --rss plan --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --rss run --pipeline-file ./pipeline.json --progress true
-mise run run -- --database ./artifacts/rss/workspace.db --rss watch --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --rss save-pipeline --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --rss relations --feed-id FEED_ID
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-file ./pipeline.json
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action run --pipeline-file ./pipeline.json --progress true
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action watch --pipeline-file ./pipeline.json
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action save --pipeline-file ./pipeline.json
+mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action relations --data-type rss.feed --data-key FEED_ID
 ```
 
 ## Adding nodes and current boundaries

@@ -4,7 +4,7 @@ namespace LazyTuiHub.Framework;
 
 public sealed class DataCatalog(SqliteDatabase database)
 {
-    public static void Register(SqliteConnection connection, SqliteTransaction transaction, DataReference reference)
+    private static void Register(SqliteConnection connection, SqliteTransaction transaction, DataReference reference)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -14,7 +14,7 @@ public sealed class DataCatalog(SqliteDatabase database)
         command.ExecuteNonQuery();
     }
 
-    public static void Relate(SqliteConnection connection, SqliteTransaction transaction, DataRelation relation)
+    private static void Relate(SqliteConnection connection, SqliteTransaction transaction, DataRelation relation)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -28,6 +28,14 @@ public sealed class DataCatalog(SqliteDatabase database)
         command.Parameters.AddWithValue("$targetKey", relation.Target.Key);
         command.Parameters.AddWithValue("$kind", relation.Kind);
         command.ExecuteNonQuery();
+    }
+
+    internal static void Apply<T>(SqliteConnection connection, SqliteTransaction transaction, BusinessChange<T> change)
+    {
+        foreach (var reference in change.Objects)
+            Register(connection, transaction, reference);
+        foreach (var relation in change.Relations)
+            Relate(connection, transaction, relation);
     }
 
     public IReadOnlyList<DataRelation> ReadRelations(DataReference source)

@@ -3,7 +3,7 @@ using LazyTuiHub.Api;
 using LazyTuiHub.Api.Greeting.V1;
 using GreetingContract = LazyTuiHub.Api.Greeting.V1.GreetingService;
 
-namespace LazyTuiHub.Transport;
+namespace LazyTuiHub.CorePlugin;
 
 internal sealed class GreetingService(IGreetingApi application) : GreetingContract.GreetingServiceBase
 {
