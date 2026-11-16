@@ -4,6 +4,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Nodes;
 
 namespace LazyTuiHub.Rss;
 

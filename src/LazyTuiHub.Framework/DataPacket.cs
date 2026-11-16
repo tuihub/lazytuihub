@@ -6,7 +6,7 @@ public abstract record DataPacket(DataReference? Reference)
 }
 
 public sealed record DataPacket<T>(T Value, DataReference? Reference = null) : DataPacket(Reference)
-    where T : class
+    where T : notnull
 {
     public override object Payload => Value;
 }

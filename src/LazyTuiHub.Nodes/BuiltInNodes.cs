@@ -1,22 +1,19 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using LazyTuiHub.Framework;
 
-namespace LazyTuiHub.Framework;
+namespace LazyTuiHub.Nodes;
 
 public static class BuiltInNodes
 {
     public static void Register(NodeRegistry registry, HttpClient httpClient)
     {
-        registry.RegisterSource<TimerTick>("framework.timer", "framework", Ticks);
-        registry.RegisterTransform<FetchRequest, HttpDocument>("framework.http-fetch", "framework", Fetch);
-        registry.RegisterSink<object>("framework.output", "framework", (value, reference, node, context, token) =>
-            context.Output?.Invoke(new DataPacket<object>(value, reference), token) ?? ValueTask.CompletedTask
-        );
+        StreamNodes.Source<TimerTick>(registry, "builtin.timer", "builtin", Ticks);
+        StreamNodes.Transform<FetchRequest, HttpDocument>(registry, "builtin.http-fetch", "builtin", Fetch);
 
         async IAsyncEnumerable<DataPacket<HttpDocument>> Fetch(
             DataPacket<FetchRequest> packet,
-            PipelineNode node,
-            PipelineContext context,
+            NodeContext context,
             [EnumeratorCancellation] CancellationToken cancellationToken
         )
         {
@@ -31,15 +28,20 @@ public static class BuiltInNodes
         }
     }
 
+    public static void RegisterOutput<T>(NodeRegistry registry, string type)
+        where T : notnull =>
+        StreamNodes.Sink<T>(registry, type, "builtin", (packet, context, token) =>
+            context.Run.Output?.Invoke(packet, token) ?? ValueTask.CompletedTask
+        );
+
     private static async IAsyncEnumerable<DataPacket<TimerTick>> Ticks(
-        PipelineNode node,
-        PipelineContext context,
+        NodeContext context,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        using var timer = context.Continuous
+        using var timer = context.Run.Continuous
             ? new PeriodicTimer(
-                TimeSpan.Parse(node.Settings.GetProperty("interval").GetString()!, CultureInfo.InvariantCulture)
+                TimeSpan.Parse(context.Node.Settings.GetProperty("interval").GetString()!, CultureInfo.InvariantCulture)
             )
             : null;
         yield return new(new(DateTimeOffset.UtcNow));

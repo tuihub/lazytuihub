@@ -2,6 +2,7 @@ using LazyTuiHub.Api;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Nodes;
 using LazyTuiHub.Rss;
 
 namespace LazyTuiHub.Examples;
@@ -22,7 +23,7 @@ public static class RssDemo
             app.MapGet("/fixture.xml", () => Results.Text(FeedXml, "application/rss+xml"));
             var workspace = app.Services.GetRequiredService<RssWorkspace>();
             var headlines = 0;
-            workspace.Registry.RegisterSink<ArticleDraft>("demo.headlines", "another-business", (_, _, _, _, _) =>
+            StreamNodes.Sink<ArticleDraft>(workspace.Registry, "demo.headlines", "another-business", (_, _, _) =>
             {
                 Interlocked.Increment(ref headlines);
                 return ValueTask.CompletedTask;
@@ -32,7 +33,7 @@ public static class RssDemo
                 ingestion with
                 {
                     Nodes = [.. ingestion.Nodes, PipelineNode.Create("headlines", "demo.headlines")],
-                    Edges = [.. ingestion.Edges, new("parse", "headlines")],
+                    Edges = [.. ingestion.Edges, new("parse", "output", "headlines", "input")],
                     BufferCapacity = 1,
                 }
             );

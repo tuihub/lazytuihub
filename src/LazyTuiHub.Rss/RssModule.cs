@@ -1,49 +1,53 @@
 using System.Globalization;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Nodes;
 
 namespace LazyTuiHub.Rss;
 
 public static class RssModule
 {
     public const string OutputNode = "output";
+    private const string SubscribeNodeType = "rss.subscribe";
 
     public static void Register(NodeRegistry registry, RssStore store)
     {
-        registry.RegisterTransform<TimerTick, FetchRequest>("rss.feed-requests", "rss", (_, _, context, _) =>
+        BuiltInNodes.RegisterOutput<FeedRecord>(registry, "rss.output-feeds");
+        BuiltInNodes.RegisterOutput<ArticleRecord>(registry, "rss.output-articles");
+        StreamNodes.Transform<TimerTick, FetchRequest>(registry, "rss.feed-requests", "rss", (_, context, _) =>
             store
-                .ReadFeeds(context.Input as FeedSelection ?? new())
+                .ReadFeeds(context.Run.Input as FeedSelection ?? new())
                 .Select(feed => new DataPacket<FetchRequest>(new(new(feed.Url), feed.Reference), feed.Reference))
                 .ToAsyncEnumerable()
         );
-        registry.RegisterTransform<HttpDocument, ArticleDraft>("rss.parse", "rss", (packet, _, _, token) =>
+        StreamNodes.Transform<HttpDocument, ArticleDraft>(registry, "rss.parse", "rss", (packet, _, token) =>
             FeedParser
                 .Parse(packet.Value, token)
                 .Select(article => new DataPacket<ArticleDraft>(article, packet.Reference))
                 .ToAsyncEnumerable()
         );
-        registry.RegisterTransform<ArticleDraft, ArticleRecord>("rss.store", "rss", (packet, _, _, _) =>
+        StreamNodes.Transform<ArticleDraft, ArticleRecord>(registry, "rss.store", "rss", (packet, _, _) =>
             One(store.Save(packet.Value))
         );
-        registry.RegisterSource<FeedRecord>("rss.subscribe", "rss", (_, context, _) =>
-            One(store.Subscribe((SubscribeFeed)context.Input!))
+        StreamNodes.Source<FeedRecord>(registry, SubscribeNodeType, "rss", (context, _) =>
+            One(store.Subscribe((SubscribeFeed)context.Run.Input!))
         );
-        registry.RegisterSource<FeedRecord>("rss.read-feeds", "rss", (_, context, _) =>
+        StreamNodes.Source<FeedRecord>(registry, "rss.read-feeds", "rss", (context, _) =>
             store
-                .ReadFeeds(context.Input as FeedSelection ?? new())
+                .ReadFeeds(context.Run.Input as FeedSelection ?? new())
                 .Select(feed => new DataPacket<FeedRecord>(feed, feed.Reference))
                 .ToAsyncEnumerable()
         );
-        registry.RegisterSource<ArticleRecord>("rss.read-articles", "rss", (_, context, _) =>
+        StreamNodes.Source<ArticleRecord>(registry, "rss.read-articles", "rss", (context, _) =>
             store
-                .ReadArticles(context.Input as ArticleQuery ?? new())
+                .ReadArticles(context.Run.Input as ArticleQuery ?? new())
                 .Select(article => new DataPacket<ArticleRecord>(article, article.Reference))
                 .ToAsyncEnumerable()
         );
-        registry.RegisterSource<ArticleRecord>("rss.read-article", "rss", (_, context, _) =>
-            One(store.GetArticle((ArticleSelection)context.Input!))
+        StreamNodes.Source<ArticleRecord>(registry, "rss.read-article", "rss", (context, _) =>
+            One(store.GetArticle((ArticleSelection)context.Run.Input!))
         );
-        registry.RegisterSource<ArticleRecord>("rss.mark-read", "rss", (_, context, _) =>
-            One(store.GetArticle((ArticleSelection)context.Input!, markRead: true))
+        StreamNodes.Source<ArticleRecord>(registry, "rss.mark-read", "rss", (context, _) =>
+            One(store.GetArticle((ArticleSelection)context.Run.Input!, markRead: true))
         );
     }
 
@@ -54,27 +58,27 @@ public static class RssModule
             [
                 PipelineNode.Create(
                     "timer",
-                    "framework.timer",
+                    "builtin.timer",
                     new { interval = refreshInterval.ToString("c", CultureInfo.InvariantCulture) }
                 ),
                 PipelineNode.Create("feeds", "rss.feed-requests"),
-                PipelineNode.Create("fetch", "framework.http-fetch"),
+                PipelineNode.Create("fetch", "builtin.http-fetch"),
                 PipelineNode.Create("parse", "rss.parse"),
                 PipelineNode.Create("store", "rss.store"),
-                PipelineNode.Create(OutputNode, "framework.output"),
+                PipelineNode.Create(OutputNode, "rss.output-articles"),
             ],
             [
-                new("timer", "feeds"),
-                new("feeds", "fetch"),
-                new("fetch", "parse"),
-                new("parse", "store"),
-                new("store", OutputNode),
+                new("timer", StreamNodes.Output, "feeds", StreamNodes.Input),
+                new("feeds", StreamNodes.Output, "fetch", StreamNodes.Input),
+                new("fetch", StreamNodes.Output, "parse", StreamNodes.Input),
+                new("parse", StreamNodes.Output, "store", StreamNodes.Input),
+                new("store", StreamNodes.Output, OutputNode, StreamNodes.Input),
             ]
         );
         foreach (
             var (name, type) in new[]
             {
-                ("rss.subscribe", "rss.subscribe"),
+                (SubscribeNodeType, SubscribeNodeType),
                 ("rss.feeds", "rss.read-feeds"),
                 ("rss.articles", "rss.read-articles"),
                 ("rss.article", "rss.read-article"),
@@ -83,8 +87,14 @@ public static class RssModule
         )
             yield return new(
                 name,
-                [PipelineNode.Create("source", type), PipelineNode.Create(OutputNode, "framework.output")],
-                [new("source", OutputNode)]
+                [
+                    PipelineNode.Create("source", type),
+                    PipelineNode.Create(
+                        OutputNode,
+                        type is SubscribeNodeType or "rss.read-feeds" ? "rss.output-feeds" : "rss.output-articles"
+                    ),
+                ],
+                [new("source", StreamNodes.Output, OutputNode, StreamNodes.Input)]
             );
     }
 

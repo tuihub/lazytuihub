@@ -174,12 +174,20 @@ depends = ["check:proto", "check:generated"]
 [tasks."demo:api"]
 description = "Run Hello World through local and generated HTTP clients"
 depends = ["check:api"]
+wait_for = ["check:analyzers", "test"]
 run = "dotnet run --project src/LazyTuiHub -- --demo true"
 
 [tasks.test]
 description = "Test pipeline execution, RSS, SQLite, and local/HTTP behavior"
+wait_for = ["check:analyzers"]
 run = "dotnet run --project tests/LazyTuiHub.Tests"
 
 [tasks."demo:rss"]
 description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"
+wait_for = ["check:analyzers", "test", "demo:api", "demo:workflow"]
 run = "dotnet run --project src/LazyTuiHub -- --rss demo"
+
+[tasks."demo:workflow"]
+description = "Run local streaming and synchronized inputs with live configuration and cancellation"
+wait_for = ["check:analyzers", "test", "demo:api"]
+run = "dotnet run --project src/LazyTuiHub -- --workflow-demo"

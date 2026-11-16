@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace LazyTuiHub.Framework;
 
-internal sealed record RegisteredNode(NodeDescriptor Descriptor, NodeOperator Run);
+internal sealed record RegisteredNode(NodeDescriptor Descriptor, Func<NodeContext, CancellationToken, Task> Run);

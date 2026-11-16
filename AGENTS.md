@@ -42,9 +42,11 @@ The separate [CodeQL workflow](.github/workflows/codeql.yml) analyzes supported 
 
 ## Streaming MVP
 
-The [streaming MVP guide](docs/development/streaming-mvp.en.md) explains the framework, RSS module, SQLite workspace, and runnable examples. Keep generic data relationships and pipeline execution in `src/LazyTuiHub.Framework/`, RSS behavior in `src/LazyTuiHub.Rss/`, and transport adaptation in the host. Modules register nodes rather than adding business branches to the runner.
+The [streaming MVP guide](docs/development/streaming-mvp.en.md) explains the framework, RSS module, SQLite workspace, and runnable examples. Keep generic data relationships and pipeline execution in `src/LazyTuiHub.Framework/`, common nodes in `src/LazyTuiHub.Nodes/`, RSS behavior in `src/LazyTuiHub.Rss/`, and transport adaptation in the host. Modules register nodes rather than adding business branches to the runner.
 
-Run `mise run demo:rss` for an isolated local RSS/HTTP/SQLite example with a cross-business branch. Run `mise run test` for product tests; both local checks and CI include them. The current interface is CLI and generated HTTP APIs; pipeline definitions are editable JSON stored in SQLite. This is an exploratory implementation, without a visual graph editor or distributed execution guarantees.
+The proposed [MVP framework Note](.agents/notes/2026-11-17-mvp-framework.en.md) records framework responsibilities, execution plans, and public-network execution boundaries. The proposed [node execution Note](.agents/notes/2026-11-17-mvp-node-execution.en.md) records named ports, streaming and synchronized delivery, and node state. The first local implementation has named streaming/synchronized ports, grouped input delivery, and executable local plans; resource scheduling, remote execution, and replay remain design targets. The guide describes the current runnable prototype.
+
+Run `mise run demo:workflow` for streaming with synchronized configuration updates and cancellation. Run `mise run demo:rss` for an isolated local RSS/HTTP/SQLite example with a cross-business branch. Run `mise run test` for product tests; both local checks and CI include them. The current interface is CLI and generated HTTP APIs; pipeline definitions are editable JSON stored in SQLite. This is an exploratory implementation, without a visual graph editor or distributed execution guarantees.
 
 ## Commits
 
@@ -66,5 +68,7 @@ Tracked files and non-ignored new files must not exceed 1 MiB (1,048,576 bytes).
 Keep decision Notes flat in `.agents/notes/` as `YYYY-MM-DD-topic.zh.md` and `.en.md` pairs. The [Note metadata schema](.agents/schemas/note-metadata.yaml) defines the authoritative frontmatter format and category whitelist.
 
 Use the [maintain-notes skill](.agents/skills/maintain-notes/SKILL.md) when creating, changing, reviewing, rejecting, partially superseding, or fully archiving Notes. It defines the working lifecycle, frozen-content boundaries, and semantic coverage review that automated checks cannot perform.
+
+Until the MVP is merged into main, keep all MVP-specific Notes in `proposed`, freely editing their content and organization as the design evolves, even when parts have been implemented. Each MVP commit includes a coherent, runnable code increment and corresponding Note updates: implement settled contracts carefully and record simple provisional behavior for unsettled details. Review their maturity and status when preparing the merge rather than promoting them automatically. This agreement does not reopen existing frozen repository or API Notes. The MVP has no compatibility commitment for its exploratory code, graph definitions, or SQLite schema; favor a clean result over preserving prototype behavior.
 
 Use `mise run notes --where status=implemented --json` to filter Notes. `check:markdown` validates current metadata and references; `check:notes` checks snapshot transitions and frozen content against Git. `mise run check` includes both.

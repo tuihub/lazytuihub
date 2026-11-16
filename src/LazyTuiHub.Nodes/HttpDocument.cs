@@ -1,7 +1,6 @@
-using System.Globalization;
-using System.Runtime.CompilerServices;
+using LazyTuiHub.Framework;
 
-namespace LazyTuiHub.Framework;
+namespace LazyTuiHub.Nodes;
 
 public sealed class HttpDocument(Uri uri, byte[] content, DataReference source)
 {

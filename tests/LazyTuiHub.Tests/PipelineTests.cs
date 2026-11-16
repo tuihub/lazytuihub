@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Nodes;
 using Xunit;
 
 namespace LazyTuiHub.Tests;
@@ -20,7 +21,7 @@ public sealed class PipelineTests
         var slow = new List<Payload>();
         var produced = 0;
         var registry = new NodeRegistry();
-        registry.RegisterSource<Payload>("source", "first-business", (_, _, _) => payloads
+        StreamNodes.Source<Payload>(registry, "source", "first-business", (_, _) => payloads
                 .Select(payload =>
                 {
                     if (Interlocked.Increment(ref produced) == 3)
@@ -28,15 +29,15 @@ public sealed class PipelineTests
                     return new DataPacket<Payload>(payload);
                 })
                 .ToAsyncEnumerable());
-        registry.RegisterSink<Payload>("slow", "second-business", async (payload, _, _, _, token) =>
+        StreamNodes.Sink<Payload>(registry, "slow", "second-business", async (packet, _, token) =>
         {
             entered.TrySetResult();
             await release.Task.WaitAsync(token);
-            slow.Add(payload);
+            slow.Add(packet.Value);
         });
-        registry.RegisterSink<Payload>("fast", "third-business", (payload, _, _, _, _) =>
+        StreamNodes.Sink<Payload>(registry, "fast", "third-business", (packet, _, _) =>
         {
-            fast.Add(payload);
+            fast.Add(packet.Value);
             return ValueTask.CompletedTask;
         });
         var definition = new PipelineDefinition(
@@ -46,7 +47,7 @@ public sealed class PipelineTests
                 PipelineNode.Create("slow", "slow"),
                 PipelineNode.Create("fast", "fast"),
             ],
-            [new("source", "slow"), new("source", "fast")],
+            [new("source", "output", "slow", "input"), new("source", "output", "fast", "input")],
             BufferCapacity: 1
         );
         var run = new PipelineRunner(registry).RunAsync(definition, cancellationToken: stopping.Token);
@@ -76,13 +77,13 @@ public sealed class PipelineTests
     {
         using var stopping = new CancellationTokenSource(DeadlockGuard);
         var registry = new NodeRegistry();
-        registry.RegisterSource<string>("source", "test", (_, _, _) =>
+        StreamNodes.Source<string>(registry, "source", "test", (_, _) =>
             Enumerable.Repeat(new DataPacket<string>("item"), 100).ToAsyncEnumerable()
         );
-        registry.RegisterSink<string>("fail", "test", (_, _, _, _, _) =>
+        StreamNodes.Sink<string>(registry, "fail", "test", (_, _, _) =>
             ValueTask.FromException(new InvalidOperationException("broken node"))
         );
-        registry.RegisterSink<string>("blocked", "test", async (_, _, _, _, token) =>
+        StreamNodes.Sink<string>(registry, "blocked", "test", async (_, _, token) =>
             await Task.Delay(Timeout.Infinite, token)
         );
         var definition = new PipelineDefinition(
@@ -92,7 +93,7 @@ public sealed class PipelineTests
                 PipelineNode.Create("failure", "fail"),
                 PipelineNode.Create("blocked", "blocked"),
             ],
-            [new("source", "blocked"), new("source", "failure")],
+            [new("source", "output", "blocked", "input"), new("source", "output", "failure", "input")],
             BufferCapacity: 1
         );
         var failure = await Assert.ThrowsAsync<PipelineExecutionException>(() =>
@@ -112,20 +113,20 @@ public sealed class PipelineTests
         var received = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var values = new List<string>();
         var registry = new NodeRegistry();
-        registry.RegisterSource<string>("first", "test", (_, _, _) =>
+        StreamNodes.Source<string>(registry, "first", "test", (_, _) =>
             new[] { new DataPacket<string>("first") }.ToAsyncEnumerable()
         );
-        registry.RegisterSource<string>("second", "test", (_, _, token) => Delayed(token));
-        registry.RegisterSink<string>("sink", "test", (value, _, _, _, _) =>
+        StreamNodes.Source<string>(registry, "second", "test", (_, token) => Delayed(token));
+        StreamNodes.Sink<string>(registry, "sink", "test", (packet, _, _) =>
         {
-            values.Add(value);
+            values.Add(packet.Value);
             received.TrySetResult();
             return ValueTask.CompletedTask;
         });
         var definition = new PipelineDefinition(
             "merge",
             [PipelineNode.Create("a", "first"), PipelineNode.Create("b", "second"), PipelineNode.Create("out", "sink")],
-            [new("a", "out"), new("b", "out")],
+            [new("a", "output", "out", "input"), new("b", "output", "out", "input")],
             BufferCapacity: 1
         );
         var run = new PipelineRunner(registry).RunAsync(definition, cancellationToken: stopping.Token);
@@ -147,30 +148,30 @@ public sealed class PipelineTests
     {
         var started = false;
         var registry = new NodeRegistry();
-        registry.RegisterSource<string>("source", "test", (_, _, _) =>
+        StreamNodes.Source<string>(registry, "source", "test", (_, _) =>
         {
             started = true;
             return new[] { new DataPacket<string>("text") }.ToAsyncEnumerable();
         });
-        registry.RegisterTransform<string, string>("pass", "test", (packet, _, _, _) =>
+        StreamNodes.Transform<string, string>(registry, "pass", "test", (packet, _, _) =>
             new[] { packet }.ToAsyncEnumerable()
         );
-        registry.RegisterSink<Uri>("uri", "test", (_, _, _, _, _) => ValueTask.CompletedTask);
-        registry.RegisterSink<string>("sink", "test", (_, _, _, _, _) => ValueTask.CompletedTask);
+        StreamNodes.Sink<Uri>(registry, "uri", "test", (_, _, _) => ValueTask.CompletedTask);
+        StreamNodes.Sink<string>(registry, "sink", "test", (_, _, _) => ValueTask.CompletedTask);
         var runner = new PipelineRunner(registry);
         await Assert.ThrowsAsync<ArgumentException>(() =>
             runner.RunAsync(
-                new(
+                new PipelineDefinition(
                     "bad type",
                     [PipelineNode.Create("source", "source"), PipelineNode.Create("out", "uri")],
-                    [new("source", "out")]
+                    [new("source", "output", "out", "input")]
                 ),
                 cancellationToken: TestContext.Current.CancellationToken
             )
         );
         await Assert.ThrowsAsync<ArgumentException>(() =>
             runner.RunAsync(
-                new(
+                new PipelineDefinition(
                     "cycle",
                     [
                         PipelineNode.Create("source", "source"),
@@ -178,7 +179,12 @@ public sealed class PipelineTests
                         PipelineNode.Create("b", "pass"),
                         PipelineNode.Create("out", "sink"),
                     ],
-                    [new("source", "a"), new("a", "b"), new("b", "a"), new("b", "out")]
+                    [
+                        new("source", "output", "a", "input"),
+                        new("a", "output", "b", "input"),
+                        new("b", "output", "a", "input"),
+                        new("b", "output", "out", "input"),
+                    ]
                 ),
                 cancellationToken: TestContext.Current.CancellationToken
             )
@@ -189,31 +195,27 @@ public sealed class PipelineTests
     private sealed record Payload(int Value);
 
     [Fact]
-    public async Task GenericNodesCanConsumeBusinessDataWithoutCopyingItsPayload()
+    public async Task TypedLibraryNodesPreserveBusinessPayloadReferences()
     {
         var payload = new Payload(42);
         var reference = new DataReference("example.payload", "42");
         DataPacket? captured = null;
         var registry = new NodeRegistry();
-        using var http = new HttpClient();
-        BuiltInNodes.Register(registry, http);
-        registry.RegisterSource<Payload>("source", "business", (_, _, _) =>
+        BuiltInNodes.RegisterOutput<Payload>(registry, "capture");
+        StreamNodes.Source<Payload>(registry, "source", "business", (_, _) =>
             new[] { new DataPacket<Payload>(payload, reference) }.ToAsyncEnumerable()
         );
-        registry.RegisterTransform<object, object>("pass", "generic-business", (packet, _, _, _) =>
-            new[] { packet }.ToAsyncEnumerable()
+        var runner = new PipelineRunner(registry);
+        var plan = runner.CreatePlan(
+            new(
+                "typed",
+                [PipelineNode.Create("source", "source"), PipelineNode.Create("out", "capture")],
+                [new("source", "output", "out", "input")]
+            )
         );
-        var definition = new PipelineDefinition(
-            "generic",
-            [
-                PipelineNode.Create("source", "source"),
-                PipelineNode.Create("pass", "pass"),
-                PipelineNode.Create("out", "framework.output"),
-            ],
-            [new("source", "pass"), new("pass", "out")]
-        );
-        await new PipelineRunner(registry).RunAsync(
-            definition,
+        Assert.All(plan.Nodes, node => Assert.Equal("local", node.Instance));
+        await runner.RunAsync(
+            plan,
             new(
                 Output: (packet, _) =>
                 {
@@ -221,7 +223,7 @@ public sealed class PipelineTests
                     return ValueTask.CompletedTask;
                 }
             ),
-            cancellationToken: TestContext.Current.CancellationToken
+            TestContext.Current.CancellationToken
         );
         Assert.Same(payload, captured!.Payload);
         Assert.Equal(reference, captured.Reference);

@@ -1,5 +1,8 @@
-using System.Text.Json;
-
 namespace LazyTuiHub.Framework;
 
-public sealed record NodeDescriptor(string Type, string Module, Type? InputType, Type? OutputType);
+public sealed record NodeDescriptor(
+    string Type,
+    string Module,
+    IReadOnlyList<PortDescriptor> Inputs,
+    IReadOnlyList<PortDescriptor> Outputs
+);

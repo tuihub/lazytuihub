@@ -1,4 +1,5 @@
 using LazyTuiHub.Framework;
+using LazyTuiHub.Nodes;
 
 namespace LazyTuiHub.Rss;
 
@@ -17,7 +18,7 @@ public sealed class RssWorkspace
         Runner = new(Registry);
         foreach (var pipeline in RssModule.Pipelines(refreshInterval))
         {
-            Runner.Validate(pipeline);
+            _ = Runner.CreatePlan(pipeline);
             Pipelines.Save(pipeline, replace: false);
         }
     }

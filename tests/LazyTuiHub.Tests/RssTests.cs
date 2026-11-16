@@ -3,6 +3,7 @@ using System.Text;
 using System.Xml;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Nodes;
 using LazyTuiHub.Rss;
 using Xunit;
 

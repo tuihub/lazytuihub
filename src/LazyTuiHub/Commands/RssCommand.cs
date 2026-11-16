@@ -20,7 +20,7 @@ internal static class RssCommand
                 RSS: add --feed-url URI [--title TEXT], feeds, refresh --name feeds/ID,
                      articles [--parent feeds/ID] [--unread true], read --name feeds/ID/articles/ID
                 Pipelines: nodes, pipeline [--pipeline-name NAME], save-pipeline --pipeline-file FILE,
-                           run or watch [--pipeline-file FILE], relations --feed-id ID
+                           plan, run or watch [--pipeline-file FILE], relations --feed-id ID
                 Demo: demo
                 Pass --database PATH to select a workspace. Press Ctrl+C to stop watch.
                 """
@@ -139,8 +139,8 @@ internal static class RssCommand
                         {
                             node.Type,
                             node.Module,
-                            Input = node.InputType?.Name,
-                            Output = node.OutputType?.Name,
+                            Inputs = node.Inputs.Select(DescribePort),
+                            Outputs = node.Outputs.Select(DescribePort),
                         }),
                         PipelineStore.JsonOptions
                     )
@@ -156,18 +156,47 @@ internal static class RssCommand
                 break;
             case "save-pipeline":
                 var definition = await LoadPipelineAsync(configuration, cancellationToken);
-                workspace.Runner.Validate(definition);
+                _ = workspace.Runner.CreatePlan(definition);
                 workspace.Pipelines.Save(definition);
                 Console.WriteLine($"Saved pipeline: {definition.Name}");
                 break;
+            case "plan":
             case "run":
             case "watch":
                 var pipeline = configuration["pipeline-file"] is null
                     ? workspace.Pipelines.Get(configuration["pipeline-name"] ?? "rss.ingest")
                     : await LoadPipelineAsync(configuration, cancellationToken);
+                var plan = workspace.Runner.CreatePlan(pipeline);
+                if (command is "plan")
+                {
+                    Console.WriteLine(
+                        JsonSerializer.Serialize(
+                            new
+                            {
+                                plan.Name,
+                                plan.BufferCapacity,
+                                Nodes = plan.Nodes.Select(node => new
+                                {
+                                    node.Definition.Id,
+                                    node.Definition.Type,
+                                    node.Instance,
+                                    Inputs = node.Descriptor.Inputs.Select(DescribePort),
+                                    Outputs = node.Descriptor.Outputs.Select(DescribePort),
+                                }),
+                                plan.Connections,
+                            },
+                            PipelineStore.JsonOptions
+                        )
+                    );
+                    break;
+                }
                 await workspace.Runner.RunAsync(
-                    pipeline,
-                    new(Output: WritePacket, Continuous: command is "watch"),
+                    plan,
+                    new(
+                        Output: WritePacket,
+                        Continuous: command is "watch",
+                        Progress: configuration.GetValue<bool>("progress") ? WriteProgress : null
+                    ),
                     cancellationToken
                 );
                 break;
@@ -181,11 +210,22 @@ internal static class RssCommand
                 break;
             default:
                 throw new ArgumentException(
-                    "Choose add, feeds, refresh, articles, read, nodes, pipeline, save-pipeline, run, watch, relations, or demo.",
+                    "Choose add, feeds, refresh, articles, read, nodes, pipeline, save-pipeline, plan, run, watch, relations, or demo.",
                     nameof(command)
                 );
         }
     }
+
+    private static object DescribePort(PortDescriptor port) =>
+        new
+        {
+            port.Name,
+            Type = port.DataType.FullName,
+            Delivery = port.Delivery.ToString(),
+        };
+
+    private static void WriteProgress(NodeProgress progress) =>
+        Console.Error.WriteLine(JsonSerializer.Serialize(progress, PipelineStore.JsonOptions));
 
     private static string Required(IConfiguration configuration, string key) =>
         configuration[key] is { Length: > 0 } value
