@@ -1,20 +1,21 @@
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
+using LazyTuiHub.Dao;
 
 namespace LazyTuiHub.Framework;
 
 public sealed class DataCatalog(SqliteDatabase database)
 {
-    private static void Register(SqliteConnection connection, SqliteTransaction transaction, DataReference reference)
+    private static void Register(DbConnection connection, DbTransaction transaction, DataReference reference)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = "INSERT INTO data_objects(type, key) VALUES ($type, $key) ON CONFLICT DO NOTHING";
-        command.Parameters.AddWithValue("$type", reference.Type);
-        command.Parameters.AddWithValue("$key", reference.Key);
+        command.AddValue("$type", reference.Type);
+        command.AddValue("$key", reference.Key);
         command.ExecuteNonQuery();
     }
 
-    private static void Relate(SqliteConnection connection, SqliteTransaction transaction, DataRelation relation)
+    private static void Relate(DbConnection connection, DbTransaction transaction, DataRelation relation)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -22,15 +23,15 @@ public sealed class DataCatalog(SqliteDatabase database)
             INSERT INTO data_relations(source_type, source_key, target_type, target_key, kind)
             VALUES ($sourceType, $sourceKey, $targetType, $targetKey, $kind) ON CONFLICT DO NOTHING
             """;
-        command.Parameters.AddWithValue("$sourceType", relation.Source.Type);
-        command.Parameters.AddWithValue("$sourceKey", relation.Source.Key);
-        command.Parameters.AddWithValue("$targetType", relation.Target.Type);
-        command.Parameters.AddWithValue("$targetKey", relation.Target.Key);
-        command.Parameters.AddWithValue("$kind", relation.Kind);
+        command.AddValue("$sourceType", relation.Source.Type);
+        command.AddValue("$sourceKey", relation.Source.Key);
+        command.AddValue("$targetType", relation.Target.Type);
+        command.AddValue("$targetKey", relation.Target.Key);
+        command.AddValue("$kind", relation.Kind);
         command.ExecuteNonQuery();
     }
 
-    internal static void Apply<T>(SqliteConnection connection, SqliteTransaction transaction, BusinessChange<T> change)
+    internal static void Apply<T>(DbConnection connection, DbTransaction transaction, BusinessChange<T> change)
     {
         foreach (var reference in change.Objects)
             Register(connection, transaction, reference);
@@ -46,8 +47,8 @@ public sealed class DataCatalog(SqliteDatabase database)
             SELECT target_type, target_key, kind FROM data_relations
             WHERE source_type = $type AND source_key = $key ORDER BY target_type, target_key, kind
             """;
-        command.Parameters.AddWithValue("$type", source.Type);
-        command.Parameters.AddWithValue("$key", source.Key);
+        command.AddValue("$type", source.Type);
+        command.AddValue("$key", source.Key);
         using var reader = command.ExecuteReader();
         var relations = new List<DataRelation>();
         while (reader.Read())

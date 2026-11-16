@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Grpc.Core;
 using LazyTuiHub.Plugins;
 
@@ -19,6 +20,9 @@ internal static class CommandRunner
             var token = app.Lifetime.ApplicationStopping;
             switch (command)
             {
+                case "dao":
+                    DaoCommand.Run(app, action, token);
+                    break;
                 case "plugins":
                     await PluginCommand.RunAsync(app, action, token);
                     break;
@@ -36,7 +40,8 @@ internal static class CommandRunner
         }
         catch (Exception error)
             when (error
-                    is RpcException
+                    is DbException
+                        or RpcException
                         or ArgumentException
                         or InvalidOperationException
                         or KeyNotFoundException

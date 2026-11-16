@@ -135,30 +135,27 @@ public sealed class PluginLifecycleTests
     public void BusinessSubmissionAndFrameworkRegistrationCommitTogether()
     {
         using var workspace = new PluginWorkspace();
-        var storage = new BusinessStorage(new(workspace.Database));
-        using (var connection = storage.Open())
+        var source = new SqliteDatabase(workspace.Database);
+        var storage = new BusinessStorage(source);
+        using (var connection = source.Open())
         {
             using var schema = connection.CreateCommand();
             schema.CommandText = "CREATE TABLE example_business (id TEXT PRIMARY KEY)";
             schema.ExecuteNonQuery();
         }
-        Assert.Throws<SqliteException>(() =>
-            storage.Write(
-                (connection, transaction) =>
-                {
-                    using var write = connection.CreateCommand();
-                    write.Transaction = transaction;
-                    write.CommandText = "INSERT INTO example_business VALUES ('entry')";
-                    write.ExecuteNonQuery();
-                    return new BusinessChange<bool>(
-                        true,
-                        [new("example.item", "entry")],
-                        [new(new("example.item", "entry"), new("missing.item", "absent"), "points-to")]
-                    );
-                }
-            )
-        );
-        using var check = storage.Open();
+        Assert.Throws<SqliteException>(() => storage.Write(source, (connection, transaction) =>
+            {
+                using var write = connection.CreateCommand();
+                write.Transaction = transaction;
+                write.CommandText = "INSERT INTO example_business VALUES ('entry')";
+                write.ExecuteNonQuery();
+                return new BusinessChange<bool>(
+                    true,
+                    [new("example.item", "entry")],
+                    [new(new("example.item", "entry"), new("missing.item", "absent"), "points-to")]
+                );
+            }));
+        using var check = source.Open();
         using var query = check.CreateCommand();
         query.CommandText = "SELECT (SELECT count(*) FROM example_business) + (SELECT count(*) FROM data_objects)";
         Assert.Equal(0L, query.ExecuteScalar());

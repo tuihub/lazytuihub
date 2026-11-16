@@ -1,3 +1,5 @@
+using LazyTuiHub.Dao;
+
 namespace LazyTuiHub.Plugins;
 
 public sealed record PluginDeclaration(
@@ -9,5 +11,8 @@ public sealed record PluginDeclaration(
     bool HasUninstall
 )
 {
+    public IReadOnlyList<DaoCapability> DaoOffers { get; init; } = [];
+    public IReadOnlyList<DaoRequirement> DaoRequirements { get; init; } = [];
+
     public static PluginDeclaration Empty { get; } = new([], [], [], [], false, false);
 }

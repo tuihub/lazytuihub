@@ -1,8 +1,10 @@
+using System.Data.Common;
+using LazyTuiHub.Dao;
 using Microsoft.Data.Sqlite;
 
 namespace LazyTuiHub.Framework;
 
-public sealed class SqliteDatabase
+public sealed class SqliteDatabase : IConnectionSource
 {
     private readonly string connectionString;
 
@@ -42,6 +44,8 @@ public sealed class SqliteDatabase
             """;
         command.ExecuteNonQuery();
     }
+
+    DbConnection IConnectionSource.Open() => Open();
 
     public SqliteConnection Open()
     {

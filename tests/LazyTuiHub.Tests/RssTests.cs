@@ -46,6 +46,8 @@ public sealed class RssTests
                 "rss.articles",
                 cancellationToken: TestContext.Current.CancellationToken
             );
+            Assert.Null(Assert.Single(app.Services.GetRequiredService<RssDetails>().Read()).ExpiresAt);
+            Assert.Single(app.Services.GetRequiredService<RssStore>().Search("streaming"));
             var article = articles[0];
             await workspace.RunAsync<ArticleRecord>(
                 "rss.mark-read",
@@ -77,6 +79,9 @@ public sealed class RssTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
             Assert.Equal(2, refreshed.Count);
+            Assert.Empty(restartedApp.Services.GetRequiredService<RssStore>().Search("streaming"));
+            Assert.Single(restartedApp.Services.GetRequiredService<RssStore>().Search("Updated"));
+            Assert.Equal(2, restartedApp.Services.GetRequiredService<RssDetails>().Read().Count);
             Assert.True(refreshed.Single(value => value.Id == article.Id).IsRead);
             Assert.Contains(refreshed, value => value.Article.Title == "Updated title");
             Assert.Equal(2, restartedWorkflows.Catalog.ReadRelations(feed.Reference).Count);

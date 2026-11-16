@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Google.Protobuf;
 using LazyTuiHub.Api;
+using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Rss.Commands;
 
@@ -10,7 +12,7 @@ internal static class RssCommand
         if (command is "help")
         {
             Console.WriteLine(
-                "RSS: add --feed-url URI [--title TEXT], feeds, refresh --name feeds/ID, articles [--unread true], read --name feeds/ID/articles/ID"
+                "RSS: add --feed-url URI [--title TEXT], feeds, refresh --name feeds/ID, articles [--unread true], read --name feeds/ID/articles/ID, search --query TEXT, details [--include-expired true], keep-detail --key KEY"
             );
             return;
         }
@@ -64,8 +66,39 @@ internal static class RssCommand
                     await api.MarkArticleReadAsync(new() { Name = Required(configuration, "name") }, cancellationToken)
                 );
                 break;
+            case "search":
+                Console.WriteLine(
+                    JsonSerializer.Serialize(
+                        app.Services.GetRequiredService<RssStore>().Search(Required(configuration, "query")),
+                        PipelineStore.JsonOptions
+                    )
+                );
+                break;
+            case "details":
+                Console.WriteLine(
+                    JsonSerializer.Serialize(
+                        app.Services.GetRequiredService<RssDetails>()
+                            .Read(configuration.GetValue<bool>("include-expired")),
+                        PipelineStore.JsonOptions
+                    )
+                );
+                break;
+            case "keep-detail":
+                Console.WriteLine(
+                    JsonSerializer.Serialize(
+                        new
+                        {
+                            Kept = app.Services.GetRequiredService<RssDetails>().Keep(Required(configuration, "key")),
+                        },
+                        PipelineStore.JsonOptions
+                    )
+                );
+                break;
             default:
-                throw new ArgumentException("Choose add, feeds, refresh, articles, or read.", nameof(command));
+                throw new ArgumentException(
+                    "Choose add, feeds, refresh, articles, read, search, details, or keep-detail.",
+                    nameof(command)
+                );
         }
     }
 

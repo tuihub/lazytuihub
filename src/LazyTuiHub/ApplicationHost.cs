@@ -41,6 +41,7 @@ public static class ApplicationHost
             plugins.Configure(builder.Services);
             builder.Services.AddSingleton(_ => plugins);
             builder.Services.AddSingleton(plugins.Workflows);
+            builder.Services.AddSingleton(plugins.Retention);
             builder.Services.AddSingleton<IWorkflowExecutor>(plugins.Workflows);
             if (builder.Configuration.GetValue<bool>("demo"))
                 builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, 0));

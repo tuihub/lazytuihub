@@ -9,7 +9,7 @@ public static class RssModule
     public const string OutputNode = "output";
     private const string SubscribeNodeType = "rss.subscribe";
 
-    public static void Register(NodeRegistry registry, RssStore store)
+    public static void Register(NodeRegistry registry, RssStore store, RssDetails details)
     {
         BuiltInNodes.RegisterOutput<FeedRecord>(registry, "rss.output-feeds");
         BuiltInNodes.RegisterOutput<ArticleRecord>(registry, "rss.output-articles");
@@ -20,11 +20,13 @@ public static class RssModule
                 .ToAsyncEnumerable()
         );
         StreamNodes.Transform<HttpDocument, ArticleDraft>(registry, "rss.parse", "rss", (packet, _, token) =>
-            FeedParser
+        {
+            details.Capture(packet.Value);
+            return FeedParser
                 .Parse(packet.Value, token)
                 .Select(article => new DataPacket<ArticleDraft>(article, packet.Reference))
-                .ToAsyncEnumerable()
-        );
+                .ToAsyncEnumerable();
+        });
         StreamNodes.Transform<ArticleDraft, ArticleRecord>(registry, "rss.store", "rss", (packet, _, _) =>
             One(store.Save(packet.Value))
         );

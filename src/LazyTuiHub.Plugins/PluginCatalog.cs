@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Plugins;
@@ -75,6 +76,24 @@ internal sealed class PluginCatalog
 
     public void Declare(string id, PluginDeclaration declaration) =>
         Update(id, "declaration", JsonSerializer.Serialize(declaration, Json));
+
+    public void Contributions(PluginRegistration registration)
+    {
+        var current = Read().Single(record => string.Equals(record.Spec.Id, registration.Id, StringComparison.Ordinal));
+        Declare(
+            registration.Id,
+            current.Declaration with
+            {
+                DataTypes = registration.DataTypes.ToArray(),
+                Commands = registration.Commands.Select(command => command.Name).ToArray(),
+                Tasks = registration.Tasks.Select(task => new DeclaredTask(task.Id, task.Workflows)).ToArray(),
+                HasCleanup = registration.Hooks.Cleanup is not null,
+                HasUninstall = registration.Hooks.Uninstall is not null,
+                DaoRequirements = registration.Daos.Requirements.ToArray(),
+                DaoOffers = registration.DaoServices.Select(service => service.Capability).ToArray(),
+            }
+        );
+    }
 
     private void Update(string id, string column, string value)
     {

@@ -1,14 +1,18 @@
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
+using LazyTuiHub.Dao;
 
 namespace LazyTuiHub.Framework;
 
-public sealed class BusinessStorage(SqliteDatabase database)
+public sealed class BusinessStorage(IConnectionSource workspace)
 {
-    public SqliteConnection Open() => database.Open();
-
-    public T Write<T>(Func<SqliteConnection, SqliteTransaction, BusinessChange<T>> write)
+    public T Write<T>(IConnectionSource source, Func<DbConnection, DbTransaction, BusinessChange<T>> write)
     {
-        using var connection = database.Open();
+        if (!ReferenceEquals(source, workspace))
+            throw new ArgumentException(
+                "Atomic metadata registration requires the workspace connection source.",
+                nameof(source)
+            );
+        using var connection = workspace.Open();
         using var transaction = connection.BeginTransaction();
         var change = write(connection, transaction);
         DataCatalog.Apply(connection, transaction, change);

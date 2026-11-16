@@ -6,7 +6,7 @@ English | [中文](streaming-mvp.zh.md)
 
 The MVP uses an RSS reader and SQLite to explore reusable nodes across business modules. The first local runtime supports named streaming/synchronized ports and executable local plans. The proposed [framework Note](../../.agents/notes/2026-11-17-mvp-framework.en.md) and [node execution Note](../../.agents/notes/2026-11-17-mvp-node-execution.en.md) distinguish current choices from further design. MVP Notes remain editable proposals until merge into main; each increment commits code and corresponding Notes together.
 
-Interaction uses CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace when experimenting with incompatible graph changes.
+Interaction uses CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. This increment moves RSS tables into encoded plugin namespaces without migrating old tables.
 
 ## Framework and business
 
@@ -15,11 +15,13 @@ Interaction uses CLI, in-process APIs, and generated HTTP clients. There is no v
 | [Framework](../../src/LazyTuiHub.Framework/) | Generic data relationships, node/port registration, planning, asynchronous delivery, synchronized-input alignment, fan-out, backpressure, and cancellation. |
 | [Node library](../../src/LazyTuiHub.Nodes/) | Timer, HTTP fetch, typed output consumers, and helpers for common source/transform/sink patterns; uses ordinary core registration. |
 | [Plugins](../../src/LazyTuiHub.Plugins/) | Trusted DLL composition, retained declarations/intent, workflow management, and task/hook invocation. |
+| [DAO toolkit](../../src/LazyTuiHub.Dao/) | Backend-neutral contracts, access requirements/capabilities, and namespaced table targets. |
+| [SQLite provider](../../src/LazyTuiHub.Storage.Sqlite/) | Required storage plugin supplying common JSON records/TTL, SQLite FTS5, native connections, and delegated cleanup. |
 | [Core plugin](../../src/LazyTuiHub.CorePlugin/) | Required distribution plugin for greetings and built-in node registration. |
 | [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, parsing, storage, queries, read state, API/CLI adapters, and background refresh. |
-| [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow CLI, shared HTTP/DI infrastructure, and lifecycle. |
+| [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, shared HTTP/DI infrastructure, and lifecycle. |
 
-PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. RSS writes its business tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits both in one SQLite transaction. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
+PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. RSS writes its business tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
 
 The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, rss.store, and a typed output consumer. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP calls share IRssApi; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
 
@@ -74,7 +76,7 @@ mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:
 
 ## Cold-start plugins
 
-The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core and rss entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
+The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core, rss, and storage.sqlite entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
 
 ```sh
 mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
@@ -84,13 +86,37 @@ mise run run -- --database ./artifacts/rss/workspace.db --command plugins --acti
 mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
 ```
 
-Changes apply on restart. list separates saved enablement, file availability, activation, and task eligibility; inspect includes retained node/port/data-type declarations and opaque settings. RSS settings may contain {"refreshInterval":"00:05:00"}; unknown fields survive. The interval initializes new default graphs and controls retry delay; edit an existing timer node's settings to change its cadence. Stored graphs take precedence over new defaults.
+Changes apply on restart. list separates saved enablement, file availability, activation, and task eligibility; inspect includes retained node/port/data-type and DAO declarations plus opaque settings. RSS settings may contain {"refreshInterval":"00:05:00","detailRetention":"7.00:00:00"}; unknown fields survive. detailRetention is optional and defaults to null (permanent). A positive duration sets expiry on new fetch observations; changing it leaves existing rows unchanged. The interval initializes new default graphs and controls retry delay; edit an existing timer node's settings to change its cadence. Stored graphs take precedence over new defaults.
 
-Disabled/missing plugins expose no business commands/routes/nodes and start no tasks. Graph inspection/editing, relationships, settings, and plugin diagnostics remain available, including when core is missing. Removing and restoring a DLL does not change enabled intent or delete data, read state, graphs, relationships, or task declarations. A missing workflow implementation prevents execution and explains why. --command workflow --action list reports all saved graphs with feasibility. Missing declarations can identify owners from retained snapshots or a graph's explicit pluginId; otherwise ownership remains unknown.
+Disabled/missing plugins expose no business commands/routes/nodes and start no tasks. Graph inspection/editing, relationships, settings, and plugin diagnostics remain available, including when core or storage.sqlite is missing. These two required plugins cannot be disabled through normal configuration. A missing DAO provider blocks RSS activation with the unavailable contract, instance, mode, or backend in diagnostics; it preserves saved requirements and data for restoration. Removing and restoring a DLL does not change enabled intent or delete data, read state, graphs, relationships, or task declarations. A missing workflow implementation prevents execution and explains why. --command workflow --action list reports all saved graphs with feasibility. Missing declarations can identify owners from retained snapshots or a graph's explicit pluginId; otherwise ownership remains unknown.
 
 --command plugins --action cleanup or uninstall --plugin ID explicitly invokes the optional plugin hook. Disabled maintenance targets can provide hooks at cold startup without activating their capabilities. Missing code or absent hooks report an error; RSS currently provides neither. The framework accepts hook completion without proving business cleanup. uninstall does not remove DLLs or catalog records. No hook runs automatically on disablement or absence.
 
-To contribute a plugin, implement IApplicationPlugin.Configure(PluginRegistration), declare services/nodes/data types/default workflows/commands/routes/tasks, and add its identity and entry DLL/type to the distribution manifest. requires lists hard service dependencies; cross-business workflow edges remain separate. Framework services manage metadata; business services receive IWorkflowExecutor. Saved default graphs are inserted only when absent. Task declarations list required workflows; tasks own their retry behavior and honor host cancellation. Declaration snapshots survive missing implementations, but active queues, synchronized inputs, and node state are still volatile.
+To contribute a plugin, implement IApplicationPlugin.Configure(PluginRegistration), declare services/nodes/data types/default workflows/commands/routes/tasks and any DAO requirements/offers or retention delegations, and add its identity and entry DLL/type to the distribution manifest. requires lists hard service dependencies; DAO requirements match active provider capabilities before consumer activation, independently of manifest order. Cross-business workflow edges remain separate. Framework services manage metadata; business services receive IWorkflowExecutor. Saved default graphs are inserted only when absent. Task declarations list required workflows; tasks own their retry behavior and honor host cancellation. Declaration snapshots survive missing implementations, but active queues, synchronized inputs, and node state are still volatile.
+
+## DAO tools and retention
+
+Plugins declare required mode, contract, access instance, and optional backend using registration.Daos.Requirements. The current instance is workspace. The provider offers three modes: IRecordDao under a common records.ttl contract, ISqliteSearch under sqlite.fts5, and a native IConnectionSource under relational.connection. Public contracts use BCL DbConnection/DbTransaction, without SQLite driver types. SQLite is currently the only implementation; declaring a backend-neutral requirement alone does not provide another backend.
+
+Plugins obtain tools through their DaoScope and pass DaoTable targets at each call. scope.Table("fetch_details") combines the plugin identity and local name; DaoNames encodes both components into safe SQL identifiers. Plugins own schema creation and private tables. No per-table catalog entry is required for ordinary tool use. Native connections are disposed by callers; specialized SQL may retain SQLite-specific behavior. FTS5 availability is probed at startup, and RSS requires it rather than silently falling back to another search behavior.
+
+The common record tool creates a key/JSON/nullable-expiry table. Put replaces both value and explicit expiry; null is permanent. Reads hide records whose absolute millisecond expiry has arrived; includeExpired exposes undeleted records for inspection. Keep removes expiry, including on an expired record not yet physically deleted. It does not turn observations into RSS articles or framework data objects.
+
+RSS records successful HTTP fetch URL, byte count, and completion time at parse ingress. It does not retain the response body, input checkpoints, or replay state. Article storage remains separate and permanent. Search currently returns article IDs using FTS5 query syntax; these new operations are CLI/service features without new Proto endpoints.
+
+```sh
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action search --query example
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action details --include-expired true
+mise run run -- --database ./artifacts/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
+mise run run -- --database ./artifacts/rss/workspace.db --command dao --action list
+mise run run -- --database ./artifacts/rss/workspace.db --command dao --action clean
+mise run run -- --database ./artifacts/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
+mise run run -- --database ./artifacts/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
+```
+
+Common cleanup only visits explicitly persisted PluginRegistration.Retentions delegations; using a template alone does not authorize cleanup. RSS delegates its fetch_details table. The storage plugin cleans once at HTTP server startup and then every minute by default; its cleanupInterval setting changes scheduling, not expiry. CLI mode starts no background tasks. Each delegated table uses a single DELETE of expired records without a work budget or batching promise. Target errors are retained independently with the last attempt and deletion count.
+
+Delegation survives owner disablement/absence, so cleanup continues when the provider remains active; that behavior follows the prior explicit authorization. Missing providers retain data, expiry, delegation, and diagnostics. dao pause/resume persists across restart and controls subsequent passes; an already started deletion may finish. Pausing physical cleanup does not change expiry visibility. Runtime queues and synchronized inputs remain volatile and are not subject to these retention policies. Cross-store commits, durable-input holds, and recovery remain open in the [storage and DAO Note](../../.agents/notes/2026-11-17-mvp-storage-dao.en.md).
 
 ## Inspecting and editing graphs
 

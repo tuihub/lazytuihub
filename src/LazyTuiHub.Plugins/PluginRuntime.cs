@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,7 @@ namespace LazyTuiHub.Plugins;
 public sealed partial class PluginRuntime : IDisposable
 {
     private const string Present = "present";
+    private const string Blocked = "blocked";
     private readonly PluginCatalog catalog;
     private readonly PluginAssemblies assemblies = new();
     private readonly Dictionary<string, PluginView> observations = new(StringComparer.Ordinal);
@@ -19,6 +21,9 @@ public sealed partial class PluginRuntime : IDisposable
     private readonly ConcurrentDictionary<(string Plugin, string Task), string> taskStates = new();
     private readonly IConfiguration configuration;
     private readonly BusinessStorage storage;
+    private readonly IConnectionSource workspace;
+    public DaoRegistry Daos { get; } = new();
+    public RetentionRuntime Retention { get; }
     private readonly string directory;
     public WorkflowRuntime Workflows { get; }
     public string? DiscoveryError { get; private set; }
@@ -28,6 +33,8 @@ public sealed partial class PluginRuntime : IDisposable
         this.configuration = configuration;
         this.directory = Path.GetFullPath(directory);
         catalog = new(database);
+        workspace = database;
+        Retention = new(database, Daos);
         storage = new(database);
         Workflows = new(database, RetainedOwner);
     }
@@ -47,7 +54,7 @@ public sealed partial class PluginRuntime : IDisposable
             if (ready is null)
             {
                 foreach (var spec in pending.Values)
-                    Observe(spec.Id, "unknown", "blocked", "Plugin dependency cycle.");
+                    Observe(spec.Id, "unknown", Blocked, "Plugin dependency cycle.");
                 break;
             }
             pending.Remove(ready.Id);
@@ -87,14 +94,23 @@ public sealed partial class PluginRuntime : IDisposable
         var missing = (spec.Requires ?? []).Where(id => !configured.ContainsKey(id)).ToArray();
         if (missing.Length > 0)
         {
-            Observe(spec.Id, Present, "blocked", $"Unavailable required plugins: {string.Join(", ", missing)}");
+            Observe(spec.Id, Present, Blocked, $"Unavailable required plugins: {string.Join(", ", missing)}");
             return;
         }
         try
         {
             var entry = assemblies.Load(path, spec.EntryType);
-            var registration = new PluginRegistration(spec.Id, record.Settings, configuration, storage);
+            var registration = new PluginRegistration(
+                spec.Id,
+                record.Settings,
+                configuration,
+                storage,
+                workspace,
+                Daos
+            );
             entry.Configure(registration);
+            _ = registration.Daos.Requirements.ToDictionary(requirement => requirement.Name, StringComparer.Ordinal);
+            catalog.Contributions(registration);
             foreach (var service in registration.Services)
                 services.Add(service);
             configured.Add(spec.Id, registration);
@@ -108,53 +124,103 @@ public sealed partial class PluginRuntime : IDisposable
 
     public void Activate(WebApplication app)
     {
-        foreach (var (id, registration) in configured)
+        var pending = configured.Keys.ToHashSet(StringComparer.Ordinal);
+        while (pending.Count > 0)
         {
-            if (!observations[id].Saved.Enabled && !observations[id].Saved.Spec.Required)
+            var progressed = false;
+            foreach (var id in pending.ToArray())
             {
-                Observe(id, Present, "maintenance", null);
+                if (!TryActivate(id, app, pending))
+                    continue;
+                pending.Remove(id);
+                progressed = true;
+            }
+            if (progressed)
                 continue;
-            }
-            var missing = (observations[id].Saved.Spec.Requires ?? [])
-                .Where(dependency => !active.Contains(dependency))
-                .ToArray();
-            if (missing.Length > 0)
-            {
-                Observe(id, Present, "blocked", $"Required plugins failed activation: {string.Join(", ", missing)}");
-                continue;
-            }
-            try
-            {
-                var nodes = new NodeRegistry();
-                registration.RegisterNodes?.Invoke(nodes, app.Services);
-                var endpoints = new PluginEndpoints(app);
-                registration.MapEndpoints?.Invoke(endpoints);
-                _ = registration.Commands.ToDictionary(command => command.Name, StringComparer.Ordinal);
-                _ = registration.Tasks.ToDictionary(task => task.Id, StringComparer.Ordinal);
-                var duplicate = active
-                    .SelectMany(owner => configured[owner].Commands)
-                    .Select(command => command.Name)
-                    .Intersect(registration.Commands.Select(command => command.Name), StringComparer.Ordinal)
-                    .FirstOrDefault();
-                if (duplicate is not null)
-                    throw new InvalidOperationException($"Command already registered: {duplicate}.");
-                Workflows.Register(id, nodes);
-                catalog.Declare(id, Declaration(registration, nodes));
-                endpoints.Commit();
-                active.Add(id);
-                Observe(id, Present, "active", null);
-            }
-            catch (Exception error)
-            {
-                Observe(id, Present, "failed", error.GetBaseException().Message);
-            }
+            foreach (var id in pending)
+                Observe(
+                    id,
+                    Present,
+                    Blocked,
+                    string.Join(
+                        Environment.NewLine,
+                        configured[id]
+                            .Daos.Problems()
+                            .Concat(
+                                (observations[id].Saved.Spec.Requires ?? [])
+                                    .Where(dependency => !active.Contains(dependency))
+                                    .Select(dependency => $"Required plugin '{dependency}' is not active.")
+                            )
+                    )
+                );
+            break;
         }
-        foreach (var id in active.ToArray())
+        foreach (var id in active)
         {
-            var registration = configured[id];
-            foreach (var workflow in registration.Workflows)
+            foreach (var workflow in configured[id].Workflows)
                 Workflows.Save(workflow, replace: false);
         }
+    }
+
+    private bool TryActivate(string id, WebApplication app, HashSet<string> pending)
+    {
+        var registration = configured[id];
+        var dependencies = observations[id].Saved.Spec.Requires ?? [];
+        if (dependencies.Any(pending.Contains))
+            return false;
+        var missing = dependencies.Where(dependency => !active.Contains(dependency)).ToArray();
+        if (missing.Length > 0)
+        {
+            Observe(id, Present, Blocked, $"Required plugins failed activation: {string.Join(", ", missing)}");
+            return true;
+        }
+        if (registration.Daos.Problems().Count > 0)
+            return false;
+        if (!observations[id].Saved.Enabled && !observations[id].Saved.Spec.Required)
+        {
+            Observe(id, Present, "maintenance", null);
+            return true;
+        }
+        try
+        {
+            ActivatePlugin(registration, app);
+        }
+        catch (Exception error)
+        {
+            Observe(id, Present, "failed", error.GetBaseException().Message);
+        }
+        return true;
+    }
+
+    private void ActivatePlugin(PluginRegistration registration, WebApplication app)
+    {
+        var id = registration.Id;
+        var nodes = new NodeRegistry();
+        registration.RegisterNodes?.Invoke(nodes, app.Services);
+        var endpoints = new PluginEndpoints(app);
+        registration.MapEndpoints?.Invoke(endpoints);
+        ValidateContributions(registration);
+        Workflows.Register(id, nodes);
+        Retention.Observe(registration);
+        catalog.Declare(id, Declaration(registration, nodes));
+        endpoints.Commit();
+        Daos.Publish(id, registration.DaoServices);
+        active.Add(id);
+        Observe(id, Present, "active", null);
+    }
+
+    private void ValidateContributions(PluginRegistration registration)
+    {
+        _ = registration.Commands.ToDictionary(command => command.Name, StringComparer.Ordinal);
+        _ = registration.Tasks.ToDictionary(task => task.Id, StringComparer.Ordinal);
+        Daos.Validate(registration.DaoServices);
+        var duplicate = active
+            .SelectMany(owner => configured[owner].Commands)
+            .Select(command => command.Name)
+            .Intersect(registration.Commands.Select(command => command.Name), StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (duplicate is not null)
+            throw new InvalidOperationException($"Command already registered: {duplicate}.");
     }
 
     private static PluginDeclaration Declaration(PluginRegistration registration, NodeRegistry nodes) =>
@@ -172,7 +238,11 @@ public sealed partial class PluginRuntime : IDisposable
             registration.Tasks.Select(task => new DeclaredTask(task.Id, task.Workflows.ToArray())).ToArray(),
             registration.Hooks.Cleanup is not null,
             registration.Hooks.Uninstall is not null
-        );
+        )
+        {
+            DaoRequirements = registration.Daos.Requirements.ToArray(),
+            DaoOffers = registration.DaoServices.Select(service => service.Capability).ToArray(),
+        };
 
     private static DeclaredPort DescribePort(PortDescriptor port) =>
         new(port.Name, port.DataType.FullName ?? port.DataType.Name, port.Delivery.ToString());

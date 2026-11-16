@@ -215,7 +215,7 @@ public sealed class PluginProcessTests
                 await disabled.StopAsync(CancellationToken.None);
             }
         }
-        manifest = manifest.Select(spec => spec.Required ? spec with { Assembly = "absent.dll" } : spec).ToArray();
+        manifest = manifest.Select(spec => spec.Id == "core" ? spec with { Assembly = "absent.dll" } : spec).ToArray();
         await File.WriteAllTextAsync(
             manifestFile,
             JsonSerializer.Serialize(manifest, PipelineStore.JsonOptions),
@@ -230,7 +230,7 @@ public sealed class PluginProcessTests
                 minimal
                     .Services.GetRequiredService<PluginRuntime>()
                     .List()
-                    .Single(view => view.Saved.Spec.Required)
+                    .Single(view => view.Saved.Spec.Id == "core")
                     .Availability
             );
             Assert.NotEmpty(minimal.Services.GetRequiredService<WorkflowRuntime>().List());
