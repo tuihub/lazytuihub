@@ -47,6 +47,28 @@ test('upstream schema truncation fails generation instead of publishing incomple
     }, []), /Incomplete schema documentation/);
 });
 
+test('synthesized dates are deterministic without changing authored examples or the source document', async () => {
+    const document = {
+        openapi: '3.0.3', info: {title: 'Dated API', version: 'v1'}, paths: {},
+        components: {schemas: {Record: {type: 'object', properties: {
+            created: {type: 'string', format: 'date-time'},
+            default: {type: 'string', format: 'date-time'},
+            scheduled: {type: 'string', format: 'date-time', example: '2025-03-04T05:06:07Z'},
+            data: {type: 'object', example: {type: 'string', format: 'date-time'}},
+        }}}},
+    };
+    const original = structuredClone(document);
+    const first = await renderApiDocs(document, []);
+    const second = await renderApiDocs(document, []);
+    assert.deepEqual(first, second);
+    assert.deepEqual(document, original);
+    const model = first.get('models/Record.md');
+    assert.match(model, /2000-01-01T00:00:00\.000Z/);
+    assert.match(model, /"default": "2000-01-01T00:00:00\.000Z"/);
+    assert.match(model, /2025-03-04T05:06:07Z/);
+    assert.match(model, /"data": \{\n\s+"type": "string",\n\s+"format": "date-time"\n\s+\}/);
+});
+
 test('checks detect edited, missing, extra, and obsolete pages without rewriting', async (t) => {
     const temporary = await mkdtemp(path.join(os.tmpdir(), 'api-docs-'));
     t.after(() => rm(temporary, {recursive: true, force: true}));

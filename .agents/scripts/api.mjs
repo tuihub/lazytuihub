@@ -32,27 +32,31 @@ async function generate(files, include) {
     const temporary = await mkdtemp(path.join(os.tmpdir(), 'lazytuihub-api-'));
     try {
         const openapi = path.join(temporary, 'openapi.yaml');
-        const client = path.join(temporary, 'GreetingHttpClient.g.cs');
         run('protoc', [
             ...include,
             `--openapi_out=${temporary}`,
             '--openapi_opt=version=v1,title=LazyTuiHub API,enum_type=string,default_response=false',
             ...files,
         ]);
-        const settings = JSON.parse(await readFile(path.join(root, '.agents/api/nswag.json'), 'utf8'));
+        const {clients, ...settings} = JSON.parse(await readFile(path.join(root, '.agents/api/nswag.json'), 'utf8'));
+        const document = parse(await readFile(openapi, 'utf8'));
         const sdk = JSON.parse(await readFile(path.join(root, 'global.json'), 'utf8')).sdk.version;
         const configuration = path.join(temporary, 'nswag.json');
-        await writeFile(configuration, JSON.stringify({
-            runtime: `Net${Number.parseInt(sdk, 10)}0`,
-            documentGenerator: {fromDocument: {url: openapi}},
-            codeGenerators: {openApiToCSharpClient: {...settings, output: client}},
-        }));
-        run('dotnet', ['nswag', 'run', configuration]);
-        const pages = await renderApiDocs(parse(await readFile(openapi, 'utf8')), files);
-        for (const [source, destination] of [
-            [openapi, 'src/LazyTuiHub.Api/Generated/openapi.yaml'],
-            [client, 'src/LazyTuiHub.Client/Generated/GreetingHttpClient.g.cs'],
-        ]) {
+        const artifacts = [[openapi, 'src/LazyTuiHub.Api/Generated/openapi.yaml']];
+        for (const {service, ...clientSettings} of clients) {
+            const client = path.join(temporary, `${clientSettings.className}.g.cs`);
+            const selected = {...document, paths: Object.fromEntries(Object.entries(document.paths).filter(([, operations]) =>
+                Object.values(operations).some(operation => operation.operationId?.startsWith(`${service}_`))))};
+            await writeFile(configuration, JSON.stringify({
+                runtime: `Net${Number.parseInt(sdk, 10)}0`,
+                documentGenerator: {fromDocument: {json: JSON.stringify(selected)}},
+                codeGenerators: {openApiToCSharpClient: {...settings, ...clientSettings, output: client}},
+            }));
+            run('dotnet', ['nswag', 'run', configuration]);
+            artifacts.push([client, `src/LazyTuiHub.Client/Generated/${clientSettings.className}.g.cs`]);
+        }
+        const pages = await renderApiDocs(document, files);
+        for (const [source, destination] of artifacts) {
             const content = (await readFile(source, 'utf8')).replaceAll('\r\n', '\n');
             const output = path.join(root, destination);
             if (mode === 'generate') {

@@ -1,0 +1,125 @@
+using LazyTuiHub.Api;
+using LazyTuiHub.Api.Rss.V1;
+using LazyTuiHub.Client;
+using LazyTuiHub.Framework;
+using LazyTuiHub.Rss;
+
+namespace LazyTuiHub.Examples;
+
+public static class RssDemo
+{
+    public static async Task RunAsync()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"lazytuihub-rss-demo-{Guid.NewGuid():N}");
+        try
+        {
+            await using var app = ApplicationHost.Create([
+                "--demo",
+                "true",
+                "--database",
+                Path.Combine(directory, "workspace.db"),
+            ]);
+            app.MapGet("/fixture.xml", () => Results.Text(FeedXml, "application/rss+xml"));
+            var workspace = app.Services.GetRequiredService<RssWorkspace>();
+            var headlines = 0;
+            workspace.Registry.RegisterSink<ArticleDraft>("demo.headlines", "another-business", (_, _, _, _, _) =>
+            {
+                Interlocked.Increment(ref headlines);
+                return ValueTask.CompletedTask;
+            });
+            var ingestion = workspace.Pipelines.Get("rss.ingest");
+            workspace.Pipelines.Save(
+                ingestion with
+                {
+                    Nodes = [.. ingestion.Nodes, PipelineNode.Create("headlines", "demo.headlines")],
+                    Edges = [.. ingestion.Edges, new("parse", "headlines")],
+                    BufferCapacity = 1,
+                }
+            );
+            await app.StartAsync(app.Lifetime.ApplicationStopping);
+            try
+            {
+                await CompareAsync(app, () => headlines);
+            }
+            finally
+            {
+                await app.StopAsync(CancellationToken.None);
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static async Task CompareAsync(WebApplication app, Func<int> headlineCount)
+    {
+        const int fixtureEntries = 2;
+        const int refreshAttempts = 2;
+        var cancellationToken = app.Lifetime.ApplicationStopping;
+        var local = app.Services.GetRequiredService<IRssApi>();
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
+        var remote = new RssHttpClient(http);
+        var request = new CreateFeedRequest
+        {
+            Feed = new() { Uri = new Uri(http.BaseAddress, "fixture.xml").AbsoluteUri, DisplayName = "MVP fixture" },
+            RequestId = Guid.NewGuid().ToString("D"),
+        };
+        var feed = await remote.CreateFeedAsync(request, cancellationToken);
+        Require(
+            feed.Equals(await local.CreateFeedAsync(request, cancellationToken)),
+            "Creation request deduplication differs."
+        );
+        var refresh = await remote.RefreshFeedAsync(new() { Name = feed.Name }, cancellationToken);
+        Require(
+            refresh.ProcessedArticleCount == fixtureEntries,
+            "The ingestion pipeline did not process both entries."
+        );
+        var query = new ListArticlesRequest { Parent = feed.Name };
+        var articles = await remote.ListArticlesAsync(query, cancellationToken);
+        Require(
+            articles.Equals(await local.ListArticlesAsync(query, cancellationToken)),
+            "Local and HTTP articles differ."
+        );
+        Require(
+            articles.Articles.Count == fixtureEntries
+                && articles.Articles.Any(article => article.PublishTime is not null),
+            "Missing entries or publication timestamps."
+        );
+        var article = articles.Articles[0];
+        await remote.MarkArticleReadAsync(new() { Name = article.Name }, cancellationToken);
+        await remote.RefreshFeedAsync(new() { Name = feed.Name }, cancellationToken);
+        Require(
+            (await local.GetArticleAsync(new() { Name = article.Name }, cancellationToken)).Read,
+            "Refresh lost read state."
+        );
+        Require(
+            (await remote.ListArticlesAsync(query, cancellationToken)).Articles.Count == fixtureEntries,
+            "Refresh duplicated entries."
+        );
+        Require(
+            headlineCount() == fixtureEntries * refreshAttempts,
+            "The cross-business branch did not receive every parsed entry."
+        );
+        Console.WriteLine(
+            "RSS MVP: local = HTTP; SQLite deduplication and read state preserved; cross-business branch received every entry."
+        );
+    }
+
+    private static void Require(bool condition, string message)
+    {
+        if (!condition)
+            throw new InvalidOperationException(message);
+    }
+
+    public const string FeedXml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <rss version="2.0"><channel><title>MVP fixture</title>
+          <item><guid>hello</guid><title>Hello streaming</title><link>/posts/hello</link>
+            <description>One payload, multiple consumers.</description><pubDate>Sun, 15 Nov 2026 10:00:00 GMT</pubDate></item>
+          <item><guid>world</guid><title>世界</title><link>/posts/world</link>
+            <description>SQLite keeps read state across refreshes.</description></item>
+        </channel></rss>
+        """;
+}

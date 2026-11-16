@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
     <ProjectReference Include="../LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
     <PackageReference Include="Grpc.AspNetCore.Server" Version="2.85.0" />
     <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="11.0.0" />
   </ItemGroup>

@@ -18,6 +18,8 @@
 
 当前实现以 [IGreetingApi](../../src/LazyTuiHub.Api/IGreetingApi.cs) 为共享调用边界。[GreetingApplication](../../src/LazyTuiHub/Application/GreetingApplication.cs) 直接实现该接口，[传输服务](../../src/LazyTuiHub/Transport/GreetingService.cs)将转码请求及取消信号交给它。生成 HTTP 客户端的[手写 partial](../../src/LazyTuiHub.Client/GreetingHttpClient.cs) 实现同一接口，配置 JSON 字段命名及相对路径。其中的 `./` 路径前缀防止自定义方法的冒号被解析为 URI scheme。
 
+RSS MVP 新增 [IRssApi](../../src/LazyTuiHub.Api/IRssApi.cs)。应用服务执行共享管线，[客户端 partial](../../src/LazyTuiHub.Client/RssHttpClient.cs) 将资源名称与查询参数适配到生成方法。Proto 消息使用 Protobuf JSON 序列化，正确处理时间戳和 repeated 字段；生成器按配置的服务分别输出客户端。[MVP 指南](streaming-mvp.zh.md)说明模块组合及当前使用 ASP.NET Core 原生 HTTP 错误表示的明确例外，该例外不改变其他 AIP 要求。
+
 ## 设计要求
 
 | 主题 | 编写要求与适用条件 | 原文 |
@@ -43,6 +45,8 @@
 `mise run generate:api` 在生成客户端时一并执行 Proto → OpenAPI → Scalar Markdown。[生成的参考索引](../api/index.md)链接操作页与消息页。请求响应示例和 HTTP 调用示例写在方法注释中，使用带标签的围栏代码块；字段注释解释相关默认值与行为。注释遵循 AIP-192，完整要求和例外仍以采用的原文为准。
 
 `docs/api/` 全部由工具生成英文 Markdown，明确豁免双语命名与配对，其他 Markdown 规则和 1 MiB 文件上限继续生效。生成清理过期页面，差异检查拒绝手工改动、缺失、多余或过期文件，不写回结果。消息通过页面链接引用，避免递归展开；检测到上游截断时生成失败，不发布缺少字段的文档。手写开发说明放在 `docs/development/`，网页渲染及部署不属于 API 工作范围。
+
+Scalar 自动合成的日期示例使用固定占位时间，保证重复生成得到相同结果。处理仅作用于渲染器的输入副本，保留声明中的示例、默认值及原始 OpenAPI 契约。
 
 ## 初始化与生成
 

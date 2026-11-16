@@ -4,9 +4,243 @@
 openapi: 3.0.3
 info:
     title: LazyTuiHub API
-    description: Generates greetings without changing application state.
     version: v1
 paths:
+    /v1/feeds:
+        get:
+            tags:
+                - RssService
+            description: Lists subscriptions in stable resource-ID order through the reading pipeline.
+            operationId: RssService_ListFeeds
+            parameters:
+                - name: pageSize
+                  in: query
+                  description: |-
+                    Optional. Number of subscriptions per page. Zero uses 50; negative values
+                     return INVALID_ARGUMENT. This prototype has no additional maximum.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: Optional. An opaque continuation token from a previous response.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListFeedsResponse'
+        post:
+            tags:
+                - RssService
+            description: |-
+                Creates a subscription without making a network request.
+                 A duplicate ID or URI returns ALREADY_EXISTS. A repeated request_id with
+                 the same inputs returns the original subscription, including after restart.
+                 Reusing that ID for different inputs returns INVALID_ARGUMENT.
+
+                 Example HTTP request, with BASE_URL set to the service base URL:
+
+                 ```sh
+                 curl -X POST "${BASE_URL}/v1/feeds?requestId=123e4567-e89b-42d3-a456-426614174000" \
+                   -H 'Content-Type: application/json' \
+                   -d '{"uri":"https://example.com/feed.xml","displayName":"Example"}'
+                 ```
+            operationId: RssService_CreateFeed
+            parameters:
+                - name: feedId
+                  in: query
+                  description: |-
+                    Optional. A lowercase, hyphenated UUID for the subscription. Omission
+                     generates one. An existing ID returns ALREADY_EXISTS.
+                  schema:
+                    type: string
+                - name: requestId
+                  in: query
+                  description: |-
+                    Optional. A UUID version 4 identifying this creation request. Successful
+                     request IDs remain deduplicated for the lifetime of the subscription.
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Feed'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Feed'
+    /v1/feeds/{feed}:
+        get:
+            tags:
+                - RssService
+            description: |-
+                Reads a subscription through the shared reading pipeline. Unknown names
+                 return NOT_FOUND.
+            operationId: RssService_GetFeed
+            parameters:
+                - name: feed
+                  in: path
+                  description: The feed id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Feed'
+    /v1/feeds/{feed}/articles:
+        get:
+            tags:
+                - RssService
+            description: |-
+                Lists articles newest-ingested first through the reading pipeline.
+                 Use `feeds/-` to aggregate subscriptions. The optional filter supports
+                 `read = true` and `read = false`; an empty filter includes both states.
+                 Pagination is a live keyset traversal, not a snapshot across refreshes or
+                 read-state changes. A token is bound to the parent and filter.
+            operationId: RssService_ListArticles
+            parameters:
+                - name: feed
+                  in: path
+                  description: The feed id.
+                  required: true
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    Optional. Number of articles per page. Zero uses 50; negative values return
+                     INVALID_ARGUMENT. This prototype has no additional maximum.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: Optional. An opaque token from a response with the same parent and filter.
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: Optional. Empty, `read = true`, or `read = false`.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListArticlesResponse'
+    /v1/feeds/{feed}/articles/{article}:
+        get:
+            tags:
+                - RssService
+            description: |-
+                Reads an article without changing its read state. Unknown names return
+                 NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
+            operationId: RssService_GetArticle
+            parameters:
+                - name: feed
+                  in: path
+                  description: The feed id.
+                  required: true
+                  schema:
+                    type: string
+                - name: article
+                  in: path
+                  description: The article id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Article'
+    /v1/feeds/{feed}/articles/{article}:markRead:
+        post:
+            tags:
+                - RssService
+            description: |-
+                Marks an article as read and returns its current state. Repeating the call
+                 has the same effect. Unknown names return NOT_FOUND.
+            operationId: RssService_MarkArticleRead
+            parameters:
+                - name: feed
+                  in: path
+                  description: The feed id.
+                  required: true
+                  schema:
+                    type: string
+                - name: article
+                  in: path
+                  description: The article id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MarkArticleReadRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Article'
+    /v1/feeds/{feed}:refresh:
+        post:
+            tags:
+                - RssService
+            description: |-
+                Fetches one subscription and streams its entries through parsing and storage.
+                 Waits for this finite pipeline execution. Repeated refreshes upsert entries
+                 by their source identity and preserve read state; HTTP fetches can repeat.
+                 Identity uses the RSS guid or Atom id, then the resolved entry link, and
+                 finally a content hash. Without a stable ID or link, content edits can
+                 produce a new article identity.
+                 Cancellation or a node error can leave already committed entries in place.
+                 This method does not promise atomic feed snapshots or exactly-once delivery.
+                 An unknown subscription returns NOT_FOUND. Upstream or parsing failure
+                 returns UNAVAILABLE; callers can retry a refresh without duplicating entries.
+            operationId: RssService_RefreshFeed
+            parameters:
+                - name: feed
+                  in: path
+                  description: The feed id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RefreshFeedRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RefreshFeedResponse'
     /v1:generateGreeting:
         post:
             tags:
@@ -54,6 +288,53 @@ paths:
                                 $ref: '#/components/schemas/GenerateGreetingResponse'
 components:
     schemas:
+        Article:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Identifier. The article name, `feeds/{feed}/articles/{article}`.
+                title:
+                    readOnly: true
+                    type: string
+                    description: Output only. The source entry title, which can be empty.
+                uri:
+                    readOnly: true
+                    type: string
+                    description: Output only. The resolved entry URI, or empty when none was supplied.
+                content:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        Output only. The entry content or summary. It may contain untrusted HTML;
+                         a rendering client must sanitize it before displaying it as HTML.
+                publishTime:
+                    readOnly: true
+                    type: string
+                    description: Output only. The source publication time, omitted when absent or invalid.
+                    format: date-time
+                read:
+                    readOnly: true
+                    type: boolean
+                    description: Output only. Whether the user has marked this article as read.
+            description: A feed entry persisted by the RSS ingestion pipeline.
+        Feed:
+            required:
+                - uri
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Identifier. The subscription name, in the form `feeds/{feed}`.
+                uri:
+                    type: string
+                    description: |-
+                        Required. The absolute HTTP or HTTPS feed URI. Subscribing stores this URI
+                         without fetching it. Each URI can have one subscription in this workspace.
+                displayName:
+                    type: string
+                    description: Optional. A reader-facing label. An omitted or empty value uses the URI host.
+            description: A locally persisted RSS or Atom subscription.
         GenerateGreetingRequest:
             type: object
             properties:
@@ -74,5 +355,65 @@ components:
                          When the request omits `recipient` or supplies an empty value, this is
                          `Hello, World!`.
             description: Response for GenerateGreeting.
+        ListArticlesResponse:
+            type: object
+            properties:
+                articles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Article'
+                    description: The articles in this page.
+                nextPageToken:
+                    type: string
+                    description: A continuation token, or empty at the end of the collection.
+            description: Response for ListArticles.
+        ListFeedsResponse:
+            type: object
+            properties:
+                feeds:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Feed'
+                    description: The subscriptions in this page.
+                nextPageToken:
+                    type: string
+                    description: A continuation token, or empty at the end of the collection.
+            description: Response for ListFeeds.
+        MarkArticleReadRequest:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Required. The article name, `feeds/{feed}/articles/{article}`.
+            description: Request for MarkArticleRead.
+        RefreshFeedRequest:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Required. The subscription name, `feeds/{feed}`.
+            description: Request for RefreshFeed.
+        RefreshFeedResponse:
+            type: object
+            properties:
+                processedArticleCount:
+                    type: integer
+                    description: Number of entries processed, including existing entries that were updated.
+                    format: int32
+            description: Response for RefreshFeed.
 tags:
     - name: GreetingService
+      description: Generates greetings without changing application state.
+    - name: RssService
+      description: |-
+        Reads and refreshes subscriptions through the shared node-based pipeline.
+         This exploratory server is intended for a trusted local operator. Public
+         hosting requires an identity and authorization policy before exposure.
+         HTTP errors currently use ASP.NET Core transcoding's google.rpc.Status JSON:
+         code is the canonical gRPC number and details includes google.rpc.ErrorInfo.
+         The outer error envelope and HTTP-valued code described by AIP-193 are not
+         implemented in this prototype; clients must use the HTTP response status.

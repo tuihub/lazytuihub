@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package lazytuihub.rss.v1;
+
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+
+option csharp_namespace = "LazyTuiHub.Api.Rss.V1";
+option go_package = "github.com/tuihub/lazytuihub/api/rss/apiv1;rsspb";
+option java_multiple_files = true;
+option java_outer_classname = "FeedProto";
+option java_package = "io.github.tuihub.lazytuihub.rss.v1";
+
+// A locally persisted RSS or Atom subscription.
+message Feed {
+  option (google.api.resource) = {
+    type: "lazytuihub.tuihub.org/Feed"
+    pattern: "feeds/{feed}"
+    singular: "feed"
+    plural: "feeds"
+  };
+
+  // Identifier. The subscription name, in the form `feeds/{feed}`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Required. The absolute HTTP or HTTPS feed URI. Subscribing stores this URI
+  // without fetching it. Each URI can have one subscription in this workspace.
+  string uri = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. A reader-facing label. An omitted or empty value uses the URI host.
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+}

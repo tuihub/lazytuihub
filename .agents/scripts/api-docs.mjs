@@ -5,7 +5,7 @@ import {createOpenApiMarkdownRenderer} from '@scalar/openapi-to-markdown';
 const methods = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']);
 
 export async function renderApiDocs(document, sources) {
-    const renderer = await createOpenApiMarkdownRenderer(document);
+    const renderer = await createOpenApiMarkdownRenderer(withStableDateExamples(document));
     const pages = new Map();
     const operations = [];
     const models = Object.keys(document.components?.schemas || {}).sort();
@@ -52,6 +52,28 @@ export async function renderApiDocs(document, sources) {
         pages.set(filename, content.trimEnd() + '\n');
     }
     return pages;
+}
+
+function withStableDateExamples(document) {
+    // Scalar otherwise inserts the wall clock into synthesized date examples.
+    // Keep supplied examples/defaults opaque and change only the renderer's copy.
+    const copy = structuredClone(document);
+    const opaque = new Set(['example', 'examples', 'default', 'const', 'enum']);
+    const schemaMaps = new Set(['schemas', 'properties', 'patternProperties', '$defs', 'definitions']);
+    const dates = {'date-time': '2000-01-01T00:00:00.000Z', date: '2000-01-01', time: '00:00:00.000Z'};
+    function visit(value) {
+        if (value === null || typeof value !== 'object') return;
+        if (value.type === 'string' && Object.hasOwn(dates, value.format) &&
+            ![...opaque].some(key => Object.hasOwn(value, key))) {
+            value.example = dates[value.format];
+        }
+        for (const [key, child] of Object.entries(value)) {
+            if (schemaMaps.has(key) && child && typeof child === 'object') Object.values(child).forEach(visit);
+            else if (!opaque.has(key) && !key.startsWith('x-')) visit(child);
+        }
+    }
+    visit(copy);
+    return copy;
 }
 
 export async function updateApiDocs(directory, pages, mode) {

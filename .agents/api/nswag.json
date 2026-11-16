@@ -1,7 +1,9 @@
 {
-  "className": "GreetingHttpClient",
+  "clients": [
+    {"service": "GreetingService", "className": "GreetingHttpClient", "additionalNamespaceUsages": ["LazyTuiHub.Api.Greeting.V1"]},
+    {"service": "RssService", "className": "RssHttpClient", "exceptionClass": "RssApiException", "additionalNamespaceUsages": ["LazyTuiHub.Api.Rss.V1"]}
+  ],
   "namespace": "LazyTuiHub.Client",
-  "additionalNamespaceUsages": ["LazyTuiHub.Api.Greeting.V1"],
   "generateDtoTypes": false,
   "generateClientInterfaces": false,
   "generateOptionalParameters": true,

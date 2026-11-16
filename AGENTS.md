@@ -40,6 +40,12 @@ The [CI workflow](.github/workflows/ci.yml) checks main-branch snapshots. Run `m
 
 The separate [CodeQL workflow](.github/workflows/codeql.yml) analyzes supported repository languages and uploads security results. The [CI Note](.agents/notes/2026-11-16-github-ci.en.md) records its coverage, compatibility limits, and pending runner validation.
 
+## Streaming MVP
+
+The [streaming MVP guide](docs/development/streaming-mvp.en.md) explains the framework, RSS module, SQLite workspace, and runnable examples. Keep generic data relationships and pipeline execution in `src/LazyTuiHub.Framework/`, RSS behavior in `src/LazyTuiHub.Rss/`, and transport adaptation in the host. Modules register nodes rather than adding business branches to the runner.
+
+Run `mise run demo:rss` for an isolated local RSS/HTTP/SQLite example with a cross-business branch. Run `mise run test` for product tests; both local checks and CI include them. The current interface is CLI and generated HTTP APIs; pipeline definitions are editable JSON stored in SQLite. This is an exploratory implementation, without a visual graph editor or distributed execution guarantees.
+
 ## Commits
 
 Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). The initial development dependency install runs `prepare` to register the repository-local commit-message hook. A no-op reinstall may skip `prepare`; use `mise run setup:hooks` to register it again when needed. The shared setup preserves existing custom hooks by refusing to replace them. The hook checks without rewriting messages or installing missing tools.

@@ -2,19 +2,34 @@
 
 > Generated from Proto declarations. Run `mise run generate:api` to update; do not edit `docs/api`.
 
-Generates greetings without changing application state.
-
 **API version:** `v1`
 
 ## Operations
 
+- [GET /v1/feeds](operations/RssService_ListFeeds.md)
+- [POST /v1/feeds](operations/RssService_CreateFeed.md)
+- [GET /v1/feeds/{feed}](operations/RssService_GetFeed.md)
+- [GET /v1/feeds/{feed}/articles](operations/RssService_ListArticles.md)
+- [GET /v1/feeds/{feed}/articles/{article}](operations/RssService_GetArticle.md)
+- [POST /v1/feeds/{feed}/articles/{article}:markRead](operations/RssService_MarkArticleRead.md)
+- [POST /v1/feeds/{feed}:refresh](operations/RssService_RefreshFeed.md)
 - [POST /v1:generateGreeting](operations/GreetingService_GenerateGreeting.md)
 
 ## Models
 
+- [Article](models/Article.md)
+- [Feed](models/Feed.md)
 - [GenerateGreetingRequest](models/GenerateGreetingRequest.md)
 - [GenerateGreetingResponse](models/GenerateGreetingResponse.md)
+- [ListArticlesResponse](models/ListArticlesResponse.md)
+- [ListFeedsResponse](models/ListFeedsResponse.md)
+- [MarkArticleReadRequest](models/MarkArticleReadRequest.md)
+- [RefreshFeedRequest](models/RefreshFeedRequest.md)
+- [RefreshFeedResponse](models/RefreshFeedResponse.md)
 
 ## Source declarations
 
 - [lazytuihub/greeting/v1/greeting_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/greeting/v1/greeting_service.proto)
+- [lazytuihub/rss/v1/article.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/article.proto)
+- [lazytuihub/rss/v1/feed.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/feed.proto)
+- [lazytuihub/rss/v1/rss_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/rss_service.proto)

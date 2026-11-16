@@ -108,7 +108,7 @@ run = "actionlint"
 
 [tasks."check:ci"]
 description = "Check the committed snapshot without development-history gates"
-depends = ["check:files", "check:markdown", "check:code", "demo:api", "test:tools", "check:workflows"]
+depends = ["check:files", "check:markdown", "check:code", "demo:api", "test", "test:tools", "check:workflows"]
 
 [tasks."check:markdown"]
 description = "Check Markdown"
@@ -128,7 +128,7 @@ run = "node .agents/scripts/commits.mjs setup"
 
 [tasks.check]
 description = "Run all checks"
-depends = ["check:code", "check:api", "check:markdown", "check:notes", "check:commit"]
+depends = ["check:code", "check:api", "check:markdown", "check:notes", "check:commit", "test"]
 
 [tasks.run]
 description = "Run the application"
@@ -175,3 +175,11 @@ depends = ["check:proto", "check:generated"]
 description = "Run Hello World through local and generated HTTP clients"
 depends = ["check:api"]
 run = "dotnet run --project src/LazyTuiHub -- --demo true"
+
+[tasks.test]
+description = "Test pipeline execution, RSS, SQLite, and local/HTTP behavior"
+run = "dotnet run --project tests/LazyTuiHub.Tests"
+
+[tasks."demo:rss"]
+description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"
+run = "dotnet run --project src/LazyTuiHub -- --rss demo"

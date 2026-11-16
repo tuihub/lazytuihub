@@ -18,6 +18,8 @@ Application services own business rules, authorization, transactions, and workfl
 
 In the current implementation, [IGreetingApi](../../src/LazyTuiHub.Api/IGreetingApi.cs) is the shared calling boundary. [GreetingApplication](../../src/LazyTuiHub/Application/GreetingApplication.cs) implements it directly, and the [transport service](../../src/LazyTuiHub/Transport/GreetingService.cs) forwards transcoded requests and cancellation to it. The generated HTTP client's [handwritten partial](../../src/LazyTuiHub.Client/GreetingHttpClient.cs) implements the same interface and configures JSON field naming and relative paths. The `./` path prefix keeps custom-method colons from being parsed as a URI scheme.
 
+The RSS MVP adds [IRssApi](../../src/LazyTuiHub.Api/IRssApi.cs). Its application service invokes the shared pipelines, while the [client partial](../../src/LazyTuiHub.Client/RssHttpClient.cs) adapts resource names and query parameters to generated methods. Proto messages use Protobuf JSON serialization to preserve timestamps and repeated fields. Generation emits one client per configured service. The [MVP guide](streaming-mvp.en.md) describes composition and the explicit prototype exception for native ASP.NET Core HTTP error representation; this exception does not change other AIP requirements.
+
 ## Design requirements
 
 | Topic | Requirement and applicability | Original |
@@ -43,6 +45,8 @@ Proto comments are the source of interface explanations and examples. Structural
 `mise run generate:api` runs Proto → OpenAPI → Scalar Markdown alongside client generation. The generated [reference index](../api/index.md) links operation and message pages. Put request and response examples and HTTP invocation examples in method comments using labeled fenced code blocks; describe relevant defaults and behavior on fields. Comments follow AIP-192; complete requirements and exceptions remain in the adopted original.
 
 `docs/api/` is entirely generated English Markdown, explicitly exempt from bilingual naming and pairing. Other Markdown rules and the 1 MiB file limit still apply. Generation removes obsolete pages; the drift check rejects edited, missing, extra, or stale files without rewriting them. Linked model pages avoid recursive schema expansion; detected upstream truncation fails generation instead of publishing incomplete field documentation. Put handwritten development instructions in `docs/development/`. Website rendering and deployment are outside this API workflow.
+
+Scalar's synthesized date examples use fixed placeholder dates so repeated generation is deterministic. This affects only the renderer's input copy; supplied examples, defaults, and the OpenAPI contract remain unchanged.
 
 ## Initialization and generation
 
