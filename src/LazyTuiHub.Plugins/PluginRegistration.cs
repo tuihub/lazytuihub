@@ -39,6 +39,7 @@ public sealed class PluginRegistration
     public ICollection<PipelineDefinition> Workflows { get; } = [];
     public ICollection<PluginTask> Tasks { get; } = [];
     public ICollection<PluginCommand> Commands { get; } = [];
+    public ICollection<DeclaredPage> Pages { get; } = [];
     public Action<NodeRegistry, IServiceProvider>? RegisterNodes { get; set; }
     public Action<IEndpointRouteBuilder>? MapEndpoints { get; set; }
     public PluginHooks Hooks { get; set; } = new();

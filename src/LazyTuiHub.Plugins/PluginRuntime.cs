@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -122,7 +122,7 @@ public sealed partial class PluginRuntime : IDisposable
         }
     }
 
-    public void Activate(WebApplication app)
+    public void Activate(IServiceProvider services, IEndpointRouteBuilder? routes = null)
     {
         var pending = configured.Keys.ToHashSet(StringComparer.Ordinal);
         while (pending.Count > 0)
@@ -130,7 +130,7 @@ public sealed partial class PluginRuntime : IDisposable
             var progressed = false;
             foreach (var id in pending.ToArray())
             {
-                if (!TryActivate(id, app, pending))
+                if (!TryActivate(id, services, routes, pending))
                     continue;
                 pending.Remove(id);
                 progressed = true;
@@ -162,7 +162,12 @@ public sealed partial class PluginRuntime : IDisposable
         }
     }
 
-    private bool TryActivate(string id, WebApplication app, HashSet<string> pending)
+    private bool TryActivate(
+        string id,
+        IServiceProvider services,
+        IEndpointRouteBuilder? routes,
+        HashSet<string> pending
+    )
     {
         var registration = configured[id];
         var dependencies = observations[id].Saved.Spec.Requires ?? [];
@@ -183,7 +188,7 @@ public sealed partial class PluginRuntime : IDisposable
         }
         try
         {
-            ActivatePlugin(registration, app);
+            ActivatePlugin(registration, services, routes);
         }
         catch (Exception error)
         {
@@ -192,18 +197,23 @@ public sealed partial class PluginRuntime : IDisposable
         return true;
     }
 
-    private void ActivatePlugin(PluginRegistration registration, WebApplication app)
+    private void ActivatePlugin(
+        PluginRegistration registration,
+        IServiceProvider services,
+        IEndpointRouteBuilder? routes
+    )
     {
         var id = registration.Id;
         var nodes = new NodeRegistry();
-        registration.RegisterNodes?.Invoke(nodes, app.Services);
-        var endpoints = new PluginEndpoints(app);
-        registration.MapEndpoints?.Invoke(endpoints);
+        registration.RegisterNodes?.Invoke(nodes, services);
+        var endpoints = routes is null ? null : new PluginEndpoints(routes);
+        if (endpoints is not null)
+            registration.MapEndpoints?.Invoke(endpoints);
         ValidateContributions(registration);
         Workflows.Register(id, nodes);
         Retention.Observe(registration);
         catalog.Declare(id, Declaration(registration, nodes));
-        endpoints.Commit();
+        endpoints?.Commit();
         Daos.Publish(id, registration.DaoServices);
         active.Add(id);
         Observe(id, Present, "active", null);
@@ -213,6 +223,7 @@ public sealed partial class PluginRuntime : IDisposable
     {
         _ = registration.Commands.ToDictionary(command => command.Name, StringComparer.Ordinal);
         _ = registration.Tasks.ToDictionary(task => task.Id, StringComparer.Ordinal);
+        _ = registration.Pages.ToDictionary(page => page.Id, StringComparer.Ordinal);
         Daos.Validate(registration.DaoServices);
         var duplicate = active
             .SelectMany(owner => configured[owner].Commands)
@@ -242,6 +253,7 @@ public sealed partial class PluginRuntime : IDisposable
         {
             DaoRequirements = registration.Daos.Requirements.ToArray(),
             DaoOffers = registration.DaoServices.Select(service => service.Capability).ToArray(),
+            Pages = registration.Pages.ToArray(),
         };
 
     private static DeclaredPort DescribePort(PortDescriptor port) =>

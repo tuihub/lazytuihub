@@ -8,6 +8,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
     <ProjectReference Include="../../src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Rss.Desktop/LazyTuiHub.Rss.Desktop.csproj" />
+    <PackageReference Include="Avalonia.Headless" Version="12.1.6" />
     <PackageReference Include="xunit.v3" Version="4.0.3" />
   </ItemGroup>
 </Project>

@@ -2,9 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Google.Protobuf.Reflection;
 using Google.Rpc;
-using LazyTuiHub.Framework;
+using LazyTuiHub.Desktop;
 using LazyTuiHub.Plugins;
-using Microsoft.AspNetCore.DataProtection;
 
 namespace LazyTuiHub;
 
@@ -13,47 +12,61 @@ public static class ApplicationHost
     [SuppressMessage(
         "Reliability",
         "CA2000:Dispose objects before losing scope",
-        Justification = "The root DI factory owns the plugin runtime; startup failures dispose it explicitly."
+        Justification = "The returned host owns the runtime; failed startup disposes it here."
     )]
     public static WebApplication Create(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-        var path = builder.Configuration["database"]
-            ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "LazyTuiHub",
-                "workspace.db"
-            );
-        var database = new SqliteDatabase(path);
-        var keyDirectory = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "keys"));
-        builder.Services.AddDataProtection().PersistKeysToFileSystem(keyDirectory).SetApplicationName("LazyTuiHub");
         builder
             .Services.AddGrpc()
             .AddJsonTranscoding(options => options.TypeRegistry = TypeRegistry.FromMessages(ErrorInfo.Descriptor));
-        builder.Services.AddSingleton(_ => new HttpClient());
-        var plugins = new PluginRuntime(
-            database,
-            builder.Configuration,
-            builder.Configuration["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins")
-        );
+        var plugins = HostComposition.Configure(builder.Services, builder.Configuration);
+        WebApplication? app = null;
         try
         {
-            plugins.Configure(builder.Services);
-            builder.Services.AddSingleton(_ => plugins);
-            builder.Services.AddSingleton(plugins.Workflows);
-            builder.Services.AddSingleton(plugins.Retention);
-            builder.Services.AddSingleton<IWorkflowExecutor>(plugins.Workflows);
             if (builder.Configuration.GetValue<bool>("demo"))
                 builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, 0));
             else if (builder.Configuration["command"] is null)
                 builder.Services.AddHostedService<PluginTaskService>();
-            var app = builder.Build();
-            app.Services.GetRequiredService<PluginRuntime>().Activate(app);
+            app = builder.Build();
+            app.Services.GetRequiredService<PluginRuntime>().Activate(app.Services, app);
             return app;
         }
         catch
         {
-            plugins.Dispose();
+            if (app is not null)
+                ((IDisposable)app).Dispose();
+            else
+                plugins.Dispose();
+            throw;
+        }
+    }
+
+    [SuppressMessage(
+        "Reliability",
+        "CA2000:Dispose objects before losing scope",
+        Justification = "The returned host owns the runtime; failed startup disposes it here."
+    )]
+    public static IHost CreateDesktop(string[] args)
+    {
+        var builder = Host.CreateApplicationBuilder(args);
+        var plugins = HostComposition.Configure(builder.Services, builder.Configuration);
+        IHost? host = null;
+        try
+        {
+            builder.Services.AddSingleton<DesktopSession>();
+            if (!builder.Configuration.GetValue<bool>("demo"))
+                builder.Services.AddHostedService<PluginTaskService>();
+            host = builder.Build();
+            host.Services.GetRequiredService<PluginRuntime>().Activate(host.Services);
+            return host;
+        }
+        catch
+        {
+            if (host is not null)
+                host.Dispose();
+            else
+                plugins.Dispose();
             throw;
         }
     }

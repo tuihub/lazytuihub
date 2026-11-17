@@ -1,0 +1,31 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Desktop"
+    x:Class="LazyTuiHub.Desktop.ShellWindow"
+    Title="LazyTuiHub"
+    Width="1180"
+    Height="800"
+>
+    <Grid RowDefinitions="Auto,*" Margin="20">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+            <StackPanel Spacing="4">
+                <TextBlock Text="LazyTuiHub" Classes="title" />
+                <TextBlock Text="Your library and workflows" Classes="caption" />
+            </StackPanel>
+            <Button
+                Grid.Column="1"
+                Content="Light / dark"
+                Click="ThemeClick"
+                VerticalAlignment="Center"
+            />
+        </Grid>
+        <TabControl x:Name="Pages" Grid.Row="1">
+            <TabControl.ItemTemplate>
+                <DataTemplate x:DataType="local:NavigationPage">
+                    <TextBlock Text="{Binding Title}" />
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+        </TabControl>
+    </Grid>
+</Window>

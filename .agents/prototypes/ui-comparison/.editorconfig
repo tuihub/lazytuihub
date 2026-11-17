@@ -1,0 +1,3 @@
+[*.cs]
+# Literal dimensions express this experimental UI layout. Product rules remain unchanged.
+dotnet_diagnostic.S109.severity = none

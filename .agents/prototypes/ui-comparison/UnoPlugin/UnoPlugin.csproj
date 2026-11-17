@@ -1,0 +1,4 @@
+<Project Sdk="Uno.Sdk/7.0.22">
+  <PropertyGroup><TargetFramework>net11.0-desktop</TargetFramework><UnoFeatures>Skia</UnoFeatures><AssemblyName>UiComparison.UnoPlugin</AssemblyName></PropertyGroup>
+  <ItemGroup><PackageReference Include="Uno.WinUI" Version="$(UnoVersion)" /><ProjectReference Include="../Shared/Shared.csproj" /></ItemGroup>
+</Project>

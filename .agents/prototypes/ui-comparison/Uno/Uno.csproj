@@ -1,0 +1,17 @@
+<Project Sdk="Uno.Sdk/7.0.22">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0-desktop</TargetFramework><AssemblyName>UiComparison.Uno</AssemblyName><GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute><UnoSingleProject>true</UnoSingleProject><UnoFeatures>Skia</UnoFeatures></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Uno.WinUI" Version="$(UnoVersion)" />
+    <PackageReference Include="Uno.WinUI.Runtime.Headless" Version="$(UnoVersion)" />
+    <PackageReference Include="Uno.Toolkit.WinUI" Version="11.0.1" />
+    <PackageReference Include="Uno.Cupertino.WinUI" Version="9.0.1" />
+    <ProjectReference Include="../Shared/Shared.csproj" />
+    <ProjectReference Include="../UnoPlugin/UnoPlugin.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="CopyPrototypePlugin" AfterTargets="Build">
+    <Copy SourceFiles="../UnoPlugin/bin/$(Configuration)/net11.0-desktop/UiComparison.UnoPlugin.dll" DestinationFiles="$(TargetDir)plugins/SamplePlugin.dll" />
+  </Target>
+  <Target Name="PublishPrototypePlugin" AfterTargets="Publish">
+    <Copy SourceFiles="../UnoPlugin/bin/$(Configuration)/net11.0-desktop/UiComparison.UnoPlugin.dll" DestinationFiles="$(PublishDir)plugins/SamplePlugin.dll" />
+  </Target>
+</Project>

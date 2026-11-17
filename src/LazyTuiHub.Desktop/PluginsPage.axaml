@@ -1,0 +1,47 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:plugins="clr-namespace:LazyTuiHub.Plugins;assembly=LazyTuiHub.Plugins"
+    x:Class="LazyTuiHub.Desktop.PluginsPage"
+>
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,16,0,0">
+        <TextBlock Text="Plugins" Classes="title" />
+        <TextBlock
+            Grid.Row="1"
+            Text="Enablement changes take effect after restarting the application. Your data is kept."
+            Classes="caption"
+            Margin="0,8,0,16"
+        />
+        <Grid Grid.Row="2" ColumnDefinitions="240,12,*">
+            <ListBox x:Name="Plugins" SelectionChanged="SelectionChanged">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem" x:DataType="plugins:PluginView">
+                        <Setter
+                            Property="AutomationProperties.Name"
+                            Value="{Binding Saved.Spec.Name}"
+                        />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="plugins:PluginView">
+                        <StackPanel Spacing="4" Margin="4">
+                            <TextBlock Text="{Binding Saved.Spec.Name}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Activation}" Classes="caption" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Grid Grid.Column="2" RowDefinitions="Auto,*">
+                <Button x:Name="Toggle" Click="ToggleClick" />
+                <TextBox
+                    Grid.Row="1"
+                    x:Name="Details"
+                    IsReadOnly="True"
+                    AcceptsReturn="True"
+                    TextWrapping="Wrap"
+                />
+            </Grid>
+        </Grid>
+        <TextBlock Grid.Row="3" x:Name="Status" Classes="status" />
+    </Grid>
+</UserControl>

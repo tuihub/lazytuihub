@@ -10,4 +10,6 @@
   <Project Path="src/LazyTuiHub.CorePlugin/LazyTuiHub.CorePlugin.csproj" />
   <Project Path="src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
   <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
+  <Project Path="src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
+  <Project Path="src/LazyTuiHub.Rss.Desktop/LazyTuiHub.Rss.Desktop.csproj" />
 </Solution>

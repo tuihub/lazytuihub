@@ -18,5 +18,14 @@
     "assembly": "storage/LazyTuiHub.Storage.Sqlite.dll",
     "entryType": "LazyTuiHub.Storage.Sqlite.SqliteStoragePlugin",
     "required": true
+  },
+  {
+    "id": "rss.desktop",
+    "name": "RSS Reader UI",
+    "assembly": "rss-desktop/LazyTuiHub.Rss.Desktop.dll",
+    "entryType": "LazyTuiHub.Rss.Desktop.RssDesktopPlugin",
+    "requires": [
+      "rss"
+    ]
   }
 ]

@@ -191,3 +191,27 @@ run = "dotnet run --project src/LazyTuiHub -- --rss-demo"
 description = "Run local streaming and synchronized inputs with live configuration and cancellation"
 wait_for = ["check:analyzers", "test", "demo:api"]
 run = "dotnet run --project src/LazyTuiHub -- --workflow-demo"
+
+[tasks."check:ui"]
+description = "Build and verify both optional UI comparison prototypes"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs check both"
+
+[tasks."demo:ui:avalonia"]
+description = "Run the Avalonia RSS, workflow canvas, and DLL plugin prototype"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs run avalonia"
+
+[tasks."demo:ui:uno"]
+description = "Run the Uno RSS, workflow canvas, and DLL plugin prototype"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs run uno"
+
+[tasks."bundle:ui"]
+description = "Prepare both local macOS UI prototype app wrappers"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle both"
+
+[tasks."bundle:ui:cupertino"]
+description = "Prepare the local Uno Cupertino theme prototype app"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle uno --cupertino"
+
+[tasks."run:desktop"]
+description = "Run the Avalonia desktop application with the local workspace"
+run = "dotnet run --project src/LazyTuiHub -- --desktop"

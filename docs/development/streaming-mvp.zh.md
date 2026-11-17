@@ -6,7 +6,9 @@
 
 MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。首轮本地运行器支持具名流式／同步端口和可执行的本地计划。[框架 Note](../../.agents/notes/2026-11-17-mvp-framework.zh.md) 与[节点执行 Note](../../.agents/notes/2026-11-17-mvp-node-execution.zh.md) 区分当前选择和后续设计。MVP 合入主分支前，Note 保持可自由编辑的提案状态；每轮将代码和对应 Note 一起提交。
 
-当前通过 CLI、进程内 API 和生成的 HTTP 客户端交互，没有可视化图编辑器或分布式执行。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮将 RSS 表移入编码后的插件命名空间，不迁移旧表。
+当前通过 Avalonia 桌面阅读器、CLI、进程内 API 和生成的 HTTP 客户端交互，没有可视化图编辑器或分布式执行。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮将 RSS 表移入编码后的插件命名空间，不迁移旧表。
+
+[桌面 MVP 指南](desktop-mvp.zh.md) 介绍可运行的 Avalonia 界面、真实 RSS／SQLite 操作、工作流查看和插件可用性。[UI 比较指南](ui-comparison.zh.md) 保留此前的独立实验。
 
 ## 框架与业务
 
@@ -19,7 +21,8 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。首轮本地运行
 | [SQLite 提供者](../../src/LazyTuiHub.Storage.Sqlite/) | 必要存储插件，提供通用 JSON 记录／TTL、SQLite FTS5、原生连接及委托清理。 |
 | [核心插件](../../src/LazyTuiHub.CorePlugin/) | 发行清单要求的问候功能及内置节点注册。 |
 | [RSS 插件](../../src/LazyTuiHub.Rss/) | 订阅、解析、存储、查询、已读状态、API／CLI 适配及后台刷新。 |
-| [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、共享 HTTP／DI 基础设施及生命周期。 |
+| [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
+| [桌面层](../../src/LazyTuiHub.Desktop/)／[RSS UI](../../src/LazyTuiHub.Rss.Desktop/) | Avalonia 外壳与诊断／动态加载、调用 IRssApi 的阅读器。 |
 
 PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。RSS 通过 BusinessStorage 写业务表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
 

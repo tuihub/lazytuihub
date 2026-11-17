@@ -91,6 +91,7 @@ internal sealed class PluginCatalog
                 HasUninstall = registration.Hooks.Uninstall is not null,
                 DaoRequirements = registration.Daos.Requirements.ToArray(),
                 DaoOffers = registration.DaoServices.Select(service => service.Capability).ToArray(),
+                Pages = registration.Pages.ToArray(),
             }
         );
     }

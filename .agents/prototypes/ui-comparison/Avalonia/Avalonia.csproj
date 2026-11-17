@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework><AssemblyName>UiComparison.Avalonia</AssemblyName></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Headless" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Labs.Panels" Version="12.1.0" />
+    <ProjectReference Include="../Shared/Shared.csproj" />
+    <ProjectReference Include="../AvaloniaPlugin/AvaloniaPlugin.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="CopyPrototypePlugin" AfterTargets="Build">
+    <Copy SourceFiles="../AvaloniaPlugin/bin/$(Configuration)/net11.0/UiComparison.AvaloniaPlugin.dll" DestinationFiles="$(TargetDir)plugins/SamplePlugin.dll" />
+  </Target>
+  <Target Name="PublishPrototypePlugin" AfterTargets="Publish">
+    <Copy SourceFiles="../AvaloniaPlugin/bin/$(Configuration)/net11.0/UiComparison.AvaloniaPlugin.dll" DestinationFiles="$(PublishDir)plugins/SamplePlugin.dll" />
+  </Target>
+</Project>

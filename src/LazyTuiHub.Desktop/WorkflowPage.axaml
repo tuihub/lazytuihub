@@ -1,0 +1,45 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:framework="clr-namespace:LazyTuiHub.Framework;assembly=LazyTuiHub.Framework"
+    x:Class="LazyTuiHub.Desktop.WorkflowPage"
+>
+    <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
+        <TextBlock Text="Workflow plans" Classes="title" Margin="0,0,0,16" />
+        <Grid Grid.Row="1" ColumnDefinitions="220,12,*">
+            <ListBox x:Name="Definitions" SelectionChanged="SelectionChanged">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem" x:DataType="framework:PipelineDefinition">
+                        <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="framework:PipelineDefinition">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Grid Grid.Column="2" RowDefinitions="Auto,*">
+                <TextBlock x:Name="PlanStatus" TextWrapping="Wrap" Margin="0,0,0,12" />
+                <TabControl Grid.Row="1">
+                    <TabItem Header="Execution plan">
+                        <TextBox
+                            x:Name="Plan"
+                            IsReadOnly="True"
+                            AcceptsReturn="True"
+                            TextWrapping="Wrap"
+                        />
+                    </TabItem>
+                    <TabItem Header="Definition">
+                        <TextBox
+                            x:Name="Definition"
+                            IsReadOnly="True"
+                            AcceptsReturn="True"
+                            FontFamily="monospace"
+                        />
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

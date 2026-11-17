@@ -6,7 +6,9 @@ English | [中文](streaming-mvp.zh.md)
 
 The MVP uses an RSS reader and SQLite to explore reusable nodes across business modules. The first local runtime supports named streaming/synchronized ports and executable local plans. The proposed [framework Note](../../.agents/notes/2026-11-17-mvp-framework.en.md) and [node execution Note](../../.agents/notes/2026-11-17-mvp-node-execution.en.md) distinguish current choices from further design. MVP Notes remain editable proposals until merge into main; each increment commits code and corresponding Notes together.
 
-Interaction uses CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. This increment moves RSS tables into encoded plugin namespaces without migrating old tables.
+Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. This increment moves RSS tables into encoded plugin namespaces without migrating old tables.
+
+The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real RSS/SQLite operations, workflow inspection, and plugin availability. The [UI comparison guide](ui-comparison.en.md) retains the earlier independent experiments.
 
 ## Framework and business
 
@@ -19,7 +21,8 @@ Interaction uses CLI, in-process APIs, and generated HTTP clients. There is no v
 | [SQLite provider](../../src/LazyTuiHub.Storage.Sqlite/) | Required storage plugin supplying common JSON records/TTL, SQLite FTS5, native connections, and delegated cleanup. |
 | [Core plugin](../../src/LazyTuiHub.CorePlugin/) | Required distribution plugin for greetings and built-in node registration. |
 | [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, parsing, storage, queries, read state, API/CLI adapters, and background refresh. |
-| [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, shared HTTP/DI infrastructure, and lifecycle. |
+| [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, desktop/web composition, shared DI infrastructure, and lifecycle. |
+| [Desktop](../../src/LazyTuiHub.Desktop/) / [RSS UI](../../src/LazyTuiHub.Rss.Desktop/) | Avalonia shell and diagnostics / dynamically loaded reader using IRssApi. |
 
 PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. RSS writes its business tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
 

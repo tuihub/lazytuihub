@@ -34,7 +34,7 @@ internal static class PluginTestHost
         builder.Services.AddSingleton(plugins.Retention);
         builder.Services.AddSingleton<IWorkflowExecutor>(plugins.Workflows);
         var app = builder.Build();
-        app.Services.GetRequiredService<PluginRuntime>().Activate(app);
+        app.Services.GetRequiredService<PluginRuntime>().Activate(app.Services, app);
         return app;
     }
 }

@@ -1,29 +1,42 @@
-using LazyTuiHub;
 using LazyTuiHub.Commands;
+using LazyTuiHub.Desktop;
 using LazyTuiHub.Examples;
 
-if (args.Contains("--workflow-demo", StringComparer.Ordinal))
-{
-    await WorkflowDemo.RunAsync();
-    return;
-}
+namespace LazyTuiHub;
 
-if (args.Contains("--rss-demo", StringComparer.Ordinal))
+public static class Program
 {
-    await RssDemo.RunAsync();
-    return;
-}
+    [STAThread]
+    public static int Main(string[] args)
+    {
+        if (args.Contains("--desktop", StringComparer.Ordinal))
+        {
+            var options = args.Where(value => !string.Equals(value, "--desktop", StringComparison.Ordinal)).ToArray();
+            using var host = ApplicationHost.CreateDesktop(options);
+            return DesktopLauncher.Run(host, options);
+        }
+        RunAsync(args).GetAwaiter().GetResult();
+        return Environment.ExitCode;
+    }
 
-await using var app = ApplicationHost.Create(args);
-if (app.Configuration.GetValue<bool>("demo"))
-{
-    await GreetingDemo.RunAsync(app);
-}
-else if (app.Configuration["command"] is { } command)
-{
-    await CommandRunner.RunAsync(app, command);
-}
-else
-{
-    await app.RunAsync();
+    private static async Task RunAsync(string[] args)
+    {
+        if (args.Contains("--workflow-demo", StringComparer.Ordinal))
+        {
+            await WorkflowDemo.RunAsync();
+            return;
+        }
+        if (args.Contains("--rss-demo", StringComparer.Ordinal))
+        {
+            await RssDemo.RunAsync();
+            return;
+        }
+        await using var app = ApplicationHost.Create(args);
+        if (app.Configuration.GetValue<bool>("demo"))
+            await GreetingDemo.RunAsync(app);
+        else if (app.Configuration["command"] is { } command)
+            await CommandRunner.RunAsync(app, command);
+        else
+            await app.RunAsync();
+    }
 }

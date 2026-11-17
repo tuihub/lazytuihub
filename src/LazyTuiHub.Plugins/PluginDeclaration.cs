@@ -13,6 +13,7 @@ public sealed record PluginDeclaration(
 {
     public IReadOnlyList<DaoCapability> DaoOffers { get; init; } = [];
     public IReadOnlyList<DaoRequirement> DaoRequirements { get; init; } = [];
+    public IReadOnlyList<DeclaredPage> Pages { get; init; } = [];
 
     public static PluginDeclaration Empty { get; } = new([], [], [], [], false, false);
 }
