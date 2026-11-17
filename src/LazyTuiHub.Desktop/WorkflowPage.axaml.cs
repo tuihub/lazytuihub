@@ -15,7 +15,15 @@ public sealed partial class WorkflowPage : UserControl
         this.workflows = workflows;
         this.state = state;
         InitializeComponent();
+        Pane.DetailOpen = state.DetailOpen;
+        Pane.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == AdaptivePane.DetailOpenProperty)
+                state.DetailOpen = Pane.DetailOpen;
+        };
         var definitions = workflows.List();
+        WorkflowCount.Text = $"{definitions.Count} saved workflows";
+        EmptyWorkflows.IsVisible = definitions.Count == 0;
         Definitions.ItemsSource = definitions;
         PlanStatus.Text = "No saved workflows.";
         Definitions.SelectedItem = definitions.FirstOrDefault(item =>
@@ -30,6 +38,7 @@ public sealed partial class WorkflowPage : UserControl
         if (Definitions.SelectedItem is not PipelineDefinition definition)
             return;
         state.Selected = definition.Name;
+        WorkflowTitle.Text = definition.Name;
         var description = workflows.Describe(definition);
         Definition.Text = JsonSerializer.Serialize(definition, PipelineStore.JsonOptions);
         PlanStatus.Text = description.Executable ? "Ready to execute locally" : "Cannot execute";

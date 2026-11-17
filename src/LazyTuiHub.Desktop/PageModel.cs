@@ -7,6 +7,7 @@ public abstract partial class PageModel(DesktopSession session, ILogger logger) 
 {
     public event PropertyChangedEventHandler? PropertyChanged;
     public bool Busy { get; private set; }
+    public bool Failed { get; private set; }
     public bool Idle => !Busy;
     public string Status { get; protected set; } = string.Empty;
 
@@ -18,6 +19,7 @@ public abstract partial class PageModel(DesktopSession session, ILogger logger) 
             if (Busy)
                 return;
             Busy = true;
+            Failed = false;
             Status = "Working…";
             Changed();
             try
@@ -30,6 +32,7 @@ public abstract partial class PageModel(DesktopSession session, ILogger logger) 
             }
             catch (Exception error)
             {
+                Failed = true;
                 Status = error.GetBaseException().Message;
                 LogOperationFailure(logger, error);
             }

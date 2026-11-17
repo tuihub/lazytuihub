@@ -1,45 +1,92 @@
 <UserControl
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Desktop"
     xmlns:framework="clr-namespace:LazyTuiHub.Framework;assembly=LazyTuiHub.Framework"
     x:Class="LazyTuiHub.Desktop.WorkflowPage"
 >
-    <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
-        <TextBlock Text="Workflow plans" Classes="title" Margin="0,0,0,16" />
-        <Grid Grid.Row="1" ColumnDefinitions="220,12,*">
-            <ListBox x:Name="Definitions" SelectionChanged="SelectionChanged">
-                <ListBox.Styles>
-                    <Style Selector="ListBoxItem" x:DataType="framework:PipelineDefinition">
-                        <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
-                    </Style>
-                </ListBox.Styles>
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="framework:PipelineDefinition">
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Grid Grid.Column="2" RowDefinitions="Auto,*">
-                <TextBlock x:Name="PlanStatus" TextWrapping="Wrap" Margin="0,0,0,12" />
-                <TabControl x:Name="PlanTabs" Grid.Row="1">
-                    <TabItem Header="Execution plan">
-                        <TextBox
-                            x:Name="Plan"
-                            IsReadOnly="True"
-                            AcceptsReturn="True"
-                            TextWrapping="Wrap"
-                        />
-                    </TabItem>
-                    <TabItem Header="Definition">
-                        <TextBox
-                            x:Name="Definition"
-                            IsReadOnly="True"
-                            AcceptsReturn="True"
-                            FontFamily="monospace"
-                        />
-                    </TabItem>
-                </TabControl>
-            </Grid>
-        </Grid>
+    <Grid RowDefinitions="Auto,*">
+        <StackPanel Margin="24,20" Spacing="4">
+            <TextBlock Text="Workflows" Classes="title" />
+            <TextBlock x:Name="WorkflowCount" Classes="caption" />
+        </StackPanel>
+        <local:AdaptivePane x:Name="Pane" Grid.Row="1" BackLabel="Back to workflows">
+            <local:AdaptivePane.Master>
+                <Grid>
+                    <ListBox
+                        x:Name="Definitions"
+                        SelectionChanged="SelectionChanged"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    >
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem" x:DataType="framework:PipelineDefinition">
+                                <Setter
+                                    Property="AutomationProperties.Name"
+                                    Value="{Binding Name}"
+                                />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="framework:PipelineDefinition">
+                                <TextBlock
+                                    Text="{Binding Name}"
+                                    Margin="8,12"
+                                    FontWeight="SemiBold"
+                                    TextWrapping="Wrap"
+                                />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock
+                        x:Name="EmptyWorkflows"
+                        Text="No saved workflows"
+                        Classes="caption"
+                        Margin="24"
+                        VerticalAlignment="Center"
+                    />
+                </Grid>
+            </local:AdaptivePane.Master>
+            <local:AdaptivePane.Detail>
+                <Grid RowDefinitions="Auto,Auto,*" Margin="24">
+                    <TextBlock
+                        x:Name="WorkflowTitle"
+                        FontSize="22"
+                        FontWeight="SemiBold"
+                        TextWrapping="Wrap"
+                    />
+                    <TextBlock
+                        x:Name="PlanStatus"
+                        Grid.Row="1"
+                        Classes="caption"
+                        Margin="0,8,0,20"
+                    />
+                    <TabControl x:Name="PlanTabs" Grid.Row="2">
+                        <TabItem Header="Execution plan">
+                            <ScrollViewer
+                                HorizontalScrollBarVisibility="Disabled"
+                                Margin="0,16,0,0"
+                            >
+                                <SelectableTextBlock
+                                    x:Name="Plan"
+                                    TextWrapping="Wrap"
+                                    LineHeight="24"
+                                />
+                            </ScrollViewer>
+                        </TabItem>
+                        <TabItem Header="Definition">
+                            <TextBox
+                                x:Name="Definition"
+                                IsReadOnly="True"
+                                AcceptsReturn="True"
+                                FontFamily="monospace"
+                                Margin="0,16,0,0"
+                            />
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </local:AdaptivePane.Detail>
+        </local:AdaptivePane>
     </Grid>
 </UserControl>

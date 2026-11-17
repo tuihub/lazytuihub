@@ -4,56 +4,120 @@
     xmlns:local="using:LazyTuiHub.Desktop"
     x:Class="LazyTuiHub.Desktop.ShellWindow"
     Title="LazyTuiHub"
-    Width="1180"
-    Height="800"
+    Width="1280"
+    Height="820"
     Background="{DynamicResource PageBackground}"
 >
-    <Grid RowDefinitions="Auto,Auto,*" Margin="{DynamicResource PagePadding}">
-        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
-            <StackPanel Spacing="4">
-                <TextBlock Text="LazyTuiHub" Classes="title" />
-                <TextBlock Text="Your library and workflows" Classes="caption" />
-            </StackPanel>
-            <StackPanel
-                Grid.Column="1"
-                Orientation="Horizontal"
-                Spacing="12"
-                VerticalAlignment="Center"
-            >
-                <StackPanel Spacing="4">
-                    <TextBlock Text="Design" Classes="caption" />
-                    <ComboBox
-                        x:Name="DesignPicker"
-                        AutomationProperties.Name="Design system"
-                        SelectionChanged="AppearanceChanged"
+    <Grid RowDefinitions="Auto,*">
+        <Border
+            x:Name="CompactHeader"
+            IsVisible="False"
+            BorderBrush="{DynamicResource DividerBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="12,8"
+        >
+            <Grid ColumnDefinitions="Auto,*">
+                <Button
+                    x:Name="MenuButton"
+                    Classes="quiet"
+                    Content="Menu"
+                    Click="MenuClick"
+                    Margin="0,0,16,0"
+                />
+                <TextBlock
+                    Grid.Column="1"
+                    Text="LazyTuiHub"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center"
+                />
+            </Grid>
+        </Border>
+        <SplitView
+            x:Name="NavigationSplit"
+            Grid.Row="1"
+            DisplayMode="Inline"
+            IsPaneOpen="True"
+            OpenPaneLength="208"
+            PaneBackground="{DynamicResource PageBackground}"
+        >
+            <SplitView.Pane>
+                <Grid RowDefinitions="Auto,*,Auto" Margin="12,24,12,16">
+                    <StackPanel Margin="12,0,0,32" Spacing="4">
+                        <TextBlock Text="LazyTuiHub" FontSize="18" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <ListBox
+                        x:Name="Pages"
+                        Grid.Row="1"
+                        SelectionChanged="PageChanged"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Classes="navigation"
                     >
-                        <ComboBoxItem Content="Automatic" />
-                        <ComboBoxItem Content="Fluent" />
-                        <ComboBoxItem Content="macOS" />
-                        <ComboBoxItem Content="Material" />
-                    </ComboBox>
-                </StackPanel>
-                <StackPanel Spacing="4">
-                    <TextBlock Text="Appearance" Classes="caption" />
-                    <ComboBox
-                        x:Name="ColorPicker"
-                        AutomationProperties.Name="Color mode"
-                        SelectionChanged="AppearanceChanged"
-                    >
-                        <ComboBoxItem Content="System" />
-                        <ComboBoxItem Content="Light" />
-                        <ComboBoxItem Content="Dark" />
-                    </ComboBox>
-                </StackPanel>
-            </StackPanel>
-        </Grid>
-        <TextBlock x:Name="AppearanceStatus" Grid.Row="1" TextWrapping="Wrap" />
-        <TabControl x:Name="Pages" Grid.Row="2">
-            <TabControl.ItemTemplate>
-                <DataTemplate x:DataType="local:NavigationPage">
-                    <TextBlock Text="{Binding Title}" />
-                </DataTemplate>
-            </TabControl.ItemTemplate>
-        </TabControl>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="local:NavigationPage">
+                                <TextBlock Text="{Binding Title}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="2" Spacing="8">
+                        <Button
+                            x:Name="AppearanceButton"
+                            Classes="quiet"
+                            Content="Appearance"
+                            HorizontalAlignment="Stretch"
+                            Margin="0"
+                        >
+                            <Button.Flyout>
+                                <Flyout Placement="RightEdgeAlignedBottom">
+                                    <StackPanel Spacing="12" Width="240" Margin="8">
+                                        <TextBlock
+                                            Text="Appearance"
+                                            FontSize="18"
+                                            FontWeight="SemiBold"
+                                        />
+                                        <TextBlock Text="Design system" Classes="caption" />
+                                        <ComboBox
+                                            x:Name="DesignPicker"
+                                            AutomationProperties.Name="Design system"
+                                            SelectionChanged="AppearanceChanged"
+                                            HorizontalAlignment="Stretch"
+                                        >
+                                            <ComboBoxItem Content="Automatic" /><ComboBoxItem Content="Fluent" />
+                                            <ComboBoxItem Content="macOS" /><ComboBoxItem Content="Material" />
+                                        </ComboBox>
+                                        <TextBlock Text="Color mode" Classes="caption" />
+                                        <ComboBox
+                                            x:Name="ColorPicker"
+                                            AutomationProperties.Name="Color mode"
+                                            SelectionChanged="AppearanceChanged"
+                                            HorizontalAlignment="Stretch"
+                                        >
+                                            <ComboBoxItem Content="System" /><ComboBoxItem Content="Light" />
+                                            <ComboBoxItem Content="Dark" />
+                                        </ComboBox>
+                                        <TextBlock
+                                            Text="{Binding Text, ElementName=AppearanceStatus}"
+                                            Classes="caption"
+                                        />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <TextBlock
+                            x:Name="AppearanceStatus"
+                            TextWrapping="Wrap"
+                            Classes="caption"
+                        />
+                    </StackPanel>
+                </Grid>
+            </SplitView.Pane>
+            <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1,0,0,0">
+                <ContentControl
+                    x:Name="PageContent"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                />
+            </Border>
+        </SplitView>
     </Grid>
 </Window>

@@ -212,6 +212,11 @@ run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle both"
 description = "Prepare the local Uno Cupertino theme prototype app"
 run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle uno --cupertino"
 
+[tasks."test:desktop"]
+description = "Drive the desktop UI with headless input and save rendered screenshots"
+env.LAZYTUIHUB_UI_ARTIFACTS = "{{config_root}}/artifacts/desktop"
+run = "dotnet run --project tests/LazyTuiHub.Tests -- -class LazyTuiHub.Tests.DesktopTests"
+
 [tasks."run:desktop"]
 description = "Run the Avalonia desktop application with the local workspace"
 run = "dotnet run --project src/LazyTuiHub -- --desktop"

@@ -17,6 +17,12 @@ public sealed partial class PluginsPage : UserControl
         this.state = state;
         this.logger = logger;
         InitializeComponent();
+        Pane.DetailOpen = state.DetailOpen;
+        Pane.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == AdaptivePane.DetailOpenProperty)
+                state.DetailOpen = Pane.DetailOpen;
+        };
         Reload(state.Selected);
         Status.Text = state.Status ?? runtime.DiscoveryError;
     }
@@ -24,6 +30,7 @@ public sealed partial class PluginsPage : UserControl
     private void Reload(string? selected = null)
     {
         var plugins = runtime.List();
+        PluginCount.Text = $"{plugins.Count} known plugins";
         Plugins.ItemsSource = plugins;
         Plugins.SelectedItem = plugins.FirstOrDefault(plugin =>
             string.Equals(plugin.Saved.Spec.Id, selected, StringComparison.Ordinal)
@@ -35,11 +42,18 @@ public sealed partial class PluginsPage : UserControl
         if (Plugins.SelectedItem is not PluginView plugin)
             return;
         state.Selected = plugin.Saved.Spec.Id;
-        Toggle.IsEnabled = !plugin.Saved.Spec.Required;
-        var action = plugin.Saved.Enabled ? "Disable after restart" : "Enable after restart";
-        Toggle.Content = plugin.Saved.Spec.Required ? "Required plugin" : action;
-        Details.Text =
-            $"{plugin.Saved.Spec.Id}\nSaved preference: {(plugin.Saved.Enabled ? "enabled" : "disabled")}\nThis startup: {plugin.Activation}\nFiles: {plugin.Availability}\n{plugin.Reason}\n\nPages: {string.Join(", ", plugin.Saved.Declaration.Pages.Select(page => page.Title))}";
+        PluginTitle.Text = plugin.Saved.Spec.Name;
+        PluginId.Text = plugin.Saved.Spec.Id;
+        Activation.Text = plugin.Activation;
+        Availability.Text = plugin.Availability;
+        SavedPreference.Text = plugin.Saved.Enabled ? "Enabled" : "Disabled";
+        Reason.Text = plugin.Reason;
+        Reason.IsVisible = !string.IsNullOrEmpty(plugin.Reason);
+        DeclaredPages.Text = string.Join(", ", plugin.Saved.Declaration.Pages.Select(page => page.Title));
+        PageSection.IsVisible = plugin.Saved.Declaration.Pages.Count > 0;
+        RequiredNotice.IsVisible = plugin.Saved.Spec.Required;
+        RestartNotice.IsVisible = Toggle.IsVisible = Toggle.IsEnabled = !plugin.Saved.Spec.Required;
+        Toggle.Content = plugin.Saved.Enabled ? "Disable after restart" : "Enable after restart";
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Could not save plugin enablement.")]

@@ -6,6 +6,7 @@ namespace LazyTuiHub.Rss.Desktop;
 public sealed partial class ReaderPage : UserControl
 {
     private bool ready;
+    private string? displayedArticle;
     public ReaderModel Model { get; }
 
     public ReaderPage(ReaderModel model)
@@ -20,6 +21,15 @@ public sealed partial class ReaderPage : UserControl
     private async void PageLoaded(object? sender, RoutedEventArgs e)
     {
         await Model.InitializeAsync();
+    }
+
+    private void ArticleChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        var name = Model.SelectedArticle?.Name;
+        if (string.Equals(displayedArticle, name, StringComparison.Ordinal))
+            return;
+        displayedArticle = name;
+        ArticleScroll.Offset = default;
     }
 
     private async void FeedChanged(object? sender, SelectionChangedEventArgs e)
@@ -39,9 +49,18 @@ public sealed partial class ReaderPage : UserControl
             await Model.SetFilterAsync(filter);
     }
 
+    private void AddFeedClick(object? sender, RoutedEventArgs e)
+    {
+        Model.AddingSubscription = true;
+        FeedUriInput.Focus();
+    }
+
+    private void CloseSubscriptionClick(object? sender, RoutedEventArgs e) => Model.AddingSubscription = false;
+
     private async void SubscribeClick(object? sender, RoutedEventArgs e) => await Model.SubscribeAsync();
 
-    private async void FetchClick(object? sender, RoutedEventArgs e) => await Model.RefreshAsync();
+    private async void RefreshClick(object? sender, RoutedEventArgs e) =>
+        await (Model.CanRefresh ? Model.RefreshAsync() : Model.LoadAsync());
 
     private async void ReloadClick(object? sender, RoutedEventArgs e) => await Model.LoadAsync();
 

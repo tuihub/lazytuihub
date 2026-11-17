@@ -54,6 +54,8 @@ Run `mise run demo:workflow` for streaming with synchronized configuration updat
 
 Avalonia is the selected product UI framework. Keep business services, workflow execution, and storage independent of the renderer. The [UI selection Note](.agents/notes/2026-11-17-mvp-ui-comparison.en.md) records the decision, comparison evidence, and remaining platform work; it remains proposed under the MVP agreement. The [desktop MVP guide](docs/development/desktop-mvp.en.md) covers `mise run run:desktop`, real RSS/SQLite operations, workflow inspection, and cold-start plugin management. Keep generic UI composition in `src/LazyTuiHub.Desktop/` and RSS views in the dynamically loaded `src/LazyTuiHub.Rss.Desktop/`; business/framework code must remain independent of Avalonia. Desktop mode shares application services and tasks without an HTTP listener. Product tests include headless desktop integration.
 
+Use `mise run test:desktop` to drive the product UI with programmatic pointer/keyboard input and produce screenshots plus control-state JSON in `artifacts/desktop/`. Functional checks do not establish visual fidelity; theme-specific visual corrections remain a separate iteration.
+
 The optional [UI comparison guide](docs/development/ui-comparison.en.md) covers the retained Avalonia and Uno prototypes in `.agents/prototypes/ui-comparison/`. They share a reader fixture and graph model, with separate framework-native DLL plugin pages. Use `mise run demo:ui:avalonia` to run the selected framework's prototype; `mise run demo:ui:uno` and `mise run check:ui` remain available to reproduce the comparison. These experiments are outside the product solution and default CI; Uno is retained as comparison evidence.
 
 ## Commits

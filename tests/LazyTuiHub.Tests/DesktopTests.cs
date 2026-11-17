@@ -19,10 +19,13 @@ using Xunit;
 
 namespace LazyTuiHub.Tests;
 
-public sealed class DesktopTests
+public sealed partial class DesktopTests
 {
     public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<DesktopApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions());
+        AppBuilder
+            .Configure<DesktopApp>()
+            .UseSkia()
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 
     [Fact]
     public async Task ReaderUsesPersistedServicesAndPagesFollowColdPluginAvailability()
@@ -75,7 +78,10 @@ public sealed class DesktopTests
                         savedArticle = page.Model.SelectedArticle!.Name;
                         await page.Model.MarkReadAsync();
                         Assert.True(page.Model.SelectedArticle!.Read);
-                        Assert.Contains("Persistent content", page.FindControl<TextBox>("ArticleContent")!.Text);
+                        Assert.Contains(
+                            "Persistent content",
+                            page.FindControl<SelectableTextBlock>("ArticleContent")!.Text
+                        );
                         await page.Model.SetFilterAsync("read = false");
                         Assert.DoesNotContain(page.Model.Articles, article => article.Name == savedArticle);
                         await page.Model.SetFilterAsync("read = true");
@@ -85,7 +91,7 @@ public sealed class DesktopTests
                         Assert.Contains("HTTP", page.Model.Status);
                         Assert.False(page.Model.Busy);
                         Assert.Equal(2, page.Model.Feeds.Count);
-                        var tabs = window.FindControl<TabControl>("Pages")!;
+                        var tabs = window.FindControl<ListBox>("Pages")!;
                         tabs.SelectedIndex = 1;
                         tabs.SelectedIndex = 0;
                         Assert.Same(page, window.GetVisualDescendants().OfType<ReaderPage>().Single());
@@ -224,7 +230,7 @@ public sealed class DesktopTests
                 Assert.IsType<ComboBoxItem>(page.FindControl<ComboBox>("ReadFilter")!.SelectedItem).Tag
             );
             Assert.Equal(model.FeedUri, page.FindControl<TextBox>("FeedUriInput")!.Text);
-            Assert.True(page.GetVisualDescendants().OfType<Expander>().Single().IsExpanded);
+            Assert.True(page.Model.AddingSubscription);
             Assert.NotNull(page.FindControl<ComboBox>("FeedPicker")!.Template);
             Assert.False(session.IsStopping);
             Assert.False(pending.IsCompleted);
@@ -237,12 +243,12 @@ public sealed class DesktopTests
         }
         release.SetResult();
         await pending;
-        var tabs = window.FindControl<TabControl>("Pages")!;
+        var tabs = window.FindControl<ListBox>("Pages")!;
         tabs.SelectedIndex = 1;
         var workflow = window.GetVisualDescendants().OfType<WorkflowPage>().Single();
         workflow.FindControl<TabControl>("PlanTabs")!.SelectedIndex = 1;
         window = window.ChangeAppearance(new(DesignSystem.Fluent, ColorMode.Light));
-        Assert.Equal(1, window.FindControl<TabControl>("Pages")!.SelectedIndex);
+        Assert.Equal(1, window.FindControl<ListBox>("Pages")!.SelectedIndex);
         Assert.Equal(
             1,
             window
@@ -252,12 +258,12 @@ public sealed class DesktopTests
                 .FindControl<TabControl>("PlanTabs")!
                 .SelectedIndex
         );
-        window.FindControl<TabControl>("Pages")!.SelectedIndex = 2;
+        window.FindControl<ListBox>("Pages")!.SelectedIndex = 2;
         var plugins = window.GetVisualDescendants().OfType<PluginsPage>().Single();
         plugins.FindControl<ListBox>("Plugins")!.SelectedIndex = 1;
         var pluginId = host.Services.GetRequiredService<PluginsPageState>().Selected;
         window = window.ChangeAppearance(new(DesignSystem.Material, ColorMode.Dark));
-        Assert.Equal(2, window.FindControl<TabControl>("Pages")!.SelectedIndex);
+        Assert.Equal(2, window.FindControl<ListBox>("Pages")!.SelectedIndex);
         Assert.Equal(
             pluginId,
             Assert
@@ -324,6 +330,7 @@ public sealed class DesktopTests
 
     private static async Task WaitIdleAsync(ReaderModel model, CancellationToken token)
     {
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background, token);
         while (model.Busy)
             await Task.Delay(10, token);
     }

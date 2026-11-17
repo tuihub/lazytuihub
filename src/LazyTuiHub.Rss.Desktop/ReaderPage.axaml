@@ -2,147 +2,373 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:LazyTuiHub.Rss.Desktop"
+    xmlns:desktop="clr-namespace:LazyTuiHub.Desktop;assembly=LazyTuiHub.Desktop"
     xmlns:rss="clr-namespace:LazyTuiHub.Api.Rss.V1;assembly=LazyTuiHub.Api"
     x:Class="LazyTuiHub.Rss.Desktop.ReaderPage"
     x:DataType="local:ReaderModel"
+    x:Name="ReaderRoot"
 >
-    <Grid RowDefinitions="Auto,*,Auto" Margin="0,16,0,0">
-        <StackPanel Spacing="12" IsEnabled="{Binding Idle}">
-            <TextBlock Text="Reader" Classes="title" />
-            <Expander
-                Header="Add subscription"
-                HorizontalAlignment="Stretch"
-                IsExpanded="{Binding AddingSubscription, Mode=TwoWay}"
-            >
-                <Grid ColumnDefinitions="2*,*,Auto">
-                    <TextBox
-                        x:Name="FeedUriInput"
-                        Text="{Binding FeedUri}"
-                        PlaceholderText="Feed URL"
-                        Margin="0,0,8,8"
-                    />
-                    <TextBox
-                        Grid.Column="1"
-                        Text="{Binding FeedTitle}"
-                        PlaceholderText="Name (optional)"
-                        Margin="0,0,8,8"
-                    />
-                    <Button
-                        Grid.Column="2"
-                        Classes="primary"
-                        Content="Subscribe"
-                        Click="SubscribeClick"
-                    />
-                </Grid>
-            </Expander>
-            <WrapPanel>
-                <ComboBox
-                    x:Name="FeedPicker"
-                    ItemsSource="{Binding Feeds}"
-                    SelectedItem="{Binding SelectedFeed, Mode=OneWay}"
-                    SelectionChanged="FeedChanged"
-                    MinWidth="180"
-                    MaxWidth="320"
-                    Margin="0,0,8,8"
-                >
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="local:FeedChoice">
-                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <ComboBox
-                    x:Name="ReadFilter"
-                    SelectedValue="{Binding Filter, Mode=OneWay}"
-                    SelectedValueBinding="{Binding Tag, DataType=ComboBoxItem}"
-                    SelectionChanged="FilterChanged"
-                    Margin="0,0,8,8"
-                >
-                    <ComboBoxItem Content="All articles" Tag="" /><ComboBoxItem
-                        Content="Unread"
-                        Tag="read = false"
-                    /><ComboBoxItem Content="Read" Tag="read = true" />
-                </ComboBox>
-                <Button Content="Fetch" IsEnabled="{Binding CanRefresh}" Click="FetchClick" />
-                <Button Content="Reload" Click="ReloadClick" />
-            </WrapPanel>
-        </StackPanel>
-        <Grid Grid.Row="1" ColumnDefinitions="2*,12,3*" IsEnabled="{Binding Idle}">
-            <Grid RowDefinitions="*,Auto">
-                <ListBox
-                    x:Name="ArticleList"
-                    ItemsSource="{Binding Articles}"
-                    SelectedItem="{Binding SelectedArticle, Mode=TwoWay}"
-                >
-                    <ListBox.Styles>
-                        <Style Selector="ListBoxItem" x:DataType="rss:Article">
-                            <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
-                        </Style>
-                    </ListBox.Styles>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="rss:Article">
-                            <StackPanel Spacing="4" Margin="4,8">
+    <UserControl.Resources>
+        <ControlTheme x:Key="ArticleCard" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="12,0,12,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="{TemplateBinding Padding}"
+                    >
+                        <ContentPresenter
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                        />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover">
+                <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+            </Style>
+            <Style Selector="^:selected">
+                <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+            </Style>
+            <Style Selector="^:focus-visible">
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            </Style>
+        </ControlTheme>
+    </UserControl.Resources>
+    <Grid RowDefinitions="*,Auto">
+        <desktop:AdaptivePane
+            x:Name="ReaderPane"
+            BackLabel="Back to articles"
+            IsEnabled="{Binding !AddingSubscription}"
+            DetailOpen="{Binding DetailOpen, Mode=TwoWay}"
+        >
+            <desktop:AdaptivePane.Master>
+                <Grid RowDefinitions="Auto,*,Auto" IsEnabled="{Binding Idle}">
+                    <StackPanel Margin="24,24,24,20" Spacing="18">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Library" FontSize="24" FontWeight="SemiBold" />
                                 <TextBlock
-                                    Text="{Binding Title}"
-                                    FontWeight="SemiBold"
-                                    TextWrapping="Wrap"
-                                />
-                                <TextBlock
-                                    Text="Read"
-                                    IsVisible="{Binding Read}"
+                                    Text="{Binding ArticleCount}"
                                     Classes="caption"
+                                    FontSize="12"
                                 />
                             </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-                <Button
-                    Grid.Row="1"
-                    Content="Load more"
-                    IsVisible="{Binding HasMore}"
-                    Click="MoreClick"
-                    Margin="0,8,0,0"
-                />
-            </Grid>
-            <Grid Grid.Column="2" RowDefinitions="Auto,Auto,Auto,*">
-                <TextBlock
-                    Text="{Binding SelectedArticle.Title}"
-                    FontSize="22"
-                    FontWeight="SemiBold"
-                    TextWrapping="Wrap"
-                    Margin="0,0,0,8"
-                />
-                <TextBox
-                    Grid.Row="1"
-                    Text="{Binding SelectedArticle.Uri, Mode=OneWay}"
-                    IsReadOnly="True"
-                    PlaceholderText="Article link"
-                    Margin="0,0,0,12"
-                />
-                <Button
-                    Grid.Row="2"
-                    Content="Mark read"
-                    IsEnabled="{Binding CanMarkRead}"
-                    Click="ReadClick"
-                />
-                <TextBox
-                    Grid.Row="3"
-                    x:Name="ArticleContent"
-                    Text="{Binding SelectedArticle.Content, Mode=OneWay}"
-                    IsReadOnly="True"
-                    AcceptsReturn="True"
-                    TextWrapping="Wrap"
-                />
-            </Grid>
-        </Grid>
-        <StackPanel Grid.Row="2">
-            <ProgressBar
-                IsIndeterminate="True"
-                IsVisible="{Binding Busy}"
-                Height="2"
-                Margin="0,12,0,0"
+                            <Button
+                                x:Name="AddFeedButton"
+                                Classes="quiet"
+                                Grid.Column="1"
+                                Click="AddFeedClick"
+                                VerticalAlignment="Center"
+                                ToolTip.Tip="Add a subscription"
+                                AutomationProperties.Name="Add subscription"
+                                Padding="9"
+                            >
+                                <PathIcon
+                                    Foreground="{DynamicResource PrimaryText}"
+                                    Data="M7,0 H9 V7 H16 V9 H9 V16 H7 V9 H0 V7 H7 Z"
+                                    Width="16"
+                                    Height="16"
+                                />
+                            </Button>
+                        </Grid>
+                        <ComboBox
+                            x:Name="FeedPicker"
+                            ItemsSource="{Binding Feeds}"
+                            HorizontalAlignment="Stretch"
+                            SelectedItem="{Binding SelectedFeed, Mode=OneWay}"
+                            SelectionChanged="FeedChanged"
+                            AutomationProperties.Name="Subscription"
+                        >
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="local:FeedChoice">
+                                    <TextBlock
+                                        Text="{Binding Title}"
+                                        TextTrimming="CharacterEllipsis"
+                                    />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <ComboBox
+                                x:Name="ReadFilter"
+                                HorizontalAlignment="Stretch"
+                                SelectedValue="{Binding Filter, Mode=OneWay}"
+                                SelectedValueBinding="{Binding Tag, DataType=ComboBoxItem}"
+                                SelectionChanged="FilterChanged"
+                                AutomationProperties.Name="Read status"
+                            >
+                                <ComboBoxItem Content="All articles" Tag="" /><ComboBoxItem
+                                    Content="Unread"
+                                    Tag="read = false"
+                                />
+                                <ComboBoxItem Content="Read" Tag="read = true" />
+                            </ComboBox>
+                            <Button
+                                x:Name="RefreshButton"
+                                Classes="quiet"
+                                Grid.Column="1"
+                                Click="RefreshClick"
+                                Padding="9"
+                                ToolTip.Tip="{Binding RefreshLabel}"
+                                AutomationProperties.Name="{Binding RefreshLabel}"
+                            >
+                                <PathIcon
+                                    Foreground="{DynamicResource PrimaryText}"
+                                    Data="M14,8 A6,6 0 1 1 12,3 L12,0 L16,4 L12,8 L12,5 A4,4 0 1 0 12,9 Z"
+                                    Width="16"
+                                    Height="16"
+                                />
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem
+                                            Header="Reload saved articles"
+                                            Click="ReloadClick"
+                                        />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                    <Grid Grid.Row="1">
+                        <ListBox
+                            x:Name="ArticleList"
+                            ItemsSource="{Binding Articles}"
+                            SelectedItem="{Binding SelectedArticle, Mode=TwoWay}"
+                            SelectionChanged="ArticleChanged"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        >
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem" x:DataType="rss:Article">
+                                    <Setter
+                                        Property="AutomationProperties.Name"
+                                        Value="{Binding Title}"
+                                    />
+                                    <Setter Property="Theme" Value="{StaticResource ArticleCard}" />
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="rss:Article">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <TextBlock
+                                                Text="{Binding Converter={x:Static local:ArticleDisplay.Source}}"
+                                                Classes="caption"
+                                                FontSize="11"
+                                                TextWrapping="NoWrap"
+                                                TextTrimming="CharacterEllipsis"
+                                            />
+                                            <Ellipse
+                                                Grid.Column="1"
+                                                Width="6"
+                                                Height="6"
+                                                Fill="{DynamicResource AccentBrush}"
+                                                IsVisible="{Binding !Read}"
+                                                VerticalAlignment="Center"
+                                            />
+                                        </Grid>
+                                        <TextBlock
+                                            Text="{Binding Converter={x:Static local:ArticleDisplay.Title}}"
+                                            FontSize="16"
+                                            FontWeight="SemiBold"
+                                            TextWrapping="Wrap"
+                                            MaxLines="3"
+                                            TextTrimming="CharacterEllipsis"
+                                        />
+                                        <TextBlock
+                                            Text="{Binding Content}"
+                                            Classes="caption"
+                                            FontSize="13"
+                                            LineHeight="20"
+                                            MaxLines="2"
+                                            TextTrimming="CharacterEllipsis"
+                                        />
+                                        <TextBlock
+                                            Text="{Binding Converter={x:Static local:ArticleDisplay.Date}}"
+                                            Classes="caption"
+                                            FontSize="11"
+                                        />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel
+                            IsVisible="{Binding !HasArticles}"
+                            VerticalAlignment="Center"
+                            Margin="32"
+                            Spacing="12"
+                        >
+                            <TextBlock Text="No articles yet" FontWeight="SemiBold" FontSize="20" />
+                            <TextBlock Text="{Binding EmptyMessage}" Classes="caption" />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Row="2" Spacing="8">
+                        <Button
+                            Content="Load more"
+                            IsVisible="{Binding HasMore}"
+                            Click="MoreClick"
+                            HorizontalAlignment="Stretch"
+                            Margin="16,8"
+                        />
+                    </StackPanel>
+                </Grid>
+            </desktop:AdaptivePane.Master>
+            <desktop:AdaptivePane.Detail>
+                <Grid>
+                    <ScrollViewer
+                        x:Name="ArticleScroll"
+                        HorizontalScrollBarVisibility="Disabled"
+                        IsVisible="{Binding HasSelection}"
+                    >
+                        <StackPanel MaxWidth="700" Margin="32,40" Spacing="24">
+                            <TextBlock
+                                Text="{Binding SelectedArticle, Converter={x:Static local:ArticleDisplay.Source}}"
+                                Foreground="{DynamicResource AccentBrush}"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                            />
+                            <SelectableTextBlock
+                                Text="{Binding SelectedArticle, Converter={x:Static local:ArticleDisplay.Title}}"
+                                FontSize="28"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap"
+                            />
+                            <WrapPanel Orientation="Horizontal">
+                                <TextBlock
+                                    Text="{Binding PublishedAt}"
+                                    Classes="caption"
+                                    FontSize="12"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,20,8"
+                                />
+                                <Button
+                                    x:Name="MarkReadButton"
+                                    Classes="quiet"
+                                    Content="Mark read"
+                                    IsEnabled="{Binding CanMarkRead}"
+                                    Click="ReadClick"
+                                    Margin="0,0,0,8"
+                                />
+                            </WrapPanel>
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                            <SelectableTextBlock
+                                x:Name="ArticleContent"
+                                Text="{Binding SelectedArticle.Content}"
+                                FontSize="16"
+                                LineHeight="28"
+                                TextWrapping="Wrap"
+                            />
+                            <SelectableTextBlock
+                                Text="{Binding SelectedArticle.Uri}"
+                                Foreground="{DynamicResource SecondaryText}"
+                                FontSize="12"
+                                TextWrapping="Wrap"
+                                Margin="0,16,0,0"
+                            />
+                        </StackPanel>
+                    </ScrollViewer>
+                    <StackPanel
+                        IsVisible="{Binding !HasSelection}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        MaxWidth="280"
+                        Margin="28"
+                        Spacing="12"
+                    >
+                        <TextBlock
+                            Text="Select an article"
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap"
+                        />
+                        <TextBlock Text="Your reading space is ready." Classes="caption" />
+                    </StackPanel>
+                </Grid>
+            </desktop:AdaptivePane.Detail>
+        </desktop:AdaptivePane>
+        <StackPanel Grid.Row="1">
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding Busy}" Height="2" />
+            <TextBlock
+                x:Name="OperationError"
+                Text="{Binding Status}"
+                IsVisible="{Binding Failed}"
+                Classes="caption"
+                Margin="20,12"
             />
-            <TextBlock Text="{Binding Status}" Classes="status" />
         </StackPanel>
+        <Grid Grid.RowSpan="2" IsVisible="{Binding AddingSubscription}" Background="#60000000">
+            <Border
+                HorizontalAlignment="Right"
+                Width="360"
+                MaxWidth="{Binding Bounds.Width, ElementName=ReaderRoot}"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="1,0,0,0"
+            >
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="24" Spacing="20">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock
+                                Text="New subscription"
+                                FontSize="20"
+                                FontWeight="SemiBold"
+                                VerticalAlignment="Center"
+                            />
+                            <Button
+                                Grid.Column="1"
+                                x:Name="CloseSubscriptionButton"
+                                Content="Close"
+                                Click="CloseSubscriptionClick"
+                            />
+                        </Grid>
+                        <TextBlock
+                            Text="Follow a site by adding its RSS or Atom feed."
+                            Classes="caption"
+                        />
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Feed URL" />
+                            <TextBox
+                                x:Name="FeedUriInput"
+                                Text="{Binding FeedUri}"
+                                PlaceholderText="https://example.com/feed.xml"
+                                AutomationProperties.Name="Feed URL"
+                            />
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Name (optional)" />
+                            <TextBox
+                                x:Name="FeedTitleInput"
+                                Text="{Binding FeedTitle}"
+                                PlaceholderText="A name for this feed"
+                                AutomationProperties.Name="Feed name"
+                            />
+                        </StackPanel>
+                        <Button
+                            Classes="primary"
+                            x:Name="SubscribeButton"
+                            Content="Subscribe"
+                            Click="SubscribeClick"
+                            IsEnabled="{Binding Idle}"
+                            HorizontalAlignment="Stretch"
+                        />
+                        <TextBlock
+                            Text="{Binding Status}"
+                            IsVisible="{Binding Failed}"
+                            Classes="caption"
+                        />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

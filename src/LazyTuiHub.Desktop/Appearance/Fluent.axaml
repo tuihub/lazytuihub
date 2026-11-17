@@ -8,10 +8,22 @@
             <x:Double x:Key="PageTitleSize">24</x:Double>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PrimaryText">#242424</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentBrush">#0067C0</SolidColorBrush>
+                    <SolidColorBrush x:Key="HoverBrush">#EDEFF2</SolidColorBrush>
+                    <SolidColorBrush x:Key="SelectionBrush">#E4EAF6</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceBrush">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="DividerBrush">#18000000</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#F3F3F3</SolidColorBrush>
                     <SolidColorBrush x:Key="SecondaryText">#606060</SolidColorBrush>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="PrimaryText">#EAEAEA</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentBrush">#A8C6FF</SolidColorBrush>
+                    <SolidColorBrush x:Key="HoverBrush">#35383E</SolidColorBrush>
+                    <SolidColorBrush x:Key="SelectionBrush">#343F55</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceBrush">#292929</SolidColorBrush>
+                    <SolidColorBrush x:Key="DividerBrush">#20FFFFFF</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#202020</SolidColorBrush>
                     <SolidColorBrush x:Key="SecondaryText">#C0C0C0</SolidColorBrush>
                 </ResourceDictionary>

@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
+using Avalonia.Interactivity;
 using LazyTuiHub.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -48,11 +48,35 @@ public sealed partial class ShellWindow : Window
                 )
             ),
         ];
-        Pages.ContentTemplate = new FuncDataTemplate<NavigationPage>((page, _) => Resolve(page));
         Pages.ItemsSource = Navigation;
         Pages.SelectedIndex = selectedPage;
         ShowAppearance();
         Closing += WindowClosing;
+        SizeChanged += (_, _) => UpdateNavigation();
+    }
+
+    private void UpdateNavigation()
+    {
+        var compact = Bounds.Width <= 992;
+        CompactHeader.IsVisible = compact;
+        var mode = compact ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
+        if (NavigationSplit.DisplayMode != mode)
+        {
+            NavigationSplit.DisplayMode = mode;
+            NavigationSplit.IsPaneOpen = !compact;
+        }
+    }
+
+    private void MenuClick(object? sender, RoutedEventArgs e) =>
+        NavigationSplit.IsPaneOpen = !NavigationSplit.IsPaneOpen;
+
+    private void PageChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Pages.SelectedItem is not NavigationPage page)
+            return;
+        PageContent.Content = Resolve(page);
+        if (NavigationSplit.DisplayMode == SplitViewDisplayMode.Overlay)
+            NavigationSplit.IsPaneOpen = false;
     }
 
     private Control Resolve(NavigationPage page)

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using LazyTuiHub.Api;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Desktop;
@@ -13,16 +14,48 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
     private Article? selectedArticle;
     private string nextPage = string.Empty;
     private bool initialized;
+    private bool addingSubscription;
     public ObservableCollection<FeedChoice> Feeds { get; } = [];
     public ObservableCollection<Article> Articles { get; } = [];
     public FeedChoice? SelectedFeed { get; private set; }
     public string FeedUri { get; set; } = string.Empty;
     public string FeedTitle { get; set; } = string.Empty;
     public string Filter { get; private set; } = string.Empty;
-    public bool AddingSubscription { get; set; }
+    public bool AddingSubscription
+    {
+        get => addingSubscription;
+        set
+        {
+            addingSubscription = value;
+            Changed();
+        }
+    }
+    public bool DetailOpen { get; set; }
+    public string ArticleCount =>
+        (Articles.Count, HasMore) switch
+        {
+            (var count, true) => $"{count} articles loaded",
+            (1, false) => "1 article",
+            (var count, false) => $"{count} articles",
+        };
+    public string RefreshLabel => CanRefresh ? "Fetch latest articles" : "Reload saved articles";
+    public string EmptyMessage =>
+        Filter switch
+        {
+            "read = false" => "No unread articles here. Try another feed or show all articles.",
+            "read = true" => "Articles you mark as read will appear here.",
+            _ when CanRefresh => "Use refresh to fetch the latest articles from this feed.",
+            _ when Feeds.Count > 1 => "Choose a subscription and refresh it to start reading.",
+            _ => "Add a subscription to collect your favorite reads here.",
+        };
+    public bool HasArticles => Articles.Count > 0;
+    public bool HasSelection => SelectedArticle != null;
+    public string PublishedAt =>
+        SelectedArticle?.PublishTime?.ToDateTime().ToLocalTime().ToString("f", CultureInfo.CurrentCulture)
+        ?? string.Empty;
     public bool HasMore => !string.IsNullOrEmpty(nextPage);
     public bool CanRefresh => SelectedFeed is { Name: not AllFeeds };
-    public bool CanMarkRead => SelectedArticle is { Read: false };
+    public bool CanMarkRead => Idle && SelectedArticle is { Read: false };
     public Article? SelectedArticle
     {
         get => selectedArticle;
@@ -61,6 +94,7 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
             FeedTitle = string.Empty;
             await LoadFeedsAsync(feed.Name, token);
             await LoadArticlesAsync(false, token);
+            AddingSubscription = false;
             Status = "Subscription added. Choose Fetch to retrieve its articles.";
         });
 
@@ -145,6 +179,7 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
             return;
         if (!append)
         {
+            DetailOpen = false;
             nextPage = string.Empty;
             Articles.Clear();
             SelectedArticle = null;
