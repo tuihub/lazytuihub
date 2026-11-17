@@ -6,18 +6,23 @@
     RequestedThemeVariant="Default"
 >
     <Application.Styles>
-        <FluentTheme />
         <Style Selector="Button">
-            <Setter Property="Padding" Value="14,8" /><Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="TextBlock.title">
-            <Setter Property="FontSize" Value="24" /><Setter
+            <Setter Property="FontSize" Value="{DynamicResource PageTitleSize}" /><Setter
                 Property="FontWeight"
                 Value="SemiBold"
             />
         </Style>
         <Style Selector="TextBlock.caption">
-            <Setter Property="Opacity" Value="0.7" /><Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" /><Setter
+                Property="TextWrapping"
+                Value="Wrap"
+            />
         </Style>
         <Style Selector="TextBlock.status">
             <Setter Property="Margin" Value="0,12,0,0" /><Setter

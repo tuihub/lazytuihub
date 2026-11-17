@@ -21,7 +21,7 @@
             </ListBox>
             <Grid Grid.Column="2" RowDefinitions="Auto,*">
                 <TextBlock x:Name="PlanStatus" TextWrapping="Wrap" Margin="0,0,0,12" />
-                <TabControl Grid.Row="1">
+                <TabControl x:Name="PlanTabs" Grid.Row="1">
                     <TabItem Header="Execution plan">
                         <TextBox
                             x:Name="Plan"

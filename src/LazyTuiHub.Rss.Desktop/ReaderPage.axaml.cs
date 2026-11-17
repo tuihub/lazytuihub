@@ -5,7 +5,7 @@ namespace LazyTuiHub.Rss.Desktop;
 
 public sealed partial class ReaderPage : UserControl
 {
-    private bool loaded;
+    private bool ready;
     public ReaderModel Model { get; }
 
     public ReaderPage(ReaderModel model)
@@ -13,28 +13,29 @@ public sealed partial class ReaderPage : UserControl
         Model = model;
         InitializeComponent();
         DataContext = model;
+        ready = true;
         Loaded += PageLoaded;
     }
 
     private async void PageLoaded(object? sender, RoutedEventArgs e)
     {
-        if (loaded)
-            return;
-        loaded = true;
-        await Model.LoadAsync();
+        await Model.InitializeAsync();
     }
 
     private async void FeedChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (!Model.Busy && FeedPicker.SelectedItem is FeedChoice feed && feed != Model.SelectedFeed)
+        if (ready && !Model.Busy && FeedPicker.SelectedItem is FeedChoice feed && feed != Model.SelectedFeed)
             await Model.SelectFeedAsync(feed);
     }
 
     private async void FilterChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (!loaded || Model.Busy)
+        if (!ready || Model.Busy)
             return;
-        if (ReadFilter.SelectedItem is ComboBoxItem { Tag: string filter })
+        if (
+            ReadFilter.SelectedItem is ComboBoxItem { Tag: string filter }
+            && !string.Equals(filter, Model.Filter, StringComparison.Ordinal)
+        )
             await Model.SetFilterAsync(filter);
     }
 

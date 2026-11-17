@@ -14,7 +14,7 @@ public static class DesktopPages
     )
     {
         registration.Pages.Add(new(id, title));
-        registration.Services.AddKeyedSingleton<Control>((registration.Id, id), (services, _) => create(services));
+        registration.Services.AddKeyedTransient<Control>((registration.Id, id), (services, _) => create(services));
     }
 
     public static Control Resolve(IServiceProvider services, string plugin, string page) =>

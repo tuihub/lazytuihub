@@ -8,20 +8,28 @@ namespace LazyTuiHub.Desktop;
 public sealed partial class WorkflowPage : UserControl
 {
     private readonly WorkflowRuntime workflows;
+    private readonly WorkflowPageState state;
 
-    public WorkflowPage(WorkflowRuntime workflows)
+    public WorkflowPage(WorkflowRuntime workflows, WorkflowPageState state)
     {
         this.workflows = workflows;
+        this.state = state;
         InitializeComponent();
-        Definitions.ItemsSource = workflows.List();
+        var definitions = workflows.List();
+        Definitions.ItemsSource = definitions;
         PlanStatus.Text = "No saved workflows.";
-        Definitions.SelectedIndex = 0;
+        Definitions.SelectedItem = definitions.FirstOrDefault(item =>
+            string.Equals(item.Name, state.Selected, StringComparison.Ordinal)
+        ) ?? (definitions.Count == 0 ? null : definitions[0]);
+        PlanTabs.SelectedIndex = state.Tab;
+        PlanTabs.SelectionChanged += (_, _) => state.Tab = PlanTabs.SelectedIndex;
     }
 
     private void SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (Definitions.SelectedItem is not PipelineDefinition definition)
             return;
+        state.Selected = definition.Name;
         var description = workflows.Describe(definition);
         Definition.Text = JsonSerializer.Serialize(definition, PipelineStore.JsonOptions);
         PlanStatus.Text = description.Executable ? "Ready to execute locally" : "Cannot execute";

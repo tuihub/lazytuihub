@@ -6,21 +6,49 @@
     Title="LazyTuiHub"
     Width="1180"
     Height="800"
+    Background="{DynamicResource PageBackground}"
 >
-    <Grid RowDefinitions="Auto,*" Margin="20">
+    <Grid RowDefinitions="Auto,Auto,*" Margin="{DynamicResource PagePadding}">
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
             <StackPanel Spacing="4">
                 <TextBlock Text="LazyTuiHub" Classes="title" />
                 <TextBlock Text="Your library and workflows" Classes="caption" />
             </StackPanel>
-            <Button
+            <StackPanel
                 Grid.Column="1"
-                Content="Light / dark"
-                Click="ThemeClick"
+                Orientation="Horizontal"
+                Spacing="12"
                 VerticalAlignment="Center"
-            />
+            >
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Design" Classes="caption" />
+                    <ComboBox
+                        x:Name="DesignPicker"
+                        AutomationProperties.Name="Design system"
+                        SelectionChanged="AppearanceChanged"
+                    >
+                        <ComboBoxItem Content="Automatic" />
+                        <ComboBoxItem Content="Fluent" />
+                        <ComboBoxItem Content="macOS" />
+                        <ComboBoxItem Content="Material" />
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Appearance" Classes="caption" />
+                    <ComboBox
+                        x:Name="ColorPicker"
+                        AutomationProperties.Name="Color mode"
+                        SelectionChanged="AppearanceChanged"
+                    >
+                        <ComboBoxItem Content="System" />
+                        <ComboBoxItem Content="Light" />
+                        <ComboBoxItem Content="Dark" />
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
         </Grid>
-        <TabControl x:Name="Pages" Grid.Row="1">
+        <TextBlock x:Name="AppearanceStatus" Grid.Row="1" TextWrapping="Wrap" />
+        <TabControl x:Name="Pages" Grid.Row="2">
             <TabControl.ItemTemplate>
                 <DataTemplate x:DataType="local:NavigationPage">
                     <TextBlock Text="{Binding Title}" />

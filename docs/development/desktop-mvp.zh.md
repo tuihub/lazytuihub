@@ -17,7 +17,17 @@ mise run run:desktop -- --database /path/to/workspace.db
 
 Workflows 展示已保存的定义、当前本地执行计划和不可执行原因。目前是只读检查器。保存和运行工作流定义使用既有 JSON／CLI 工具；该页面不提交执行或收集所需输入。
 
-Plugins 分别展示已保存的启用设置、本次启动的激活状态和文件可用性。启用／关闭在重启后生效，必要插件不能关闭。RSS Reader UI 插件（`rss.desktop`）可独立于 RSS 业务服务（`rss`）关闭；关闭 RSS 后，依赖它的界面也不可用。插件缺失或关闭时保留页面声明和既有数据；常规保留策略继续遵循存储约定。切换标签页会保留页面实例及内存中的选择，重启不会保留选择、筛选条件和临时主题设置。
+Plugins 分别展示已保存的启用设置、本次启动的激活状态和文件可用性。启用／关闭在重启后生效，必要插件不能关闭。RSS Reader UI 插件（`rss.desktop`）可独立于 RSS 业务服务（`rss`）关闭；关闭 RSS 后，依赖它的界面也不可用。插件缺失或关闭时保留页面声明和既有数据；常规保留策略继续遵循存储约定。切换标签页会保留页面实例及内存中的选择，重启不会保留选择和筛选条件，外观偏好则单独保存在本机。
+
+## 外观
+
+在顶部 Design 中选择 Automatic、Fluent、macOS 或 Material。Automatic 按平台选择：macOS 使用 macOS 主题，Windows／Linux 使用 Fluent，未来 Android 的映射为 Material。Appearance 单独选择 System、Light 或 Dark。设置保存在本地应用数据目录下的 `LazyTuiHub/desktop.json`，切换工作区或重启后仍然保留。独立运行时，除了指定数据库路径，还可通过 `--desktop-settings /path/to/desktop.json` 指定独立的外观配置。
+
+切换设计系统会重建窗口，保留当前页面、阅读选择／筛选、已加载文章、未提交的订阅输入和正在进行的操作。只切换明暗则直接更新原控件。重建时滚动位置、焦点和文本选择可能重置。后台任务继续运行，插件开关仍需冷启动才能生效。
+
+宿主同时只加载一套基础主题，并提供 `PageBackground`、`SecondaryText`、`PagePadding` 和 `PageTitleSize` 资源。共用样式类包括 `title`、`caption`、`status` 和 `primary`。插件页面使用标准 Avalonia 控件，通过动态资源引用外观相关值。`AddDesktopPage` 注册瞬态视图工厂；需要跨设计切换保留的状态放入插件自己的服务／模型。数据按模型初始化一次，避免每次加载视图都重新读取。外壳在当前窗口内缓存视图，切换设计不重新加载插件程序集。
+
+Fluent 使用 Avalonia 官方主题；macOS 使用 Devolutions 主题，尚未覆盖的控件回退到其内置 Fluent 样式；Material 使用 Material.Avalonia。原生标题栏继续遵循操作系统。主题选择不代表已完成全部原生交互、完整 Material 3 规范或 Android 支持。
 
 ## 装配与生命周期
 
@@ -32,7 +42,7 @@ Plugins 分别展示已保存的启用设置、本次启动的激活状态和文
 
 阅读操作将服务工作移出 UI 线程，同一页面内串行执行。错误保留在界面上，不转换为空的成功结果。关闭主窗口时取消并等待受跟踪的界面操作，再停止后台任务，最后释放服务。取消不回滚已经提交的数据库变更，也不提供工作流的持久化暂停。
 
-产品使用 Avalonia 12.1.6、Fluent 样式、编译式 XAML 绑定、可换行操作栏和列表虚拟化。各操作系统的设计体系、更完善的响应式布局、远程服务端选择、可视化工作流编辑器、HTML 渲染以及 Android／旧 Windows 支持仍待后续推进。选型记录在 proposed 状态的 [UI Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.zh.md) 中；[比较原型](ui-comparison.zh.md) 继续作为独立开发产物保留。
+产品使用 Avalonia 12.1.6、三套设计系统、编译式 XAML 绑定、可换行操作栏和列表虚拟化。更完善的响应式布局、远程服务端选择、可视化工作流编辑器、HTML 渲染以及 Android／旧 Windows 支持仍待后续推进。选型记录在 proposed 状态的 [UI Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.zh.md) 中；[比较原型](ui-comparison.zh.md) 继续作为独立开发产物保留。
 
 ## 验证
 

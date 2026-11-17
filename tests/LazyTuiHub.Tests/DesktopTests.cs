@@ -1,6 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Media;
+using Avalonia.Styling;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using LazyTuiHub.Api;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Plugins;
@@ -55,9 +59,7 @@ public sealed class DesktopTests
                         Assert.Null(host.Services.GetService<IServer>());
                         var window = new ShellWindow(host);
                         window.Show();
-                        var page = Assert.IsType<ReaderPage>(
-                            DesktopPages.Resolve(host.Services, "rss.desktop", "reader")
-                        );
+                        var page = window.GetVisualDescendants().OfType<ReaderPage>().Single();
                         await WaitIdleAsync(page.Model, token);
                         Assert.Equal(3, window.Navigation.Count);
                         page.Model.FeedUri = fixture.Urls.Single() + "/feed";
@@ -86,13 +88,18 @@ public sealed class DesktopTests
                         var tabs = window.FindControl<TabControl>("Pages")!;
                         tabs.SelectedIndex = 1;
                         tabs.SelectedIndex = 0;
-                        Assert.Same(page, DesktopPages.Resolve(host.Services, "rss.desktop", "reader"));
+                        Assert.Same(page, window.GetVisualDescendants().OfType<ReaderPage>().Single());
+                        window = await SwitchDesignsAsync(host, window, token);
                         host.Services.GetRequiredService<PluginRuntime>().SetEnabled("rss.desktop", false);
                         Assert.Equal(3, window.Navigation.Count);
                         await CloseAsync(window, token);
                     }
                     using (var disabled = CreateHost(workspace))
                     {
+                        Assert.Equal(
+                            new(DesignSystem.Material, ColorMode.Dark),
+                            disabled.Services.GetRequiredService<DesktopAppearance>().Preferences
+                        );
                         var plugins = disabled.Services.GetRequiredService<PluginRuntime>();
                         var record = plugins.List().Single(plugin => plugin.Saved.Spec.Id == "rss.desktop");
                         Assert.Equal("disabled", record.Activation);
@@ -159,6 +166,115 @@ public sealed class DesktopTests
     }
 
     [Fact]
+    public void InvalidAppearanceSettingsRemainVisibleAndSaveErrorsAreReported()
+    {
+        using var workspace = new PluginWorkspace();
+        var filename = workspace.Database + ".desktop.json";
+        File.WriteAllText(filename, "{ broken json");
+        using var host = CreateHost(workspace);
+        var appearance = host.Services.GetRequiredService<DesktopAppearance>();
+        Assert.Equal(new(), appearance.Preferences);
+        Assert.Contains("Could not load", appearance.Status);
+        Assert.Equal("{ broken json", File.ReadAllText(filename));
+        var settings = new AppearanceSettings(filename);
+        settings.Save(new(DesignSystem.Material, ColorMode.Dark));
+        Assert.Equal(new(DesignSystem.Material, ColorMode.Dark), settings.Load());
+        Assert.Throws<IOException>(() => new AppearanceSettings(workspace.Plugins).Save(new()));
+    }
+
+    private static async Task<ShellWindow> SwitchDesignsAsync(IHost host, ShellWindow window, CancellationToken token)
+    {
+        var initial = window.GetVisualDescendants().OfType<ReaderPage>().Single();
+        var model = initial.Model;
+        await model.SetFilterAsync("read = false");
+        model.SelectedArticle = model.Articles[^1];
+        var selected = model.SelectedArticle;
+        var filter = model.Filter;
+        var count = model.Articles.Count;
+        var session = host.Services.GetRequiredService<DesktopSession>();
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = session.RunAsync(stop => release.Task.WaitAsync(stop));
+        model.FeedUri = "https://example.com/draft.xml";
+        model.FeedTitle = "Unsubmitted subscription";
+        model.AddingSubscription = true;
+        foreach (
+            var design in new[]
+            {
+                DesignSystem.Material,
+                DesignSystem.MacOS,
+                DesignSystem.Fluent,
+                DesignSystem.Material,
+                DesignSystem.MacOS,
+            }
+        )
+        {
+            var previous = window;
+            window = window.ChangeAppearance(new(design, ColorMode.Light));
+            Assert.NotSame(previous, window);
+            Assert.False(previous.IsVisible);
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background, token);
+            window.UpdateLayout();
+            var page = window.GetVisualDescendants().OfType<ReaderPage>().Single();
+            Assert.NotSame(initial, page);
+            Assert.Same(model, page.Model);
+            Assert.Same(selected, model.SelectedArticle);
+            Assert.Equal(count, model.Articles.Count);
+            Assert.Equal(
+                filter,
+                Assert.IsType<ComboBoxItem>(page.FindControl<ComboBox>("ReadFilter")!.SelectedItem).Tag
+            );
+            Assert.Equal(model.FeedUri, page.FindControl<TextBox>("FeedUriInput")!.Text);
+            Assert.True(page.GetVisualDescendants().OfType<Expander>().Single().IsExpanded);
+            Assert.NotNull(page.FindControl<ComboBox>("FeedPicker")!.Template);
+            Assert.False(session.IsStopping);
+            Assert.False(pending.IsCompleted);
+            var light = Assert.IsAssignableFrom<ISolidColorBrush>(window.Background).Color;
+            Assert.Same(window, window.ChangeAppearance(new(design, ColorMode.Dark)));
+            Assert.Equal(ThemeVariant.Dark, Application.Current!.ActualThemeVariant);
+            Assert.NotEqual(light, Assert.IsAssignableFrom<ISolidColorBrush>(window.Background).Color);
+            Assert.Same(window, window.ChangeAppearance(new(design, ColorMode.System)));
+            Assert.Equal(ThemeVariant.Default, Application.Current.RequestedThemeVariant);
+        }
+        release.SetResult();
+        await pending;
+        var tabs = window.FindControl<TabControl>("Pages")!;
+        tabs.SelectedIndex = 1;
+        var workflow = window.GetVisualDescendants().OfType<WorkflowPage>().Single();
+        workflow.FindControl<TabControl>("PlanTabs")!.SelectedIndex = 1;
+        window = window.ChangeAppearance(new(DesignSystem.Fluent, ColorMode.Light));
+        Assert.Equal(1, window.FindControl<TabControl>("Pages")!.SelectedIndex);
+        Assert.Equal(
+            1,
+            window
+                .GetVisualDescendants()
+                .OfType<WorkflowPage>()
+                .Single()
+                .FindControl<TabControl>("PlanTabs")!
+                .SelectedIndex
+        );
+        window.FindControl<TabControl>("Pages")!.SelectedIndex = 2;
+        var plugins = window.GetVisualDescendants().OfType<PluginsPage>().Single();
+        plugins.FindControl<ListBox>("Plugins")!.SelectedIndex = 1;
+        var pluginId = host.Services.GetRequiredService<PluginsPageState>().Selected;
+        window = window.ChangeAppearance(new(DesignSystem.Material, ColorMode.Dark));
+        Assert.Equal(2, window.FindControl<TabControl>("Pages")!.SelectedIndex);
+        Assert.Equal(
+            pluginId,
+            Assert
+                .IsType<PluginView>(
+                    window
+                        .GetVisualDescendants()
+                        .OfType<PluginsPage>()
+                        .Single()
+                        .FindControl<ListBox>("Plugins")!
+                        .SelectedItem
+                )
+                .Saved.Spec.Id
+        );
+        return window;
+    }
+
+    [Fact]
     public async Task DesktopHostStopsBackgroundTasksWithoutStartingAnHttpServer()
     {
         using var workspace = new PluginWorkspace();
@@ -196,6 +312,8 @@ public sealed class DesktopTests
         ApplicationHost.CreateDesktop([
             "--database",
             workspace.Database,
+            "--desktop-settings",
+            workspace.Database + ".desktop.json",
             "--plugin-directory",
             workspace.Plugins,
             "--demo",

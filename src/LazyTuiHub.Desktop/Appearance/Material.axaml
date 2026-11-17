@@ -1,0 +1,23 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:material="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+>
+    <Styles.Resources>
+        <ResourceDictionary>
+            <Thickness x:Key="PagePadding">24</Thickness>
+            <x:Double x:Key="PageTitleSize">24</x:Double>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PageBackground">#FAFAFA</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryText">#616161</SolidColorBrush>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="PageBackground">#303030</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryText">#BDBDBD</SolidColorBrush>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+    <material:MaterialTheme BaseTheme="Light" PrimaryColor="Indigo" SecondaryColor="Teal" />
+</Styles>

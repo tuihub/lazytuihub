@@ -55,6 +55,19 @@ public static class ApplicationHost
         try
         {
             builder.Services.AddSingleton<DesktopSession>();
+            builder.Services.AddSingleton(
+                new AppearanceSettings(
+                    builder.Configuration["desktop-settings"]
+                        ?? Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "LazyTuiHub",
+                            "desktop.json"
+                        )
+                )
+            );
+            builder.Services.AddSingleton<DesktopAppearance>();
+            builder.Services.AddSingleton<WorkflowPageState>();
+            builder.Services.AddSingleton<PluginsPageState>();
             if (!builder.Configuration.GetValue<bool>("demo"))
                 builder.Services.AddHostedService<PluginTaskService>();
             host = builder.Build();

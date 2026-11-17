@@ -12,12 +12,14 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
     private const string AllFeeds = "feeds/-";
     private Article? selectedArticle;
     private string nextPage = string.Empty;
+    private bool initialized;
     public ObservableCollection<FeedChoice> Feeds { get; } = [];
     public ObservableCollection<Article> Articles { get; } = [];
     public FeedChoice? SelectedFeed { get; private set; }
     public string FeedUri { get; set; } = string.Empty;
     public string FeedTitle { get; set; } = string.Empty;
     public string Filter { get; private set; } = string.Empty;
+    public bool AddingSubscription { get; set; }
     public bool HasMore => !string.IsNullOrEmpty(nextPage);
     public bool CanRefresh => SelectedFeed is { Name: not AllFeeds };
     public bool CanMarkRead => SelectedArticle is { Read: false };
@@ -29,6 +31,14 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
             selectedArticle = value;
             Changed();
         }
+    }
+
+    public Task InitializeAsync()
+    {
+        if (initialized)
+            return Task.CompletedTask;
+        initialized = true;
+        return LoadAsync();
     }
 
     public Task LoadAsync() =>

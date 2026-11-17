@@ -9,7 +9,11 @@
     <Grid RowDefinitions="Auto,*,Auto" Margin="0,16,0,0">
         <StackPanel Spacing="12" IsEnabled="{Binding Idle}">
             <TextBlock Text="Reader" Classes="title" />
-            <Expander Header="Add subscription" HorizontalAlignment="Stretch">
+            <Expander
+                Header="Add subscription"
+                HorizontalAlignment="Stretch"
+                IsExpanded="{Binding AddingSubscription, Mode=TwoWay}"
+            >
                 <Grid ColumnDefinitions="2*,*,Auto">
                     <TextBox
                         x:Name="FeedUriInput"
@@ -23,7 +27,12 @@
                         PlaceholderText="Name (optional)"
                         Margin="0,0,8,8"
                     />
-                    <Button Grid.Column="2" Content="Subscribe" Click="SubscribeClick" />
+                    <Button
+                        Grid.Column="2"
+                        Classes="primary"
+                        Content="Subscribe"
+                        Click="SubscribeClick"
+                    />
                 </Grid>
             </Expander>
             <WrapPanel>
@@ -44,7 +53,8 @@
                 </ComboBox>
                 <ComboBox
                     x:Name="ReadFilter"
-                    SelectedIndex="0"
+                    SelectedValue="{Binding Filter, Mode=OneWay}"
+                    SelectedValueBinding="{Binding Tag, DataType=ComboBoxItem}"
                     SelectionChanged="FilterChanged"
                     Margin="0,0,8,8"
                 >

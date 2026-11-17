@@ -8,15 +8,17 @@ namespace LazyTuiHub.Desktop;
 public sealed partial class PluginsPage : UserControl
 {
     private readonly PluginRuntime runtime;
+    private readonly PluginsPageState state;
     private readonly ILogger<PluginsPage> logger;
 
-    public PluginsPage(PluginRuntime runtime, ILogger<PluginsPage> logger)
+    public PluginsPage(PluginRuntime runtime, PluginsPageState state, ILogger<PluginsPage> logger)
     {
         this.runtime = runtime;
+        this.state = state;
         this.logger = logger;
         InitializeComponent();
-        Reload();
-        Status.Text = runtime.DiscoveryError;
+        Reload(state.Selected);
+        Status.Text = state.Status ?? runtime.DiscoveryError;
     }
 
     private void Reload(string? selected = null)
@@ -32,6 +34,7 @@ public sealed partial class PluginsPage : UserControl
     {
         if (Plugins.SelectedItem is not PluginView plugin)
             return;
+        state.Selected = plugin.Saved.Spec.Id;
         Toggle.IsEnabled = !plugin.Saved.Spec.Required;
         var action = plugin.Saved.Enabled ? "Disable after restart" : "Enable after restart";
         Toggle.Content = plugin.Saved.Spec.Required ? "Required plugin" : action;
@@ -50,11 +53,11 @@ public sealed partial class PluginsPage : UserControl
         {
             runtime.SetEnabled(plugin.Saved.Spec.Id, !plugin.Saved.Enabled);
             Reload(plugin.Saved.Spec.Id);
-            Status.Text = "Saved. Restart the application to apply this change.";
+            Status.Text = state.Status = "Saved. Restart the application to apply this change.";
         }
         catch (Exception error)
         {
-            Status.Text = error.GetBaseException().Message;
+            Status.Text = state.Status = error.GetBaseException().Message;
             LogSaveFailure(logger, error);
         }
     }
