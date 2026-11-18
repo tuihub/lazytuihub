@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -123,20 +124,21 @@ internal sealed class DesktopUiDriver(Window window, CancellationToken token)
     private static object? DescribeTypography(Control control) =>
         control switch
         {
-            TextBlock text => new
-            {
-                Family = text.FontFamily.ToString(),
-                text.FontSize,
-                Weight = text.FontWeight.ToString(),
-                Foreground = text.Foreground?.ToString(),
-            },
-            TemplatedControl templated => new
-            {
-                Family = templated.FontFamily.ToString(),
-                templated.FontSize,
-                Weight = templated.FontWeight.ToString(),
-                Foreground = templated.Foreground?.ToString(),
-            },
+            TextBlock text => DescribeFont(text.FontFamily, text.FontSize, text.FontWeight, text.Foreground),
+            TemplatedControl item => DescribeFont(item.FontFamily, item.FontSize, item.FontWeight, item.Foreground),
             _ => null,
         };
+
+    private static object DescribeFont(FontFamily family, double fontSize, FontWeight weight, IBrush? foreground)
+    {
+        FontManager.Current.TryGetGlyphTypeface(new Typeface(family, weight: weight), out var face);
+        return new
+        {
+            Family = family.ToString(),
+            ResolvedFamily = face?.FamilyName,
+            FontSize = fontSize,
+            Weight = weight.ToString(),
+            Foreground = foreground?.ToString(),
+        };
+    }
 }

@@ -8,7 +8,7 @@ category: architecture
 
 ## 范围与决策
 
-2026-11-18，用户在源码／生态调查和原生原型比较后，确定使用 Avalonia 作为产品 UI 框架。后续产品 UI 按 Avalonia 推进，Uno 仅保留在比较原型中。该 Note 根据 [MVP 约定](../../AGENTS.md) 保持 proposed，以便所有 MVP Note 在合入主分支前自由编辑；这一生命周期状态不表示框架选择尚未确定。
+2026-11-18，用户在源码／生态调查和原生原型比较后，确定使用 Avalonia 作为产品 UI 框架。后续产品 UI 按 Avalonia 推进，Uno 仅保留在比较原型中。该 Note 根据 [MVP 约定](../../AGENTS.md) 保持 proposed，以便所有 MVP Note 在合入主分支前自由编辑；Avalonia 是当前实现选择，仍可按该约定替换；此前选型和现有代码都不约束最终 MVP。
 
 比较已验证下一轮需要的阅读器、流式工作流画布交互和 DLL 视图机制。Avalonia 在 macOS 上观察到的输入、可访问性树保留和原生菜单表现支持本次选择。Uno 的未决现象仍限定于当前原型与工具；采用 Avalonia 无需先证明这些现象属于框架缺陷。
 
@@ -56,7 +56,7 @@ Workflows 展示已保存的定义、当前执行计划和节点不可用的原�
 
 ## 多设计系统
 
-本轮接入 Avalonia.Themes.Fluent、Devolutions.AvaloniaTheme.MacOS 和 Material.Avalonia，具体包版本只在桌面项目中声明。标准 Avalonia 控件共用当前主题，不要求引入 FluentAvalonia 专有控件，也不为每个控件添加统一包装层。导航或对话框的交互确有差异时，再引入专门适配。业务插件不替换应用级主题。
+宿主将项目维护的组件角色与 Avalonia Fluent、Devolutions macOS、CCSWE Material 结合。插件视图在标准 Avalonia 控件上使用这些角色。
 
 设计系统（Automatic、Fluent、macOS、Material）与明暗模式（System、Light、Dark）分别设置。Automatic 在 macOS 上选择 macOS，在 Android 上选择 Material，其余平台选择 Fluent；该映射不代表已实现 Android 宿主。桌面允许显式选择设计系统。明暗模式使用 RequestedThemeVariant。桌面宿主管理可替换的主题位置，以及页面背景、次要文字、页面边距和标题大小等语义资源，插件局部样式单独保留。
 
@@ -64,7 +64,7 @@ Workflows 展示已保存的定义、当前执行计划和节点不可用的原�
 
 偏好属于本机 UI 配置，保存在本地应用数据目录的 `LazyTuiHub/desktop.json`，独立于工作区数据库。独立运行可通过 `--desktop-settings` 指定其他文件。写入通过相邻临时文件和重命名完成。读取失败时使用默认外观并显示错误，不覆盖失败文件；保存或应用失败也在界面中报告。探索性 MVP 不引入偏好格式版本或历史迁移。
 
-适配层使用已发布的 Avalonia 12 包。Devolutions 的 macOS 主题仍处于开发中，未覆盖控件使用内置 Fluent 样式补齐；Material.Avalonia 不代表完整遵循 Material 3。移除 Material 主题时释放它；其适配层先初始化具体明暗变体，再启用继承，避免挂接前的资源查询遇到未初始化的 Inherit 值。macOS 适配层调用库提供的清理接口，移除应用级 Liquid Glass 色调资源。参见 [Devolutions 实现](https://github.com/Devolutions/avalonia-extensions/blob/7ef3ab09b1696938009c7923efda44490a848445/src/Devolutions.AvaloniaTheme.MacOS/DevolutionsMacOsTheme.cs)和 [Material 实现](https://github.com/AvaloniaCommunity/Material.Avalonia/blob/v3.21.0/Material.Styles/Themes/MaterialTheme.cs)。
+替换主题时，macOS 适配层清除应用级壁纸色调资源。CCSWE 随 Avalonia 的明暗变体切换。
 
 无窗口集成检查覆盖反复切换设计系统、独立明暗模式、草稿／筛选／选择保留、进行中的操作、检查器导航、偏好恢复和配置错误展示。macOS 原生检查另确认了不同控件绘制、选择器、中文草稿保留、当前导航保留、浅色模式及重新打开后的偏好恢复。其他操作系统和完整辅助技术行为尚未验证。
 
@@ -80,9 +80,9 @@ Workflows 展示已保存的定义、当前执行计划和节点不可用的原�
 
 场景覆盖订阅输入、抓取、阅读、已读状态、窄屏返回／焦点、检查器导航、三种设计的宽／中／窄尺寸以及深色模式。弹层通过打开状态和自己的视觉根节点观察，再通过键盘操作、单独截图。computer use 捕获遗漏属于工具观察，不能单凭它判定界面失败或替换交互。无窗口图像不替代对原生字体、窗口外观、无障碍、弹层位置和图形性能的验证。Android 和旧 Windows 不在本轮范围内。
 
-## 后续视觉校准
+## 设计系统审查
 
-用户指出当前三套适配层均存在视觉问题。本轮交付响应式内容组织和程序化 UI 检查，交互／布局测试通过不代表视觉准确。官方设计文档、组件参考的对比及对应的 Avalonia 修正留到下一轮，样板准备与本轮产品变更分开。Fluent Web 不能等同于 WinUI；Material 3 参考不能证明 Material.Avalonia 已符合该规范；macOS 原生样板也需要保留操作系统范围。
+[设计系统 Note](2026-11-18-mvp-design-systems.zh.md) 记录五套库的比较、产品实现和验证结果。
 
 ## 产品验证与剩余工作
 

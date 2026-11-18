@@ -27,7 +27,7 @@
                 <TextBlock
                     Grid.Column="1"
                     Text="LazyTuiHub"
-                    FontWeight="SemiBold"
+                    Classes="item-title"
                     VerticalAlignment="Center"
                 />
             </Grid>
@@ -43,7 +43,7 @@
             <SplitView.Pane>
                 <Grid RowDefinitions="Auto,*,Auto" Margin="12,24,12,16">
                     <StackPanel Margin="12,0,0,32" Spacing="4">
-                        <TextBlock Text="LazyTuiHub" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="LazyTuiHub" Classes="section" />
                     </StackPanel>
                     <ListBox
                         x:Name="Pages"
@@ -70,11 +70,7 @@
                             <Button.Flyout>
                                 <Flyout Placement="RightEdgeAlignedBottom">
                                     <StackPanel Spacing="12" Width="240" Margin="8">
-                                        <TextBlock
-                                            Text="Appearance"
-                                            FontSize="18"
-                                            FontWeight="SemiBold"
-                                        />
+                                        <TextBlock Text="Appearance" Classes="section" />
                                         <TextBlock Text="Design system" Classes="caption" />
                                         <ComboBox
                                             x:Name="DesignPicker"

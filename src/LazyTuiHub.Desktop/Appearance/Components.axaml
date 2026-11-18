@@ -1,0 +1,131 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+>
+    <Styles.Resources>
+        <ControlTheme x:Key="CollectionRow" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="{DynamicResource RowPadding}" />
+            <Setter Property="Margin" Value="{DynamicResource RowMargin}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RowRadius}" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                        >
+                            <ContentPresenter
+                                Name="PART_ContentPresenter"
+                                Margin="{TemplateBinding Padding}"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            />
+                        </Border>
+                        <Border
+                            Name="Indicator"
+                            Background="{DynamicResource AccentBrush}"
+                            IsVisible="False"
+                            Width="{DynamicResource SelectionBarWidth}"
+                            Height="16"
+                            CornerRadius="2"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False"
+                        />
+                        <Border
+                            Name="FocusRing"
+                            BorderBrush="{DynamicResource AccentBrush}"
+                            BorderThickness="2"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            IsVisible="False"
+                            IsHitTestVisible="False"
+                        />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+            <Style Selector="^:pointerover">
+                <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+            </Style>
+            <Style Selector="^:selected">
+                <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource SelectedText}" />
+            </Style>
+            <Style Selector="^:selected /template/ Border#Indicator">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#FocusRing">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Opacity" Value="0.5" />
+            </Style>
+        </ControlTheme>
+        <ControlTheme
+            x:Key="NavigationRow"
+            TargetType="ListBoxItem"
+            BasedOn="{StaticResource CollectionRow}"
+        >
+            <Setter Property="Padding" Value="{DynamicResource NavigationPadding}" />
+            <Setter Property="Margin" Value="{DynamicResource NavigationMargin}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource NavigationRadius}" />
+        </ControlTheme>
+    </Styles.Resources>
+    <Style Selector="ListBox.collection">
+        <Setter Property="ItemContainerTheme" Value="{StaticResource CollectionRow}" />
+    </Style>
+    <Style Selector="ListBox.navigation">
+        <Setter Property="ItemContainerTheme" Value="{StaticResource NavigationRow}" />
+    </Style>
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+    </Style>
+    <Style Selector=":is(TextBlock).title">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource PageTitleSize}" />
+        <Setter Property="FontWeight" Value="{DynamicResource PageTitleWeight}" />
+    </Style>
+    <Style Selector=":is(TextBlock).headline">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource HeadlineSize}" />
+        <Setter Property="FontWeight" Value="{DynamicResource HeadlineWeight}" />
+    </Style>
+    <Style Selector=":is(TextBlock).section">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource SectionSize}" />
+        <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" />
+    </Style>
+    <Style Selector=":is(TextBlock).item-title">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource ItemTitleSize}" />
+        <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" />
+    </Style>
+    <Style Selector=":is(TextBlock).label">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource MetadataSize}" />
+        <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" />
+    </Style>
+    <Style Selector=":is(TextBlock).caption">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource CaptionSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector=":is(TextBlock).metadata">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource MetadataSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector=":is(TextBlock).reading">
+        <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+        <Setter Property="FontSize" Value="{DynamicResource ReadingSize}" />
+        <Setter Property="LineHeight" Value="{DynamicResource ReadingLineHeight}" />
+    </Style>
+</Styles>

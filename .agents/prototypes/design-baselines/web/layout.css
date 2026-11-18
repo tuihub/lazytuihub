@@ -1,0 +1,20 @@
+/* Specimen arrangement only. Component geometry, type and state styling belong to their libraries. */
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2, p { margin: 0; }
+.specimen { padding: 32px; min-height: 100vh; }
+.heading { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.reader { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px; }
+.stack { display: flex; flex-direction: column; gap: 20px; }
+.row { display: flex; align-items: center; gap: 16px; }
+.spread { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+.align-start { align-items: flex-start; }
+.popup { min-width: 280px; }
+.material { background: var(--md-sys-color-background); color: var(--md-sys-color-on-background); }
+.material main { max-width: 960px; }
+.material [data-measure="caption"] { color: var(--md-sys-color-on-surface-variant); }
+@media (max-width: 700px) {
+  .specimen { padding: 20px; }
+  .reader { grid-template-columns: 1fr; gap: 24px; }
+}

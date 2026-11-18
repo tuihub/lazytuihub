@@ -25,9 +25,9 @@ Plugins 分别展示已保存的启用设置、本次启动的激活状态和文
 
 切换设计系统会重建窗口，保留当前页面、阅读选择／筛选、已加载文章、未提交的订阅输入和正在进行的操作。只切换明暗则直接更新原控件。重建时滚动位置、焦点和文本选择可能重置。后台任务继续运行，插件开关仍需冷启动才能生效。
 
-宿主同时只加载一套基础主题，并提供 `PageBackground`、`SurfaceBrush`、`DividerBrush`、`PrimaryText`、`SecondaryText`、`AccentBrush`、`HoverBrush`、`SelectionBrush`、`PagePadding` 和 `PageTitleSize` 资源。共用样式类包括 `title`、`caption`、`status`、`primary` 和 `quiet`。插件页面使用标准 Avalonia 控件，通过动态资源引用外观相关值。`AddDesktopPage` 注册瞬态视图工厂；需要跨设计切换保留的状态放入插件自己的服务／模型。数据按模型初始化一次，避免每次加载视图都重新读取。外壳在当前窗口内缓存视图，切换设计不重新加载插件程序集。
+插件页面使用标准 Avalonia 控件。主操作用 `accent`，次要操作用 `secondary`，文本按钮用 `quiet`，图标按钮用 `icon` 并设置无障碍名称。在 ListBox 上使用 `navigation` 或 `collection` 即可获得对应的选中与键盘焦点反馈。文字角色包括 `title`、`headline`、`section`、`item-title`、`reading`、`caption` 和 `metadata`。自定义布局通过动态资源获取 `SurfaceBrush`、`DividerBrush` 或 `SecondaryText`。其他标准控件继承当前基础主题。`AddDesktopPage` 注册瞬态视图工厂；需要跨设计切换保留的状态放入插件自己的服务／模型。数据按模型初始化一次，避免每次加载视图都重新读取。外壳在当前窗口内缓存视图，切换设计不重新加载插件程序集。
 
-Fluent 使用 Avalonia 官方主题；macOS 使用 Devolutions 主题，尚未覆盖的控件回退到其内置 Fluent 样式；Material 使用 Material.Avalonia。原生标题栏继续遵循操作系统。主题选择不代表已完成全部原生交互、完整 Material 3 规范或 Android 支持。
+Fluent 使用 Avalonia 官方主题；macOS 使用 Devolutions 主题，尚未覆盖的控件回退到其内置 Fluent 样式；Material 使用 CCSWE Material，并接入项目维护的 M3 色板、Roboto 字体和按钮模板。原生标题栏继续遵循操作系统。主题选择不代表已完成全部原生交互、完整 Material 3 规范或 Android 支持。
 
 ## 响应式内容组织
 
@@ -60,7 +60,7 @@ mise run test:desktop
 
 [DesktopUiDriver](../../tests/LazyTuiHub.Tests/DesktopUiDriver.cs) 向真实控件发送 Avalonia 无窗口鼠标和键盘输入，调整窗口尺寸，并捕获 Skia 绘制的画面。[布局场景](../../tests/LazyTuiHub.Tests/DesktopTests.Layout.cs) 创建临时 SQLite 工作区和本地 RSS 服务，通过表单输入订阅、抓取文章、进入详情、标记已读、返回并恢复焦点，再切换检查器页面。场景检查三套设计在 1280、820、390 个逻辑单位下的布局，以及外观弹层和深色模式。任务将 PNG 及同名 JSON 控件快照（边界、字体、前景色、启用／焦点状态）写入已忽略的 `artifacts/desktop/`；直接调用测试运行器时，可通过 `LAZYTUIHUB_UI_ARTIFACTS` 指定截图目录。常规产品测试也执行这些场景，但不写截图。
 
-外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。当前主题仍有视觉偏差，官方设计参考对比和相应修正留到下一轮。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
+外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。[设计系统审查](../../.agents/notes/2026-11-18-mvp-design-systems.zh.md) 记录组件库对照、产品组件的维护归属和平台边界。首次执行 `mise run setup:design-baselines`，用 `mise run render:design-baselines:avalonia` 生成组件库样板，再用 `mise run run:design-baselines` 对照官方交互参考。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
 
 
 `mise run check` 包含产品构建／分析器、格式、API 一致性、文档／Note 规则和产品测试。`mise run test` 通过 Avalonia 官方无窗口主机，连接实际动态装配的 RSS 服务和独立 SQLite 工作区，覆盖分页、已读状态持久化、输入错误、导航、界面插件关闭／缺失／恢复、业务依赖不可用、桌面不启动 HTTP 服务以及协作退出。视图通过构造函数注入依赖并使用编译式初始化；两个 UI 项目仅豁免 AVLN3001，它提示缺少无参构造函数导致未使用的 URI 构造方式不可用。

@@ -1,0 +1,103 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Desktop"
+>
+    <Styles.Resources>
+        <ControlTheme x:Key="MaterialAction" TargetType="Button">
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="24,0" />
+            <Setter Property="CornerRadius" Value="24" />
+            <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+            <Setter Property="ClipToBounds" Value="False" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                        />
+                        <Border
+                            Name="Hover"
+                            Background="{TemplateBinding Foreground}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0"
+                            IsHitTestVisible="False"
+                        />
+                        <Border
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            ClipToBounds="True"
+                            IsHitTestVisible="False"
+                        >
+                            <local:MaterialInk Pressed="{TemplateBinding IsPressed}" />
+                        </Border>
+                        <ContentPresenter
+                            Name="PART_ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            RecognizesAccessKey="True"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                        />
+                        <Border
+                            Name="FocusRing"
+                            BorderBrush="{DynamicResource Secondary}"
+                            BorderThickness="3"
+                            Margin="-5"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            IsHitTestVisible="False"
+                            IsVisible="False"
+                        />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^.accent">
+                <Setter Property="Background" Value="{DynamicResource Primary}" />
+                <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+            </Style>
+            <Style Selector="^.secondary">
+                <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+            <Style Selector="^.quiet">
+                <Setter Property="Padding" Value="12,0" />
+            </Style>
+            <Style Selector="^.icon">
+                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="Padding" Value="8" />
+                <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+            </Style>
+            <Style Selector="^:pointerover /template/ Border#Hover">
+                <Setter Property="Opacity" Value="0.08" />
+            </Style>
+            <Style Selector="^:pressed /template/ Border#Hover">
+                <Setter Property="Opacity" Value="0" />
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#FocusRing">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Foreground" Value="{DynamicResource OnSurface38}" />
+            </Style>
+            <Style Selector="^.accent:disabled">
+                <Setter Property="Background" Value="{DynamicResource OnSurface12}" />
+            </Style>
+            <Style Selector="^.secondary:disabled">
+                <Setter Property="BorderBrush" Value="{DynamicResource OnSurface12}" />
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+    <Style Selector="Button.accent, Button.secondary, Button.quiet, Button.icon">
+        <Setter Property="Theme" Value="{StaticResource MaterialAction}" />
+    </Style>
+</Styles>

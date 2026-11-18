@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace LazyTuiHub.Rss.Desktop;
 
@@ -52,12 +53,24 @@ public sealed partial class ReaderPage : UserControl
     private void AddFeedClick(object? sender, RoutedEventArgs e)
     {
         Model.AddingSubscription = true;
-        FeedUriInput.Focus();
+        Dispatcher.UIThread.Post(() => FeedUriInput.Focus(), DispatcherPriority.Loaded);
     }
 
-    private void CloseSubscriptionClick(object? sender, RoutedEventArgs e) => Model.AddingSubscription = false;
+    private void CloseSubscriptionClick(object? sender, RoutedEventArgs e)
+    {
+        Model.AddingSubscription = false;
+        FocusLibraryAction();
+    }
 
-    private async void SubscribeClick(object? sender, RoutedEventArgs e) => await Model.SubscribeAsync();
+    private async void SubscribeClick(object? sender, RoutedEventArgs e)
+    {
+        await Model.SubscribeAsync();
+        if (!Model.AddingSubscription)
+            FocusLibraryAction();
+    }
+
+    private void FocusLibraryAction() =>
+        Dispatcher.UIThread.Post(() => AddFeedButton.Focus(), DispatcherPriority.Loaded);
 
     private async void RefreshClick(object? sender, RoutedEventArgs e) =>
         await (Model.CanRefresh ? Model.RefreshAsync() : Model.LoadAsync());

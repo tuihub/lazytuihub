@@ -1,35 +1,143 @@
 <Styles
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:material="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+    xmlns:m3="using:CCSWE.Avalonia.Material"
 >
     <Styles.Resources>
         <ResourceDictionary>
-            <Thickness x:Key="PagePadding">24</Thickness>
-            <x:Double x:Key="PageTitleSize">24</x:Double>
+            <FontFamily x:Key="DesignFont">
+                avares://LazyTuiHub.Desktop/Appearance/Fonts#Roboto
+            </FontFamily>
+            <x:Double x:Key="PageTitleSize">22</x:Double>
+            <x:Double x:Key="HeadlineSize">28</x:Double>
+            <x:Double x:Key="SectionSize">18</x:Double>
+            <x:Double x:Key="ItemTitleSize">16</x:Double>
+            <x:Double x:Key="CaptionSize">14</x:Double>
+            <x:Double x:Key="MetadataSize">12</x:Double>
+            <x:Double x:Key="ReadingSize">16</x:Double>
+            <FontWeight x:Key="PageTitleWeight">Normal</FontWeight>
+            <FontWeight x:Key="HeadlineWeight">Normal</FontWeight>
+            <FontWeight x:Key="ItemTitleWeight">Medium</FontWeight>
+            <CornerRadius x:Key="NavigationRadius">28</CornerRadius>
+            <CornerRadius x:Key="RowRadius">12</CornerRadius>
+            <Thickness x:Key="NavigationPadding">20,12</Thickness>
+            <Thickness x:Key="RowPadding">16,12</Thickness>
+            <Thickness x:Key="NavigationMargin">0,2</Thickness>
+            <Thickness x:Key="RowMargin">8,2</Thickness>
+            <x:Double x:Key="SelectionBarWidth">0</x:Double>
+            <x:Double x:Key="ReadingLineHeight">24</x:Double>
+            <StaticResource x:Key="BodyFontFamily" ResourceKey="DesignFont" />
+            <StaticResource x:Key="BrandFontFamily" ResourceKey="DesignFont" />
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="PrimaryText">#242424</SolidColorBrush>
-                    <SolidColorBrush x:Key="AccentBrush">#6750A4</SolidColorBrush>
-                    <SolidColorBrush x:Key="HoverBrush">#EDEFF2</SolidColorBrush>
-                    <SolidColorBrush x:Key="SelectionBrush">#E4EAF6</SolidColorBrush>
-                    <SolidColorBrush x:Key="SurfaceBrush">#FFFFFF</SolidColorBrush>
-                    <SolidColorBrush x:Key="DividerBrush">#18000000</SolidColorBrush>
-                    <SolidColorBrush x:Key="PageBackground">#FAFAFA</SolidColorBrush>
-                    <SolidColorBrush x:Key="SecondaryText">#616161</SolidColorBrush>
+                    <SolidColorBrush x:Key="Primary">#6750A4</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnPrimary">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="PrimaryContainer">#E9DDFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnPrimaryContainer">#22005D</SolidColorBrush>
+                    <SolidColorBrush x:Key="Secondary">#625B71</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSecondary">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryContainer">#E8DEF8</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSecondaryContainer">#1E192B</SolidColorBrush>
+                    <SolidColorBrush x:Key="Tertiary">#7E5260</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnTertiary">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="TertiaryContainer">#FFD9E3</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnTertiaryContainer">#31101D</SolidColorBrush>
+                    <SolidColorBrush x:Key="Error">#BA1A1A</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnError">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="ErrorContainer">#FFDAD6</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnErrorContainer">#410002</SolidColorBrush>
+                    <SolidColorBrush x:Key="Background">#FFFBFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnBackground">#1C1B1E</SolidColorBrush>
+                    <SolidColorBrush x:Key="Surface">#FFFBFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSurface">#1C1B1E</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceVariant">#E7E0EB</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSurfaceVariant">#49454E</SolidColorBrush>
+                    <SolidColorBrush x:Key="Outline">#7A757F</SolidColorBrush>
+                    <SolidColorBrush x:Key="OutlineVariant">#CAC4CF</SolidColorBrush>
+                    <SolidColorBrush x:Key="Shadow">#000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="Scrim">#000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="InverseSurface">#313033</SolidColorBrush>
+                    <SolidColorBrush x:Key="InverseOnSurface">#F4EFF4</SolidColorBrush>
+                    <SolidColorBrush x:Key="InversePrimary">#CFBCFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerLowest">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerLow">#F7F2FA</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainer">#F2ECF4</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerHigh">#ECE6EE</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerHighest">#E6E0E9</SolidColorBrush>
+                    <StaticResource x:Key="PrimaryText" ResourceKey="OnSurface" />
+                    <StaticResource x:Key="SecondaryText" ResourceKey="OnSurfaceVariant" />
+                    <StaticResource x:Key="AccentBrush" ResourceKey="Primary" />
+                    <StaticResource x:Key="SurfaceBrush" ResourceKey="Surface" />
+                    <StaticResource x:Key="PageBackground" ResourceKey="SurfaceContainerLow" />
+                    <StaticResource x:Key="DividerBrush" ResourceKey="OutlineVariant" />
+                    <StaticResource x:Key="SelectionBrush" ResourceKey="SecondaryContainer" />
+                    <StaticResource x:Key="SelectedText" ResourceKey="OnSecondaryContainer" />
+                    <StaticResource x:Key="PrimaryFill" ResourceKey="Primary" />
+                    <StaticResource x:Key="OnPrimaryFill" ResourceKey="OnPrimary" />
+                    <StaticResource x:Key="Accent" ResourceKey="Primary" />
+                    <StaticResource x:Key="SurfaceTint" ResourceKey="Primary" />
+                    <StaticResource x:Key="OnSurfaceMuted" ResourceKey="OnSurfaceVariant" />
+                    <StaticResource x:Key="OnSurfaceStrong" ResourceKey="OnSurface" />
+                    <SolidColorBrush x:Key="HoverBrush" Color="#1C1B1E" Opacity="0.08" />
+                    <SolidColorBrush x:Key="OnSurface12" Color="#1C1B1E" Opacity="0.12" />
+                    <SolidColorBrush x:Key="OnSurface38" Color="#1C1B1E" Opacity="0.38" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="PrimaryText">#EAEAEA</SolidColorBrush>
-                    <SolidColorBrush x:Key="AccentBrush">#A8C6FF</SolidColorBrush>
-                    <SolidColorBrush x:Key="HoverBrush">#35383E</SolidColorBrush>
-                    <SolidColorBrush x:Key="SelectionBrush">#343F55</SolidColorBrush>
-                    <SolidColorBrush x:Key="SurfaceBrush">#292929</SolidColorBrush>
-                    <SolidColorBrush x:Key="DividerBrush">#20FFFFFF</SolidColorBrush>
-                    <SolidColorBrush x:Key="PageBackground">#303030</SolidColorBrush>
-                    <SolidColorBrush x:Key="SecondaryText">#BDBDBD</SolidColorBrush>
+                    <SolidColorBrush x:Key="Primary">#CFBCFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnPrimary">#381E72</SolidColorBrush>
+                    <SolidColorBrush x:Key="PrimaryContainer">#4F378A</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnPrimaryContainer">#E9DDFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="Secondary">#CBC2DB</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSecondary">#332D41</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryContainer">#4A4458</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSecondaryContainer">#E8DEF8</SolidColorBrush>
+                    <SolidColorBrush x:Key="Tertiary">#EFB8C8</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnTertiary">#4A2532</SolidColorBrush>
+                    <SolidColorBrush x:Key="TertiaryContainer">#633B48</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnTertiaryContainer">#FFD9E3</SolidColorBrush>
+                    <SolidColorBrush x:Key="Error">#FFB4AB</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnError">#690005</SolidColorBrush>
+                    <SolidColorBrush x:Key="ErrorContainer">#93000A</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnErrorContainer">#FFB4AB</SolidColorBrush>
+                    <SolidColorBrush x:Key="Background">#1C1B1E</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnBackground">#E6E1E6</SolidColorBrush>
+                    <SolidColorBrush x:Key="Surface">#1C1B1E</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSurface">#E6E1E6</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceVariant">#49454E</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnSurfaceVariant">#CAC4CF</SolidColorBrush>
+                    <SolidColorBrush x:Key="Outline">#948F99</SolidColorBrush>
+                    <SolidColorBrush x:Key="OutlineVariant">#49454E</SolidColorBrush>
+                    <SolidColorBrush x:Key="Shadow">#000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="Scrim">#000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="InverseSurface">#E6E1E6</SolidColorBrush>
+                    <SolidColorBrush x:Key="InverseOnSurface">#313033</SolidColorBrush>
+                    <SolidColorBrush x:Key="InversePrimary">#6750A4</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerLowest">#100F13</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerLow">#201F23</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainer">#242327</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerHigh">#2E2D31</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceContainerHighest">#39373B</SolidColorBrush>
+                    <StaticResource x:Key="PrimaryText" ResourceKey="OnSurface" />
+                    <StaticResource x:Key="SecondaryText" ResourceKey="OnSurfaceVariant" />
+                    <StaticResource x:Key="AccentBrush" ResourceKey="Primary" />
+                    <StaticResource x:Key="SurfaceBrush" ResourceKey="Surface" />
+                    <StaticResource x:Key="PageBackground" ResourceKey="SurfaceContainerLow" />
+                    <StaticResource x:Key="DividerBrush" ResourceKey="OutlineVariant" />
+                    <StaticResource x:Key="SelectionBrush" ResourceKey="SecondaryContainer" />
+                    <StaticResource x:Key="SelectedText" ResourceKey="OnSecondaryContainer" />
+                    <StaticResource x:Key="PrimaryFill" ResourceKey="Primary" />
+                    <StaticResource x:Key="OnPrimaryFill" ResourceKey="OnPrimary" />
+                    <StaticResource x:Key="Accent" ResourceKey="Primary" />
+                    <StaticResource x:Key="SurfaceTint" ResourceKey="Primary" />
+                    <StaticResource x:Key="OnSurfaceMuted" ResourceKey="OnSurfaceVariant" />
+                    <StaticResource x:Key="OnSurfaceStrong" ResourceKey="OnSurface" />
+                    <SolidColorBrush x:Key="HoverBrush" Color="#E6E1E6" Opacity="0.08" />
+                    <SolidColorBrush x:Key="OnSurface12" Color="#E6E1E6" Opacity="0.12" />
+                    <SolidColorBrush x:Key="OnSurface38" Color="#E6E1E6" Opacity="0.38" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
-    <material:MaterialTheme BaseTheme="Light" PrimaryColor="Indigo" SecondaryColor="Teal" />
+    <m3:MaterialTheme />
+    <StyleInclude Source="/Appearance/MaterialButtons.axaml" />
 </Styles>

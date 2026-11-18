@@ -6,6 +6,12 @@ category: architecture
 
 English | [中文](2026-11-17-mvp-framework.zh.md)
 
+## Provisional choices
+
+No MVP technology or architecture choice is immutable before merge into main. Frameworks, dependencies, UI and design-system libraries, protocols, storage implementations, schemas, and component boundaries may all be reconsidered or replaced. Current code and earlier selections describe the experiment; they do not constrain the final result. Compare correct use of the current stack with available alternatives against the final MVP deliverable. Replacement cost, sunk effort, minimizing rework, and preserving earlier implementation are not decision criteria during the MVP. Replace earlier work when it improves the final result, without prototype compatibility. A limitation of one installed package is not evidence that its ecosystem lacks the capability. Frozen repository/API Notes still follow their revision lifecycle; the lifecycle does not make a technology permanent.
+
+Long-term maintenance ownership, third-party stability, and future switching exposure remain valid design criteria. These obligations concern the delivered architecture, not preserving the current prototype. Self-maintained components are an option rather than an automatic preference.
+
 ## Scope and maintenance
 
 This Note records the framework direction. The [node execution Note](2026-11-17-mvp-node-execution.en.md) separately maintains ports, synchronized delivery, backpressure, and node state. The [plugin Note](2026-11-17-mvp-plugins.en.md) maintains cold-start composition, metadata ownership, and preservation despite missing plugins. Resource modeling will be discussed later; this proposal does not establish a resource taxonomy or scheduling policy.

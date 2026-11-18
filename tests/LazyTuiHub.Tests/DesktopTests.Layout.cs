@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Rss.Desktop;
@@ -58,6 +59,7 @@ public sealed partial class DesktopTests
                         driver.Window = window;
                         await driver.SettleAsync();
                         reader = window.GetVisualDescendants().OfType<ReaderPage>().Single();
+                        await ExerciseActionsAsync(driver, reader, design);
                         await ExerciseResponsiveReaderAsync(driver, reader, design.ToString());
                         await ExerciseAppearanceAsync(driver, design.ToString());
                     }
@@ -111,6 +113,38 @@ public sealed partial class DesktopTests
         await driver.KeyAsync(driver.Window, Key.Enter);
         Assert.True(pane.DetailOpen);
         await driver.ResizeAsync(1280, 800);
+    }
+
+    private static async Task ExerciseActionsAsync(DesktopUiDriver driver, ReaderPage reader, DesignSystem design)
+    {
+        await driver.ClickAsync(reader.FindControl<Button>("AddFeedButton")!);
+        Assert.True(reader.Model.AddingSubscription, $"{design}: open subscription panel");
+        var submit = reader.FindControl<Button>("SubscribeButton")!;
+        Assert.True(reader.FindControl<TextBox>("FeedUriInput")!.IsFocused);
+        await driver.ClickAsync(reader.FindControl<TextBox>("FeedTitleInput")!);
+        await driver.KeyAsync(driver.Window, Key.Tab);
+        Assert.True(submit.IsFocused, $"{design}: Tab from the name field focuses Subscribe.");
+        await driver.CaptureAsync(design + "-action-focus");
+        if (design == DesignSystem.Material)
+        {
+            var ink = Assert.Single(submit.GetVisualDescendants().OfType<MaterialInk>());
+            Assert.True(submit.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "FocusRing").IsVisible);
+            Assert.True(FontManager.Current.TryGetGlyphTypeface(new Typeface(submit.FontFamily), out var face));
+            Assert.Equal("Roboto", face.FamilyName);
+            var point = submit.TranslatePoint(new Point(10, 10), driver.Window)!.Value;
+            driver.Window.MouseDown(point, MouseButton.Left);
+            await driver.SettleAsync();
+            Assert.True(ink.Pressed);
+            await driver.CaptureAsync("Material-action-pressed");
+            driver.Window.MouseMove(default);
+            driver.Window.MouseUp(default, MouseButton.Left);
+            Assert.False(ink.Pressed);
+        }
+        var close = reader.FindControl<Button>("CloseSubscriptionButton")!;
+        close.Focus(NavigationMethod.Tab);
+        await driver.KeyAsync(driver.Window, Key.Space);
+        Assert.False(reader.Model.AddingSubscription);
+        Assert.True(reader.FindControl<Button>("AddFeedButton")!.IsFocused);
     }
 
     private static async Task ExerciseAppearanceAsync(DesktopUiDriver driver, string design)

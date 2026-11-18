@@ -2,8 +2,6 @@ using System.Text.Json;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Styling;
 using Devolutions.AvaloniaTheme.MacOS;
-using Material.Styles.Themes;
-using Material.Styles.Themes.Base;
 using Microsoft.Extensions.Logging;
 
 namespace LazyTuiHub.Desktop;
@@ -64,11 +62,7 @@ public sealed partial class DesktopAppearance
     private static Styles CreateTheme(DesignSystem design)
     {
         var source = new Uri($"avares://LazyTuiHub.Desktop/Appearance/{design}.axaml");
-        var styles = (Styles)new StyleInclude(source) { Source = source }.Loaded;
-        // Material needs a concrete initial variant before resource lookup can precede attachment.
-        foreach (var material in styles.OfType<MaterialTheme>())
-            material.BaseTheme = BaseThemeMode.Inherit;
-        return styles;
+        return (Styles)new StyleInclude(source) { Source = source }.Loaded;
     }
 
     private static void ReplaceTheme(DesktopApp app, Styles theme)

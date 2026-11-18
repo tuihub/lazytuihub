@@ -15,6 +15,7 @@
                 <Grid>
                     <ListBox
                         x:Name="Definitions"
+                        Classes="collection"
                         SelectionChanged="SelectionChanged"
                         Background="Transparent"
                         BorderThickness="0"
@@ -32,8 +33,7 @@
                             <DataTemplate x:DataType="framework:PipelineDefinition">
                                 <TextBlock
                                     Text="{Binding Name}"
-                                    Margin="8,12"
-                                    FontWeight="SemiBold"
+                                    Classes="item-title"
                                     TextWrapping="Wrap"
                                 />
                             </DataTemplate>
@@ -50,12 +50,7 @@
             </local:AdaptivePane.Master>
             <local:AdaptivePane.Detail>
                 <Grid RowDefinitions="Auto,Auto,*" Margin="24">
-                    <TextBlock
-                        x:Name="WorkflowTitle"
-                        FontSize="22"
-                        FontWeight="SemiBold"
-                        TextWrapping="Wrap"
-                    />
+                    <TextBlock x:Name="WorkflowTitle" Classes="title" TextWrapping="Wrap" />
                     <TextBlock
                         x:Name="PlanStatus"
                         Grid.Row="1"

@@ -14,6 +14,7 @@
             <local:AdaptivePane.Master>
                 <ListBox
                     x:Name="Plugins"
+                    Classes="collection"
                     SelectionChanged="SelectionChanged"
                     Background="Transparent"
                     BorderThickness="0"
@@ -29,10 +30,10 @@
                     </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="plugins:PluginView">
-                            <StackPanel Spacing="8" Margin="8,12">
+                            <StackPanel Spacing="8">
                                 <TextBlock
                                     Text="{Binding Saved.Spec.Name}"
-                                    FontWeight="SemiBold"
+                                    Classes="item-title"
                                     TextWrapping="Wrap"
                                 />
                                 <TextBlock Text="{Binding Activation}" Classes="caption" />
@@ -45,16 +46,10 @@
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="28" Spacing="24" MaxWidth="760">
                         <StackPanel Spacing="8">
-                            <TextBlock
-                                x:Name="PluginTitle"
-                                FontSize="24"
-                                FontWeight="SemiBold"
-                                TextWrapping="Wrap"
-                            />
+                            <TextBlock x:Name="PluginTitle" Classes="title" TextWrapping="Wrap" />
                             <SelectableTextBlock
                                 x:Name="PluginId"
-                                Foreground="{DynamicResource SecondaryText}"
-                                FontSize="12"
+                                Classes="metadata"
                                 TextWrapping="Wrap"
                             />
                         </StackPanel>
@@ -73,7 +68,7 @@
                                 <TextBlock
                                     x:Name="Activation"
                                     Grid.Column="1"
-                                    FontWeight="SemiBold"
+                                    Classes="item-title"
                                 />
                                 <TextBlock Text="Plugin files" Grid.Row="1" Classes="caption" />
                                 <TextBlock x:Name="Availability" Grid.Row="1" Grid.Column="1" />
@@ -83,7 +78,7 @@
                         </Border>
                         <TextBlock x:Name="Reason" TextWrapping="Wrap" />
                         <StackPanel x:Name="PageSection" Spacing="8">
-                            <TextBlock Text="Pages" FontWeight="SemiBold" />
+                            <TextBlock Text="Pages" Classes="item-title" />
                             <TextBlock x:Name="DeclaredPages" Classes="caption" />
                         </StackPanel>
                         <Border
@@ -99,6 +94,7 @@
                                 />
                                 <Button
                                     x:Name="Toggle"
+                                    Classes="secondary"
                                     Click="ToggleClick"
                                     HorizontalAlignment="Left"
                                 />
@@ -113,6 +109,6 @@
                 </ScrollViewer>
             </local:AdaptivePane.Detail>
         </local:AdaptivePane>
-        <TextBlock Grid.Row="2" x:Name="Status" Classes="caption" FontSize="12" Margin="20,8" />
+        <TextBlock Grid.Row="2" x:Name="Status" Classes="metadata" Margin="20,8" />
     </Grid>
 </UserControl>

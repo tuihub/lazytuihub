@@ -8,7 +8,7 @@ English | [中文](2026-11-17-mvp-ui-comparison.zh.md)
 
 ## Scope and decision
 
-On 2026-11-18, the user selected Avalonia as the product UI framework after the source/ecosystem investigation and native prototype comparison. Subsequent product UI development uses Avalonia; Uno remains only in the retained comparison prototypes. This Note stays proposed under the [MVP agreement](../../AGENTS.md), which keeps all MVP Notes editable until merge into main. That lifecycle status does not leave framework selection undecided.
+On 2026-11-18, the user selected Avalonia as the product UI framework after the source/ecosystem investigation and native prototype comparison. Subsequent product UI development uses Avalonia; Uno remains only in the retained comparison prototypes. This Note stays proposed under the [MVP agreement](../../AGENTS.md), which keeps all MVP Notes editable until merge into main. Avalonia is the current implementation choice and can be replaced under that agreement; neither the selection nor the existing code constrains the final MVP.
 
 The comparison established the reader, streaming-workflow canvas interaction, and DLL-owned view mechanisms needed for the next increment. Avalonia's observed macOS input, accessibility-tree continuity, and native menu behavior support the choice. Uno's unresolved observations remain scoped to this prototype and tool; adopting Avalonia does not require proving those observations are framework defects.
 
@@ -56,15 +56,15 @@ Reader operations are serialized within a page, with visible errors and busy sta
 
 ## Multiple design systems
 
-The next increment uses Avalonia.Themes.Fluent, Devolutions.AvaloniaTheme.MacOS, and Material.Avalonia. Exact package versions remain in the desktop project. Standard Avalonia controls share the active theme; FluentAvalonia-specific controls and a wrapper around every control are not required. Navigation or dialogs may gain dedicated adapters when their interaction differs. Business plugins do not replace the application theme.
+The host combines project-owned component roles with Avalonia Fluent, Devolutions macOS, and CCSWE Material. Plugin views use standard Avalonia controls with the shared roles.
 
-Design selection (Automatic, Fluent, macOS, Material) is independent of color mode (System, Light, Dark). Automatic selects macOS on macOS, Material on Android, and Fluent elsewhere; this mapping does not implement an Android host. Explicit selection is available on desktop. Color mode uses RequestedThemeVariant. The desktop host owns a replaceable theme slot and semantic resources for page background, secondary text, page padding, and title size. Plugin-local styles remain separate.
+Design selection (Automatic, Fluent, macOS, Material) is independent of color mode (System, Light, Dark). Automatic selects macOS on macOS, Material on Android, and Fluent elsewhere; this mapping does not implement an Android host. Explicit selection is available on desktop. Color mode uses RequestedThemeVariant. The desktop host owns a replaceable theme slot and semantic resources for page background, secondary text, row padding, and title size. Plugin-local styles remain separate.
 
 Changing the effective design recreates the window and lazily recreates page views, retaining window placement and the active page. ReaderModel survives with subscriptions, loaded articles, selected feed/article, filters, draft input, the subscription panel, pagination, errors, and in-flight operations. Workflow/plugin selection and the workflow detail tab also survive. Scroll position, text selection, and keyboard focus are not serialized across reconstruction. A color-only change keeps existing controls. Window replacement does not stop DesktopSession, the host, or plugin tasks; normal closing retains the existing shutdown path. Task admission, completion removal, and shutdown snapshots are synchronized so cancellation cannot race collection copying.
 
 Preferences are local UI configuration in `LazyTuiHub/desktop.json` under the local application-data directory, independently of the workspace database. `--desktop-settings` selects another file for isolated runs. Writes use a temporary sibling and rename. Read errors remain visible with default appearance and do not overwrite the file; save/apply errors also remain visible. The exploratory MVP introduces no preference schema version or historical migration.
 
-The adapters use published Avalonia 12 packages. Devolutions still marks its macOS theme as work in progress and embeds Fluent fallbacks for uncovered controls; Material.Avalonia does not establish full Material 3 compliance. The removed Material theme is disposed. Its adapter initializes a concrete variant before enabling inheritance, because resource queries before attachment otherwise encounter the uninitialized Inherit value. The macOS adapter calls the vendor cleanup API for application-level Liquid Glass tint resources. See the [Devolutions implementation](https://github.com/Devolutions/avalonia-extensions/blob/7ef3ab09b1696938009c7923efda44490a848445/src/Devolutions.AvaloniaTheme.MacOS/DevolutionsMacOsTheme.cs) and [Material implementation](https://github.com/AvaloniaCommunity/Material.Avalonia/blob/v3.21.0/Material.Styles/Themes/MaterialTheme.cs).
+The macOS adapter clears application-level wallpaper tint resources when replacing its theme. CCSWE follows the active Avalonia theme variant.
 
 Headless integration checks exercise repeated design changes, independent color modes, draft/filter/selection retention, ongoing operations, inspector navigation, preference restoration, and visible configuration failures. A macOS native pass also confirmed distinct control rendering, selectors, Chinese draft retention, active navigation retention, light mode, and restored appearance after reopening. Other operating systems and complete assistive-technology behavior remain unverified.
 
@@ -80,9 +80,9 @@ Programmatic UI control is a maintained development path. `mise run test:desktop
 
 The scenario covers subscription entry, fetch, reading, read state, narrow-screen return/focus, inspector navigation, three designs at wide/medium/narrow sizes, and dark mode. Popup behavior is observed through open state and its own visual root, then operated by keyboard and captured separately. A popup omitted by computer-use capture is a tool observation, not sufficient evidence of a UI failure or a reason to replace the interaction. Headless images do not replace native validation for fonts, window chrome, accessibility, popup placement, or graphics performance. Android and legacy Windows remain outside this increment.
 
-## Visual fidelity follow-up
+## Design-system audit
 
-The user identified visual problems across all three current adapters. This increment delivers responsive content organization and programmatic UI inspection; passing interaction/layout tests does not establish visual fidelity. Comparison with official design documentation and component references, and the resulting Avalonia corrections, belong to the next iteration. Sample preparation remains separate from the product changes. Fluent Web must not be equated with WinUI, Material 3 references must not be taken as proof of Material.Avalonia's conformance, and native macOS samples must retain their operating-system scope.
+The [design-system Note](2026-11-18-mvp-design-systems.en.md) records the five-library comparison, product implementation and verification.
 
 ## Product verification and remaining work
 

@@ -217,6 +217,22 @@ description = "Drive the desktop UI with headless input and save rendered screen
 env.LAZYTUIHUB_UI_ARTIFACTS = "{{config_root}}/artifacts/desktop"
 run = "dotnet run --project tests/LazyTuiHub.Tests -- -class LazyTuiHub.Tests.DesktopTests"
 
+[tasks."setup:design-baselines"]
+description = "Install isolated official design reference tools and fonts"
+run = "node .agents/prototypes/design-baselines/baseline.mjs setup"
+
+[tasks."run:design-baselines"]
+description = "Serve official design references and Avalonia control comparisons"
+run = "node .agents/prototypes/design-baselines/baseline.mjs serve"
+
+[tasks."render:design-baselines:web"]
+description = "Capture official Fluent and Material Web component states"
+run = "node .agents/prototypes/design-baselines/baseline.mjs render web"
+
+[tasks."render:design-baselines:avalonia"]
+description = "Exercise and capture installed and candidate Avalonia themes"
+run = "node .agents/prototypes/design-baselines/baseline.mjs render avalonia"
+
 [tasks."run:desktop"]
 description = "Run the Avalonia desktop application with the local workspace"
 run = "dotnet run --project src/LazyTuiHub -- --desktop"

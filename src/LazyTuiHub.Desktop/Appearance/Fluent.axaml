@@ -4,31 +4,68 @@
 >
     <Styles.Resources>
         <ResourceDictionary>
-            <Thickness x:Key="PagePadding">20</Thickness>
+            <FontFamily x:Key="DesignFont">Segoe UI, Inter, $Default</FontFamily>
             <x:Double x:Key="PageTitleSize">24</x:Double>
+            <x:Double x:Key="HeadlineSize">28</x:Double>
+            <x:Double x:Key="SectionSize">20</x:Double>
+            <x:Double x:Key="ItemTitleSize">16</x:Double>
+            <x:Double x:Key="CaptionSize">14</x:Double>
+            <x:Double x:Key="MetadataSize">12</x:Double>
+            <x:Double x:Key="ReadingSize">16</x:Double>
+            <FontWeight x:Key="PageTitleWeight">SemiBold</FontWeight>
+            <FontWeight x:Key="HeadlineWeight">SemiBold</FontWeight>
+            <FontWeight x:Key="ItemTitleWeight">SemiBold</FontWeight>
+            <CornerRadius x:Key="NavigationRadius">6</CornerRadius>
+            <CornerRadius x:Key="RowRadius">4</CornerRadius>
+            <Thickness x:Key="NavigationPadding">12,7</Thickness>
+            <Thickness x:Key="RowPadding">14,12</Thickness>
+            <Thickness x:Key="NavigationMargin">0,2</Thickness>
+            <Thickness x:Key="RowMargin">8,1</Thickness>
+            <x:Double x:Key="SelectionBarWidth">3</x:Double>
+            <x:Double x:Key="ReadingLineHeight">26</x:Double>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="PrimaryText">#242424</SolidColorBrush>
-                    <SolidColorBrush x:Key="AccentBrush">#0067C0</SolidColorBrush>
-                    <SolidColorBrush x:Key="HoverBrush">#EDEFF2</SolidColorBrush>
-                    <SolidColorBrush x:Key="SelectionBrush">#E4EAF6</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryText">#616161</SolidColorBrush>
+                    <SolidColorBrush
+                        x:Key="AccentBrush"
+                        Color="{DynamicResource SystemAccentColor}"
+                    />
                     <SolidColorBrush x:Key="SurfaceBrush">#FFFFFF</SolidColorBrush>
-                    <SolidColorBrush x:Key="DividerBrush">#18000000</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#F3F3F3</SolidColorBrush>
-                    <SolidColorBrush x:Key="SecondaryText">#606060</SolidColorBrush>
+                    <SolidColorBrush x:Key="DividerBrush">#22000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="HoverBrush">#09000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="SelectionBrush">#0F000000</SolidColorBrush>
+                    <SolidColorBrush x:Key="SelectedText">#1A1A1A</SolidColorBrush>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="PrimaryText">#EAEAEA</SolidColorBrush>
-                    <SolidColorBrush x:Key="AccentBrush">#A8C6FF</SolidColorBrush>
-                    <SolidColorBrush x:Key="HoverBrush">#35383E</SolidColorBrush>
-                    <SolidColorBrush x:Key="SelectionBrush">#343F55</SolidColorBrush>
-                    <SolidColorBrush x:Key="SurfaceBrush">#292929</SolidColorBrush>
-                    <SolidColorBrush x:Key="DividerBrush">#20FFFFFF</SolidColorBrush>
-                    <SolidColorBrush x:Key="PageBackground">#202020</SolidColorBrush>
-                    <SolidColorBrush x:Key="SecondaryText">#C0C0C0</SolidColorBrush>
+                    <SolidColorBrush x:Key="PrimaryText">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryText">#C5C5C5</SolidColorBrush>
+                    <SolidColorBrush
+                        x:Key="AccentBrush"
+                        Color="{DynamicResource SystemAccentColor}"
+                    />
+                    <SolidColorBrush x:Key="SurfaceBrush">#202020</SolidColorBrush>
+                    <SolidColorBrush x:Key="PageBackground">#292929</SolidColorBrush>
+                    <SolidColorBrush x:Key="DividerBrush">#24FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="HoverBrush">#0FFFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SelectionBrush">#15FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SelectedText">#FFFFFF</SolidColorBrush>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
     <FluentTheme />
+    <Style Selector="Button.accent">
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.quiet, Button.icon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.icon">
+        <Setter Property="MinWidth" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="6" />
+    </Style>
 </Styles>
