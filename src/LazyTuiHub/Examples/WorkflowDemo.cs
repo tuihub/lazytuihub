@@ -53,7 +53,7 @@ public static class WorkflowDemo
         );
         StreamNodes.Sink<int>(registry, "sink", "demo", (packet, _, _) => state.CollectAsync(packet));
         var runner = new PipelineRunner(registry);
-        var plan = runner.CreatePlan(
+        var plan = await runner.CreatePlanAsync(
             new(
                 "mixed-inputs",
                 [
@@ -68,7 +68,8 @@ public static class WorkflowDemo
                     new(ProcessName, ResultName, "sink", "input"),
                 ],
                 BufferCapacity: 1
-            )
+            ),
+            stopping.Token
         );
         try
         {

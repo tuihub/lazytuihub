@@ -124,6 +124,8 @@ public sealed partial class PluginRuntime : IDisposable
 
     public void Activate(IServiceProvider services, IEndpointRouteBuilder? routes = null)
     {
+        if (services.GetService<ExecutionTopology>() is { } topology)
+            Workflows.PlaceOn(topology);
         var pending = configured.Keys.ToHashSet(StringComparer.Ordinal);
         while (pending.Count > 0)
         {
@@ -241,7 +243,8 @@ public sealed partial class PluginRuntime : IDisposable
                     node.Type,
                     node.Module,
                     node.Inputs.Select(DescribePort).ToArray(),
-                    node.Outputs.Select(DescribePort).ToArray()
+                    node.Outputs.Select(DescribePort).ToArray(),
+                    node.RequiredResource
                 ))
                 .ToArray(),
             registration.DataTypes.ToArray(),
@@ -314,52 +317,55 @@ public sealed partial class PluginRuntime : IDisposable
         await hook(services, token);
     }
 
-    public IReadOnlyList<PluginTaskView> Tasks() =>
-        List()
-            .SelectMany(plugin =>
-                plugin.Saved.Declaration.Tasks.Select(task =>
-                {
-                    if (!active.Contains(plugin.Saved.Spec.Id))
-                        return new PluginTaskView(
-                            plugin.Saved.Spec.Id,
-                            task,
-                            "unavailable",
-                            plugin.Reason ?? plugin.Activation
-                        );
-                    var problem = task.Workflows.SelectMany(name => DescribeTaskWorkflow(name)).FirstOrDefault();
-                    return new PluginTaskView(
-                        plugin.Saved.Spec.Id,
-                        task,
-                        problem is null
-                            ? taskStates.GetValueOrDefault((plugin.Saved.Spec.Id, task.Id)) ?? "ready"
-                            : "unavailable",
-                        problem
-                    );
-                })
-            )
-            .ToArray();
-
-    private IEnumerable<string> DescribeTaskWorkflow(string name)
+    public async Task<IReadOnlyList<PluginTaskView>> TasksAsync(CancellationToken token)
     {
-        PipelineDefinition definition;
-        try
+        var result = new List<PluginTaskView>();
+        foreach (var plugin in List())
         {
-            definition = Workflows.Get(name);
+            var id = plugin.Saved.Spec.Id;
+            foreach (var task in plugin.Saved.Declaration.Tasks)
+            {
+                var problem = active.Contains(id) ? null : plugin.Reason ?? plugin.Activation;
+                problem ??= await TaskProblemAsync(task, token);
+                var state = problem is null ? taskStates.GetValueOrDefault((id, task.Id)) ?? "ready" : "unavailable";
+                result.Add(new(id, task, state, problem));
+            }
         }
-        catch (KeyNotFoundException error)
+        return result;
+    }
+
+    private async Task<string?> TaskProblemAsync(DeclaredTask task, CancellationToken token)
+    {
+        foreach (var name in task.Workflows)
         {
-            return [error.Message];
+            try
+            {
+                var description = await Workflows.DescribeAsync(Workflows.Get(name), token);
+                if (description.Problems is [var issue, ..])
+                    return $"{issue.NodeType} (plugin {issue.PluginId ?? "unknown"}): {issue.Reason}";
+            }
+            catch (KeyNotFoundException error)
+            {
+                return error.Message;
+            }
         }
-        return Workflows
-            .Describe(definition)
-            .Problems.Select(problem =>
-                $"{problem.NodeType} (plugin {problem.PluginId ?? "unknown"}): {problem.Reason}"
-            );
+        return null;
+    }
+
+    internal void MarkUnstartedTasksStopped()
+    {
+        foreach (var id in active)
+        {
+            foreach (var task in configured[id].Tasks)
+                taskStates.TryAdd((id, task.Id), "stopped");
+        }
     }
 
     internal async Task RunTasksAsync(IServiceProvider services, CancellationToken token)
     {
-        var runnable = Tasks().Where(task => string.Equals(task.State, "ready", StringComparison.Ordinal)).ToArray();
+        var runnable = (await TasksAsync(token))
+            .Where(task => string.Equals(task.State, "ready", StringComparison.Ordinal))
+            .ToArray();
         await Task.WhenAll(
             runnable.Select(async task =>
             {

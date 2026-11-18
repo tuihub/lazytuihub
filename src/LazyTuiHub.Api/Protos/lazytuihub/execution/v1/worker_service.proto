@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package lazytuihub.execution.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+
+option csharp_namespace = "LazyTuiHub.Api.Execution.V1";
+option go_package = "github.com/tuihub/lazytuihub/api/execution/apiv1;executionpb";
+option java_multiple_files = true;
+option java_outer_classname = "WorkerServiceProto";
+option java_package = "io.github.tuihub.lazytuihub.execution.v1";
+
+// Reports instance resources and executes explicitly exported packet operations.
+service WorkerService {
+  // Reports this instance's current resources and exported operations.
+  // The coordinator reads this inventory when it plans a workflow.
+  rpc DescribeWorker(DescribeWorkerRequest) returns (DescribeWorkerResponse) {
+    option (google.api.http) = { get: "/v1:describeWorker" };
+  }
+
+  // Runs one registered operation and returns one complete output packet.
+  // The coordinator supplies its worker bearer credential over a trusted channel.
+  // Repeatable transforms may move to another candidate after loss of a response.
+  // For an owner-bound write a lost response leaves the outcome unknown.
+  // UNAVAILABLE covers missing capabilities and temporarily unreachable inputs.
+  // Invalid packets and rejected operations must not be retried on another worker.
+  rpc ExecutePacket(ExecutePacketRequest) returns (ExecutePacketResponse) {
+    option (google.api.http) = { post: "/v1:executePacket" body: "*" };
+  }
+}
+
+// Request for DescribeWorker.
+message DescribeWorkerRequest {}
+
+// Response for DescribeWorker.
+message DescribeWorkerResponse {
+  // Output only. The identity of this worker.
+  string instance = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Output only. Resource names contributed by this instance.
+  repeated string resources = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Output only. Exported transforms that may run again after an unavailable response.
+  repeated string repeatable_operations = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Output only. Exported operations bound to one resource owner and one attempt.
+  repeated string owned_operations = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Request for ExecutePacket.
+message ExecutePacketRequest {
+  // Required. The configured execution instance expected by the coordinator.
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+  // Required. The registered node type that defines the settings and packet codec.
+  string node_type = 2 [(google.api.field_behavior) = REQUIRED];
+  // Required. The node settings encoded as a UTF-8 JSON object.
+  bytes settings = 3 [(google.api.field_behavior) = REQUIRED];
+  // Required. A UTF-8 JSON packet with a typed value and optional data reference.
+  bytes input = 4 [(google.api.field_behavior) = REQUIRED];
+  // Optional. Resources that must still be available when executing this packet.
+  repeated string required_resources = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional. True for a repeatable transform. The worker checks the execution
+  // mode against its current registration before invoking the implementation.
+  bool repeatable = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ExecutePacket.
+message ExecutePacketResponse {
+  // Output only. A UTF-8 JSON packet containing the result value and its data reference.
+  bytes output = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

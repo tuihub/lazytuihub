@@ -93,7 +93,7 @@ public sealed class ArticleStore
             search.Index(searchTable, saved.Id, article.Title + "\n" + article.Content, transaction);
             return new BusinessChange<ArticleRecord>(
                 saved,
-                [saved.Reference],
+                origin is null ? [saved.Reference] : [origin, saved.Reference],
                 origin is null ? [] : [new(origin, saved.Reference, "contains")]
             );
         });

@@ -1,3 +1,4 @@
+using LazyTuiHub.Execution;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using Microsoft.AspNetCore.DataProtection;
@@ -16,7 +17,19 @@ internal static class HostComposition
             );
         var keys = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "keys"));
         services.AddDataProtection().PersistKeysToFileSystem(keys).SetApplicationName("LazyTuiHub");
-        services.AddSingleton(_ => new HttpClient());
+        ClusterConfiguration.Register(services, configuration);
+        services.AddSingleton(_ =>
+            configuration.GetValue<bool>("worker")
+                ? new HttpClient(
+                    new HttpClientHandler
+                    {
+                        CheckCertificateRevocationList = true,
+                        AllowAutoRedirect = false,
+                        UseProxy = false,
+                    }
+                )
+                : new HttpClient()
+        );
         var plugins = new PluginRuntime(
             new SqliteDatabase(path),
             configuration,

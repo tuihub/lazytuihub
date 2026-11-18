@@ -11,20 +11,44 @@ public static class ArticleModule
     public static void Register(NodeRegistry registry, ArticleStore store)
     {
         BuiltInNodes.RegisterOutput<ArticleRecord>(registry, "articles.output");
-        StreamNodes.Transform<ArticleDraft, ArticleRecord>(registry, "articles.store", Module, (packet, _, _) =>
-            One(store.Save(packet.Value, packet.Reference))
+        registry.RegisterOwned<ArticleDraft, ArticleRecord>(
+            new(
+                "articles.store",
+                Module,
+                [PortDescriptor.Stream<ArticleDraft>(StreamNodes.Input)],
+                [PortDescriptor.Stream<ArticleRecord>(StreamNodes.Output)],
+                ExecutionTopology.PrimaryWorkspace
+            ),
+            (packet, _, _) =>
+            {
+                var article = store.Save(packet.Value, packet.Reference);
+                return Task.FromResult(new DataPacket<ArticleRecord>(article, article.Reference));
+            }
         );
-        StreamNodes.Source<ArticleRecord>(registry, "articles.read-articles", Module, (context, _) =>
-            store
-                .ReadArticles(context.Run.Input as ArticleQuery ?? new())
-                .Select(article => new DataPacket<ArticleRecord>(article, article.Reference))
-                .ToAsyncEnumerable()
+        StreamNodes.Source<ArticleRecord>(
+            registry,
+            "articles.read-articles",
+            Module,
+            (context, _) =>
+                store
+                    .ReadArticles(context.Run.Input as ArticleQuery ?? new())
+                    .Select(article => new DataPacket<ArticleRecord>(article, article.Reference))
+                    .ToAsyncEnumerable(),
+            ExecutionTopology.PrimaryWorkspace
         );
-        StreamNodes.Source<ArticleRecord>(registry, "articles.read-article", Module, (context, _) =>
-            One(store.GetArticle((string)context.Run.Input!))
+        StreamNodes.Source<ArticleRecord>(
+            registry,
+            "articles.read-article",
+            Module,
+            (context, _) => One(store.GetArticle((string)context.Run.Input!)),
+            ExecutionTopology.PrimaryWorkspace
         );
-        StreamNodes.Source<ArticleRecord>(registry, "articles.mark-read", Module, (context, _) =>
-            One(store.GetArticle((string)context.Run.Input!, markRead: true))
+        StreamNodes.Source<ArticleRecord>(
+            registry,
+            "articles.mark-read",
+            Module,
+            (context, _) => One(store.GetArticle((string)context.Run.Input!, markRead: true)),
+            ExecutionTopology.PrimaryWorkspace
         );
     }
 

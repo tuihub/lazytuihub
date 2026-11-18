@@ -4,9 +4,9 @@ English | [中文](streaming-mvp.zh.md)
 
 ## Purpose and scope
 
-The MVP uses an RSS reader and SQLite to explore reusable nodes across business modules. The first local runtime supports named streaming/synchronized ports and executable local plans. The proposed [framework Note](../../.agents/notes/2026-11-17-mvp-framework.en.md) and [node execution Note](../../.agents/notes/2026-11-17-mvp-node-execution.en.md) distinguish current choices from further design. MVP Notes remain editable proposals until merge into main; each increment commits code and corresponding Notes together.
+The MVP uses an RSS reader and SQLite to explore reusable nodes across business modules. The runtime supports named streaming/synchronized ports, local execution, and dispatch of eligible packet operations to workers. The proposed [framework Note](../../.agents/notes/2026-11-17-mvp-framework.en.md) and [node execution Note](../../.agents/notes/2026-11-17-mvp-node-execution.en.md) distinguish current choices from further design. MVP Notes remain editable proposals until merge into main; each increment commits code and corresponding Notes together.
 
-Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. Use a fresh database for the split article schema and default ingestion graph.
+Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. Graphs are edited as JSON. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. Use a fresh database for the split article schema and default ingestion graph.
 
 The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real RSS/SQLite operations, workflow inspection, and plugin availability. The [UI comparison guide](ui-comparison.en.md) retains the earlier independent experiments.
 
@@ -35,7 +35,22 @@ To connect another source, emit [ArticleDraft](../../src/LazyTuiHub.Api/Articles
 
 NodeRegistry.Register accepts typed, named input/output declarations and one asynchronous execution function. Each category may have any number of ports, including zero. Connections identify source, sourcePort, target, and targetPort. Type and delivery mode must match exactly; object is not a catch-all receiving port. Unused outputs may remain unconnected; every declared input needs a producer.
 
-PipelinePlanner creates a PipelinePlan containing bound node implementations, port connections, local placement, and buffering capacity. The current backend requires a DAG and assigns all nodes to local. Saving returns feasibility diagnostics while retaining unavailable nodes and their original settings/connections; execution requires a valid plan; running a definition builds a fresh plan, while callers may also execute a previously created plan. Resource inventories, remote placement, and remote transport are not implemented.
+The planner combines each node descriptor's required resource with any extra resource names in the workflow node’s `requires` array. Each instance registers its resources independently. For example, `articles.store` requires `workspace.primary`, while a digest workflow can request `compute.batch`. Workflow JSON contains only logical nodes, settings, requirements, and edges. A plan shows the resolved requirements and candidate instances, plus any unreachable inventory endpoints. Running a saved definition builds a fresh plan. Saving retains definitions with missing capabilities and reports diagnostics.
+
+## Running across instances
+
+Use `mise run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `artifacts/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration.
+
+| Setting | Purpose |
+| --- | --- |
+| `Cluster:Id`, `Cluster:Resources` | This instance's identity and named resources. Assign `workspace.primary` to the instance that owns the authoritative article database. Standalone mode uses its local workspace. |
+| `Cluster:Peers` | Addresses and bearer credentials for reachable worker endpoints. Each entry has `Url` and `Token`. The planner reads operations and resources from those endpoints when planning. |
+| `--worker true`, `Cluster:Token`, `Cluster:Export` | Start the authenticated worker endpoint with its own credential and allowed operation types. Only loaded packet implementations can be exported. |
+| `Cluster:FetchOrigins` | HTTP origins the worker may fetch. A worker does not follow redirects. Use HTTPS for peer traffic. The internal Docker networks explicitly enable `Cluster:AllowInsecureHttp`. |
+
+The coordinator calls a local implementation directly or sends a typed packet with its reference over the generated HTTP client. Only registered single-input, single-output streaming packet operations can cross this boundary. Each packet of a repeatable transform tries the local instance first, then eligible workers in instance ID order. Other streams, synchronized groups, and queues stay on the coordinator. A plan takes one inventory snapshot. New or recovered workers enter on the next plan. A plan can continue using reachable candidates if others become unavailable during execution.
+
+For an owner-bound operation such as `articles.store`, the planner requires exactly one eligible owner. A lost write acknowledgement produces an unknown outcome. Inspect the owner before deciding whether to submit again. RSS feed selection and fetch details live in the submitting instance’s workspace. The article and its source relation live on the selected owner. The [worker protocol](../api/operations/WorkerService_ExecutePacket.md) describes the wire contract.
 
 ## Streaming and synchronized delivery
 
@@ -154,6 +169,6 @@ Register NodeDescriptor inputs/outputs using PortDescriptor.Stream or Sync and s
 
 The runtime uses .NET Channels behind its port API. Node functions need not manage competing read tasks or concrete queues. Normal consumers read inputs to completion or explicitly arrange cancellation. Cancellation is cooperative and cannot forcibly interrupt synchronous work. Microsoft.Data.Sqlite performs synchronous I/O; parser and database work execute on worker tasks. XmlReader honors declared encoding, preserves supported RSS/Atom content, and disables DTDs/external entities; not every extension or xml:base rule is covered.
 
-Run progress is transient. Saved graphs do not save active queues or create crash recovery, checkpoints, durable replay, or exactly-once effects. Resource scheduling, pending-input budgets, complex key association, feedback graphs, and remote execution remain further work.
+Run progress is transient. Saved graphs do not save active queues or create crash recovery, checkpoints, durable replay, or exactly-once effects. Capacity scheduling, pending-input budgets, complex key association, feedback graphs, and remote synchronized execution remain further work.
 
-Public-network identity and authorization are not implemented, so this prototype serves trusted operators; subscription URIs trigger outbound requests. HTTP errors retain the existing ASP.NET Core google.rpc.Status JSON/ErrorInfo difference from AIP-193's outer error envelope and HTTP-valued code. Pagination keys live beside the database in keys; retain them for existing tokens to survive restart. No database schema standard or historical upgrade layer is introduced.
+The business APIs serve trusted operators and have no end-user authentication; subscription URIs trigger outbound requests. HTTP errors retain the existing ASP.NET Core google.rpc.Status JSON/ErrorInfo difference from AIP-193's outer error envelope and HTTP-valued code. Pagination keys live beside the database in keys; retain them for existing tokens to survive restart. No database schema standard or historical upgrade layer is introduced.

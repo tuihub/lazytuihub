@@ -1,36 +1,50 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Nodes;
 
 public static class BuiltInNodes
 {
-    public static void Register(NodeRegistry registry, HttpClient httpClient)
-    {
-        StreamNodes.Source<TimerTick>(registry, "builtin.timer", "builtin", Ticks);
-        StreamNodes.Transform<FetchRequest, HttpDocument>(registry, "builtin.http-fetch", "builtin", Fetch);
+    private const string Module = "builtin";
 
-        async IAsyncEnumerable<DataPacket<HttpDocument>> Fetch(
-            DataPacket<FetchRequest> packet,
-            NodeContext context,
-            [EnumeratorCancellation] CancellationToken cancellationToken
-        )
-        {
-            using var response = await httpClient.GetAsync(
-                packet.Value.Uri,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken
-            );
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            yield return new(new(packet.Value.Uri, content, packet.Value.Source), packet.Value.Source);
-        }
+    public static void Register(
+        NodeRegistry registry,
+        HttpClient httpClient,
+        IReadOnlySet<string>? allowedOrigins = null
+    )
+    {
+        StreamNodes.Source<TimerTick>(registry, "builtin.timer", Module, Ticks);
+        var fetch = new FetchOperation(httpClient, allowedOrigins);
+        registry.RegisterRepeatable<FetchRequest, HttpDocument>(
+            new(
+                "builtin.http-fetch",
+                Module,
+                [PortDescriptor.Stream<FetchRequest>(StreamNodes.Input)],
+                [PortDescriptor.Stream<HttpDocument>(StreamNodes.Output)]
+            ),
+            (request, _, token) => fetch.ExecuteAsync(request, token)
+        );
+        StreamNodes.Source<string>(registry, "builtin.text", Module, (context, _) =>
+            new[] { new DataPacket<string>(context.Node.Settings.GetProperty("text").GetString()!) }.ToAsyncEnumerable()
+        );
+        registry.RegisterRepeatable<string, string>(
+            new(
+                "builtin.text-digest",
+                Module,
+                [PortDescriptor.Stream<string>(StreamNodes.Input)],
+                [PortDescriptor.Stream<string>(StreamNodes.Output)]
+            ),
+            (value, _, _) => Task.FromResult(Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value))))
+        );
+        RegisterOutput<string>(registry, "builtin.output-text");
     }
 
     public static void RegisterOutput<T>(NodeRegistry registry, string type)
         where T : notnull =>
-        StreamNodes.Sink<T>(registry, type, "builtin", (packet, context, token) =>
+        StreamNodes.Sink<T>(registry, type, Module, (packet, context, token) =>
             context.Run.Output?.Invoke(packet, token) ?? ValueTask.CompletedTask
         );
 

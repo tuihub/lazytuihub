@@ -17,7 +17,10 @@ public sealed class WorkflowRuntime : IWorkflowExecutor
     }
 
     public NodeRegistry Registry { get; } = new();
-    public PipelineRunner Runner { get; }
+    public PipelineRunner Runner { get; private set; }
+
+    internal void PlaceOn(ExecutionTopology topology) => Runner = new(Registry, topology);
+
     public DataCatalog Catalog { get; }
 
     public IReadOnlyList<PipelineDefinition> List() => pipelines.List();
@@ -42,7 +45,7 @@ public sealed class WorkflowRuntime : IWorkflowExecutor
             replace
         );
 
-    public WorkflowDescription Describe(PipelineDefinition definition)
+    public async Task<WorkflowDescription> DescribeAsync(PipelineDefinition definition, CancellationToken token)
     {
         var available = Registry.Descriptors.Select(node => node.Type).ToHashSet(StringComparer.Ordinal);
         var problems = new List<WorkflowProblem>();
@@ -57,37 +60,30 @@ public sealed class WorkflowRuntime : IWorkflowExecutor
             )
                 problems.Add(new(node.Id, node.Type, owner, "Loaded implementation belongs to a different plugin."));
         }
+        PipelinePlan? plan = null;
         if (problems.Count == 0)
         {
             try
             {
-                _ = Runner.CreatePlan(definition);
+                plan = await Runner.CreatePlanAsync(definition, token);
             }
-            catch (ArgumentException error)
+            catch (Exception error) when (error is ArgumentException or InvalidOperationException)
             {
                 problems.Add(new(null, null, null, error.Message));
             }
         }
-        return new(definition, problems);
+        return new(definition, problems) { Plan = plan };
     }
 
-    public PipelinePlan CreatePlan(PipelineDefinition definition)
+    public async Task RunAsync(
+        string name,
+        PipelineContext? context = null,
+        CancellationToken cancellationToken = default
+    )
     {
-        var description = Describe(definition);
-        if (!description.Executable)
-            throw new WorkflowUnavailableException(
-                string.Join(
-                    Environment.NewLine,
-                    description.Problems.Select(problem =>
-                        $"{problem.NodeId}: {problem.NodeType} (plugin {problem.PluginId ?? "unknown"}): {problem.Reason}"
-                    )
-                )
-            );
-        return Runner.CreatePlan(definition);
+        var description = await DescribeAsync(Get(name), cancellationToken);
+        await Runner.RunAsync(description.ExecutablePlan(), context, cancellationToken);
     }
-
-    public Task RunAsync(string name, PipelineContext? context = null, CancellationToken cancellationToken = default) =>
-        Runner.RunAsync(CreatePlan(Get(name)), context, cancellationToken);
 
     private string? Owner(string type) => owners.GetValueOrDefault(type) ?? retainedOwner(type);
 }

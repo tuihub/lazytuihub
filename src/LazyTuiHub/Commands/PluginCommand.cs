@@ -22,7 +22,7 @@ internal static class PluginCommand
                 {
                     plugins.DiscoveryError,
                     Plugins = plugins.List(),
-                    Tasks = plugins.Tasks(),
+                    Tasks = await plugins.TasksAsync(token),
                 }
             );
             return;

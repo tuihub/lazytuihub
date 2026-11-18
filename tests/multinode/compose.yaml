@@ -1,0 +1,90 @@
+x-application: &application
+  image: mcr.microsoft.com/dotnet/aspnet:${DOTNET_RUNTIME_TAG}
+  working_dir: /app
+  volumes: ["../../artifacts/multinode/app:/app:ro"]
+x-worker: &worker
+  <<: *application
+  command: ["dotnet", "LazyTuiHub.dll", "--worker", "true", "--database", "/workspace/worker.db", "--urls", "http://+:8080"]
+  tmpfs: ["/workspace"]
+  networks: [control, private]
+  volumes:
+    - ../../artifacts/multinode/app:/app:ro
+    - ./worker-plugins.json:/app/plugins/plugins.json:ro
+x-worker-environment: &worker-environment
+  Cluster__AllowInsecureHttp: "true"
+  Cluster__Export__0: builtin.http-fetch
+  Cluster__Export__1: builtin.text-digest
+  Cluster__FetchOrigins__0: http://private-feed:8080
+  Cluster__FetchOrigins__1: http://shared-feed:8080
+x-fixture: &fixture
+  image: python:3-alpine
+  command: ["python", "-u", "/fixture.py"]
+  volumes: ["./fixture.py:/fixture.py:ro"]
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready')"]
+    interval: 1s
+    timeout: 3s
+    retries: 30
+services:
+  a:
+    <<: *application
+    command: ["dotnet", "LazyTuiHub.dll", "--worker", "true", "--database", "/workspace/main.db", "--urls", "http://+:8080"]
+    networks: [control]
+    volumes:
+      - ../../artifacts/multinode/app:/app:ro
+      - primary:/workspace
+      - ./digest.json:/scenario/digest.json:ro
+    environment:
+      Logging__LogLevel__Default: Warning
+      Cluster__Token: ${WORKER_A_TOKEN}
+      Cluster__Export__0: articles.store
+      Cluster__Id: A
+      Cluster__AllowInsecureHttp: "true"
+      Cluster__Resources__0: workspace.primary
+      Cluster__Peers__0__Url: http://b:8080/
+      Cluster__Peers__0__Token: ${WORKER_B_TOKEN}
+      Cluster__Peers__1__Url: http://c:8080/
+      Cluster__Peers__1__Token: ${WORKER_C_TOKEN}
+  b:
+    <<: *worker
+    environment:
+      <<: *worker-environment
+      Cluster__Resources__0: ${B_RESOURCE}
+      Cluster__Id: B
+      Cluster__Token: ${WORKER_B_TOKEN}
+  c:
+    <<: *worker
+    environment:
+      <<: *worker-environment
+      Cluster__Resources__0: compute.batch
+      Cluster__Id: C
+      Cluster__Token: ${WORKER_C_TOKEN}
+  d:
+    <<: *application
+    command: ["sleep", "infinity"]
+    networks: [control]
+    tmpfs: ["/workspace"]
+    environment:
+      Logging__LogLevel__Default: Warning
+      Cluster__Id: D
+      Cluster__AllowInsecureHttp: "true"
+      Cluster__Peers__0__Url: http://a:8080/
+      Cluster__Peers__0__Token: ${WORKER_A_TOKEN}
+  lost-reply:
+    image: python:3-alpine
+    command: ["python", "-u", "/lost_reply.py"]
+    volumes: ["./lost_reply.py:/lost_reply.py:ro"]
+    networks: [control]
+  private-feed:
+    <<: *fixture
+    networks: [private]
+    environment: { LABEL: private }
+  shared-feed:
+    <<: *fixture
+    networks: [control]
+    environment: { LABEL: shared }
+networks:
+  control: {internal: true}
+  private: {internal: true}
+volumes:
+  primary: {}

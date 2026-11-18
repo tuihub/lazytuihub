@@ -140,7 +140,7 @@ public sealed class SynchronizationTests
         registry.Register(new("exact", "test", [PortDescriptor.Stream<string>("input")], []), (_, _) =>
             Task.CompletedTask
         );
-        var planner = new PipelinePlanner(registry);
+        var planner = new PipelinePlanner(registry, ExecutionTopology.Standalone.LocalInventory);
         foreach (var target in new[] { "wide", "sync", "exact" })
         {
             var error = Assert.Throws<ArgumentException>(() =>

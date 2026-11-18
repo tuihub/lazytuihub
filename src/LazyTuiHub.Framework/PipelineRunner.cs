@@ -2,15 +2,23 @@ using System.Runtime.ExceptionServices;
 
 namespace LazyTuiHub.Framework;
 
-public sealed class PipelineRunner(NodeRegistry registry)
+public sealed class PipelineRunner(NodeRegistry registry, ExecutionTopology? topology = null)
 {
-    public PipelinePlan CreatePlan(PipelineDefinition definition) => new PipelinePlanner(registry).Create(definition);
+    public async Task<PipelinePlan> CreatePlanAsync(PipelineDefinition definition, CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        var instances = topology ?? ExecutionTopology.Standalone;
+        var inventory = definition.Nodes.Any(node => registry.Get(node.Type).InvokePacket is not null)
+            ? await instances.InspectAsync(token)
+            : instances.LocalInventory;
+        return new PipelinePlanner(registry, inventory).Create(definition);
+    }
 
-    public Task RunAsync(
+    public async Task RunAsync(
         PipelineDefinition definition,
         PipelineContext? context = null,
         CancellationToken cancellationToken = default
-    ) => RunAsync(CreatePlan(definition), context, cancellationToken);
+    ) => await RunAsync(await CreatePlanAsync(definition, cancellationToken), context, cancellationToken);
 
     public async Task RunAsync(
         PipelinePlan plan,
@@ -39,14 +47,15 @@ public sealed class PipelineRunner(NodeRegistry registry)
             try
             {
                 stopping.Token.ThrowIfCancellationRequested();
-                run.Progress?.Invoke(new(node.Definition.Id, "running"));
+                var placement = node.Candidates.Count == 1 ? node.Instance : null;
+                run.Progress?.Invoke(new(node.Definition.Id, "running", Instance: placement));
                 var inputs = inboxes[node.Definition.Id].ReadAsync(stopping.Token);
-                var nodeContext = new NodeContext(node, run, inputs, PublishAsync);
+                var nodeContext = new NodeContext(node, run, inputs, PublishAsync, plan.Inventory);
                 await node.Registration.Run(nodeContext, stopping.Token);
                 inboxes[node.Definition.Id].Stop();
                 foreach (var edge in outgoing)
                     await inboxes[edge.Target].CompleteAsync(edge.TargetPort, stopping.Token);
-                run.Progress?.Invoke(new(node.Definition.Id, "completed"));
+                run.Progress?.Invoke(new(node.Definition.Id, "completed", Instance: placement));
             }
             catch (OperationCanceledException) when (stopping.IsCancellationRequested)
             {

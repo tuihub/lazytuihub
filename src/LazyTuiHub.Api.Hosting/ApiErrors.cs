@@ -42,6 +42,21 @@ public static partial class ApiErrors
                 LogPipelineFailure(logger, exception.NodeId, exception);
             throw exception.InnerException switch
             {
+                PacketRejectedException rejected => Create(
+                    StatusCode.FailedPrecondition,
+                    "PACKET_REJECTED",
+                    rejected.Message
+                ),
+                UnconfirmedExecutionException unconfirmed => Create(
+                    StatusCode.Unknown,
+                    "OUTCOME_UNKNOWN",
+                    unconfirmed.Message
+                ),
+                InstanceUnavailableException unavailable => Create(
+                    StatusCode.Unavailable,
+                    "NO_AVAILABLE_INSTANCE",
+                    unavailable.Message
+                ),
                 KeyNotFoundException => Create(
                     StatusCode.NotFound,
                     "RESOURCE_NOT_FOUND",

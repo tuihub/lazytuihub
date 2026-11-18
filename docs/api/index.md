@@ -13,11 +13,16 @@
 - [POST /v1/feeds](operations/RssService_CreateFeed.md)
 - [GET /v1/feeds/{feed}](operations/RssService_GetFeed.md)
 - [POST /v1/feeds/{feed}:refresh](operations/RssService_RefreshFeed.md)
+- [GET /v1:describeWorker](operations/WorkerService_DescribeWorker.md)
+- [POST /v1:executePacket](operations/WorkerService_ExecutePacket.md)
 - [POST /v1:generateGreeting](operations/GreetingService_GenerateGreeting.md)
 
 ## Models
 
 - [Article](models/Article.md)
+- [DescribeWorkerResponse](models/DescribeWorkerResponse.md)
+- [ExecutePacketRequest](models/ExecutePacketRequest.md)
+- [ExecutePacketResponse](models/ExecutePacketResponse.md)
 - [Feed](models/Feed.md)
 - [GenerateGreetingRequest](models/GenerateGreetingRequest.md)
 - [GenerateGreetingResponse](models/GenerateGreetingResponse.md)
@@ -31,6 +36,7 @@
 
 - [lazytuihub/articles/v1/article.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/articles/v1/article.proto)
 - [lazytuihub/articles/v1/article_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/articles/v1/article_service.proto)
+- [lazytuihub/execution/v1/worker_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/execution/v1/worker_service.proto)
 - [lazytuihub/greeting/v1/greeting_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/greeting/v1/greeting_service.proto)
 - [lazytuihub/rss/v1/feed.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/feed.proto)
 - [lazytuihub/rss/v1/rss_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/rss_service.proto)

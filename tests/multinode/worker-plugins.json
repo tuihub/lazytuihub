@@ -1,0 +1,9 @@
+[
+  {
+    "id": "core",
+    "assembly": "core/LazyTuiHub.CorePlugin.dll",
+    "entryType": "LazyTuiHub.CorePlugin.CoreLibraryPlugin",
+    "name": "Core",
+    "required": true
+  }
+]

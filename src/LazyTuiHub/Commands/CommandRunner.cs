@@ -40,7 +40,8 @@ internal static class CommandRunner
         }
         catch (Exception error)
             when (error
-                    is DbException
+                    is LazyTuiHub.Framework.PipelineExecutionException
+                        or DbException
                         or RpcException
                         or ArgumentException
                         or InvalidOperationException

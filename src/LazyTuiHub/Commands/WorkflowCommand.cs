@@ -23,13 +23,18 @@ internal static class WorkflowCommand
                     {
                         node.Type,
                         node.Module,
+                        node.RequiredResource,
                         Inputs = node.Inputs.Select(CommandJson.Port),
                         Outputs = node.Outputs.Select(CommandJson.Port),
                     })
                 );
                 break;
             case "list":
-                CommandJson.Write(workflows.List().Select(workflows.Describe));
+                CommandJson.Write(
+                    await Task.WhenAll(
+                        workflows.List().Select(definition => workflows.DescribeAsync(definition, token))
+                    )
+                );
                 break;
             case "relations":
                 CommandJson.Write(
@@ -78,17 +83,17 @@ internal static class WorkflowCommand
         {
             _ = CommandJson.Required(configuration, "pipeline-file");
             workflows.Save(definition);
-            CommandJson.Write(workflows.Describe(workflows.Get(definition.Name)));
+            CommandJson.Write(await workflows.DescribeAsync(workflows.Get(definition.Name), token));
             return;
         }
-        var description = workflows.Describe(definition);
+        var description = await workflows.DescribeAsync(definition, token);
         if (action is "plan" && !description.Executable)
         {
             CommandJson.Write(description);
             Environment.ExitCode = 1;
             return;
         }
-        var plan = workflows.CreatePlan(definition);
+        var plan = description.ExecutablePlan();
         if (action is "plan")
         {
             CommandJson.Write(
@@ -102,10 +107,14 @@ internal static class WorkflowCommand
                         node.Definition.Type,
                         node.Definition.PluginId,
                         node.Instance,
+                        node.Candidates,
+                        node.ExecutionMode,
+                        node.Requirements,
                         Inputs = node.Descriptor.Inputs.Select(CommandJson.Port),
                         Outputs = node.Descriptor.Outputs.Select(CommandJson.Port),
                     }),
                     plan.Connections,
+                    UnavailablePeers = plan.Inventory.Unavailable,
                 }
             );
             return;

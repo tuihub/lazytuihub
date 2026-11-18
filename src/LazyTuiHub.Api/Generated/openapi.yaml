@@ -226,6 +226,46 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/RefreshFeedResponse'
+    /v1:describeWorker:
+        get:
+            tags:
+                - WorkerService
+            description: |-
+                Reports this instance's current resources and exported operations.
+                 The coordinator reads this inventory when it plans a workflow.
+            operationId: WorkerService_DescribeWorker
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DescribeWorkerResponse'
+    /v1:executePacket:
+        post:
+            tags:
+                - WorkerService
+            description: |-
+                Runs one registered operation and returns one complete output packet.
+                 The coordinator supplies its worker bearer credential over a trusted channel.
+                 Repeatable transforms may move to another candidate after loss of a response.
+                 For an owner-bound write a lost response leaves the outcome unknown.
+                 UNAVAILABLE covers missing capabilities and temporarily unreachable inputs.
+                 Invalid packets and rejected operations must not be retried on another worker.
+            operationId: WorkerService_ExecutePacket
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExecutePacketRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExecutePacketResponse'
     /v1:generateGreeting:
         post:
             tags:
@@ -307,6 +347,74 @@ components:
                     type: string
                     description: Output only. The source resource name supplied by the producer, such as `feeds/{feed}`.
             description: An article collected from a source in this workspace.
+        DescribeWorkerResponse:
+            type: object
+            properties:
+                instance:
+                    readOnly: true
+                    type: string
+                    description: Output only. The identity of this worker.
+                resources:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
+                    description: Output only. Resource names contributed by this instance.
+                repeatableOperations:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
+                    description: Output only. Exported transforms that may run again after an unavailable response.
+                ownedOperations:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
+                    description: Output only. Exported operations bound to one resource owner and one attempt.
+            description: Response for DescribeWorker.
+        ExecutePacketRequest:
+            required:
+                - instance
+                - nodeType
+                - settings
+                - input
+            type: object
+            properties:
+                instance:
+                    type: string
+                    description: Required. The configured execution instance expected by the coordinator.
+                nodeType:
+                    type: string
+                    description: Required. The registered node type that defines the settings and packet codec.
+                settings:
+                    type: string
+                    description: Required. The node settings encoded as a UTF-8 JSON object.
+                    format: bytes
+                input:
+                    type: string
+                    description: Required. A UTF-8 JSON packet with a typed value and optional data reference.
+                    format: bytes
+                requiredResources:
+                    type: array
+                    items:
+                        type: string
+                    description: Optional. Resources that must still be available when executing this packet.
+                repeatable:
+                    type: boolean
+                    description: |-
+                        Optional. True for a repeatable transform. The worker checks the execution
+                         mode against its current registration before invoking the implementation.
+            description: Request for ExecutePacket.
+        ExecutePacketResponse:
+            type: object
+            properties:
+                output:
+                    readOnly: true
+                    type: string
+                    description: Output only. A UTF-8 JSON packet containing the result value and its data reference.
+                    format: bytes
+            description: Response for ExecutePacket.
         Feed:
             required:
                 - uri
@@ -408,3 +516,5 @@ tags:
          code is the canonical gRPC number and details includes google.rpc.ErrorInfo.
          The outer error envelope and HTTP-valued code described by AIP-193 are not
          implemented in this prototype; clients must use the HTTP response status.
+    - name: WorkerService
+      description: Reports instance resources and executes explicitly exported packet operations.

@@ -162,7 +162,9 @@ public sealed partial class DesktopTests
                         Assert.False(page.Model.CanSubscribe);
                         await page.Model.SetFilterAsync("read = true");
                         Assert.Equal(savedArticle, Assert.Single(page.Model.Articles).Name);
-                        Assert.NotEmpty(plugins.Workflows.Describe(plugins.Workflows.Get("rss.ingest")).Problems);
+                        Assert.NotEmpty(
+                            (await plugins.Workflows.DescribeAsync(plugins.Workflows.Get("rss.ingest"), token)).Problems
+                        );
                         await CloseAsync(window, token);
                     }
                     return true;
@@ -293,7 +295,9 @@ public sealed partial class DesktopTests
         await host.StartAsync(TestContext.Current.CancellationToken);
         Assert.Null(host.Services.GetService<IServer>());
         await host.StopAsync(TestContext.Current.CancellationToken);
-        var tasks = host.Services.GetRequiredService<PluginRuntime>().Tasks();
+        var tasks = await host
+            .Services.GetRequiredService<PluginRuntime>()
+            .TasksAsync(TestContext.Current.CancellationToken);
         Assert.Contains(tasks, task => task.Declaration.Id == "rss.refresh");
         Assert.All(tasks, task => Assert.Contains(task.State, new[] { "stopped", "completed" }));
     }

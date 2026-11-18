@@ -4,9 +4,9 @@
 
 ## 目标与边界
 
-MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。首轮本地运行器支持具名流式／同步端口和可执行的本地计划。[框架 Note](../../.agents/notes/2026-11-17-mvp-framework.zh.md) 与[节点执行 Note](../../.agents/notes/2026-11-17-mvp-node-execution.zh.md) 区分当前选择和后续设计。MVP 合入主分支前，Note 保持可自由编辑的提案状态；每轮将代码和对应 Note 一起提交。
+MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具名流式／同步端口，可以在本地执行，也可以把符合条件的包操作交给工作节点。[框架 Note](../../.agents/notes/2026-11-17-mvp-framework.zh.md) 与[节点执行 Note](../../.agents/notes/2026-11-17-mvp-node-execution.zh.md) 区分当前选择和后续设计。MVP 合入主分支前，Note 保持可自由编辑的提案状态；每轮将代码和对应 Note 一起提交。
 
-当前通过 Avalonia 桌面阅读器、CLI、进程内 API 和生成的 HTTP 客户端交互，没有可视化图编辑器或分布式执行。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮文章表和默认抓取图均已变更，请使用新工作区。
+当前通过 Avalonia 桌面阅读器、CLI、进程内 API 和生成的 HTTP 客户端交互，通过 JSON 编辑图。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮文章表和默认抓取图均已变更，请使用新工作区。
 
 [桌面 MVP 指南](desktop-mvp.zh.md) 介绍可运行的 Avalonia 界面、真实 RSS／SQLite 操作、工作流查看和插件可用性。[UI 比较指南](ui-comparison.zh.md) 保留此前的独立实验。
 
@@ -35,7 +35,22 @@ rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.p
 
 NodeRegistry.Register 接收具名、有类型的输入／输出声明和一个异步执行函数，每类端口可以为任意数量，包括零。连线记录 source、sourcePort、target、targetPort，数据类型与交付方式必须严格一致，object 不作为接收任意类型的端口。输出可以未连接，每个已声明输入需要生产者。
 
-PipelinePlanner 生成 PipelinePlan，绑定节点实现、端口连接、本地放置和缓冲容量。当前后端要求 DAG，所有节点放在 local。保存时返回可执行性诊断，同时保留不可用节点及原始参数／连线；执行要求有效计划，运行定义时生成新计划，也可直接执行已有计划。资源清单、远程放置及远程传输尚未实现。
+计划器合并插件节点必需的资源和工作流节点在 `requires` 数组里追加的需求，再与各实例独立登记的资源匹配。例如，`articles.store` 要求 `workspace.primary`，摘要工作流可以要求 `compute.batch`。图中只需填写逻辑节点、设置、需求和连线。计划列出每一步的需求、候选实例和无法读取清单的对端。运行已保存的定义时重新生成计划。保存时会保留缺少能力的定义并返回诊断。
+
+## 跨实例运行
+
+准备 Docker 引擎和 Compose，运行 `mise run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `artifacts/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。
+
+| 配置 | 用途 |
+| --- | --- |
+| `Cluster:Id`、`Cluster:Resources` | 当前实例的身份及可提供的具名资源。由持有权威文章库的实例登记 `workspace.primary`。单机模式默认使用本地工作区。 |
+| `Cluster:Peers` | 可连接的工作节点地址及凭据，每项仅含 `Url` 和 `Token`。生成计划时向各工作节点查询资源与操作。 |
+| `--worker true`、`Cluster:Token`、`Cluster:Export` | 启动工作节点端点，配置本机的 Bearer 凭据和允许导出的操作。只有已加载的包操作可以导出。 |
+| `Cluster:FetchOrigins` | 此工作节点允许抓取的 HTTP 来源。工作节点不会跟随重定向。实例间通信使用 HTTPS，隔离的 Docker 测试网络显式启用 `Cluster:AllowInsecureHttp`。 |
+
+协调端可直接调用本地实现，也可通过生成的 HTTP 客户端发送带引用的类型化数据包。当前只有注册为单流入、单流出的包操作才能跨实例。可重复转换按包先尝试本地，再按实例标识依次尝试符合条件的远端。其余流、同步组和队列由协调端维护。每份计划使用一次清单快照，新加入或恢复的实例在下次生成计划时可见。计划运行期间如有候选失效，可继续使用其他可达候选。
+
+`articles.store` 等绑定所有者的操作要求恰好一个符合条件的所有者。写入确认丢失时返回结果未知，重新提交前应先核对所有者的数据。RSS 订阅和抓取明细保存在提交方工作区。文章及来源关联保存在计划选中的所有者上。[工作节点协议](../api/operations/WorkerService_ExecutePacket.md) 描述传输契约。
 
 ## 流式与同步交付
 
@@ -154,6 +169,6 @@ mise run run -- --database ./artifacts/rss/workspace.db --command workflow --act
 
 运行器通过 .NET Channels 实现端口 API，节点函数不必管理竞争读取任务或具体队列。普通消费者读取到输入结束，或显式安排取消。取消依赖协作，不能强行中断同步工作。Microsoft.Data.Sqlite 的 I/O 是同步的，解析与数据库工作在工作任务中执行。XmlReader 遵守声明编码，保留支持的 RSS/Atom 内容，禁用 DTD／外部实体；尚未覆盖所有扩展或 xml:base 规则。
 
-运行进度不持久保存。保存的图不保存活动队列，也不提供崩溃恢复、检查点、持久重放或恰好执行一次。资源调度、未齐输入预算、复杂 key 关联、反馈图及远程执行留待后续实现。
+运行进度不持久保存。保存的图不保存活动队列，也不提供崩溃恢复、检查点、持久重放或恰好执行一次。容量调度、未齐输入预算、复杂 key 关联、反馈图及跨设备同步执行留待后续实现。
 
-公网身份与授权尚未接入，原型面向可信操作者；订阅 URI 会触发出站请求。HTTP 错误保留既有 ASP.NET Core google.rpc.Status JSON/ErrorInfo 与 AIP-193 外层 error 和 HTTP code 的差异。分页密钥位于数据库旁的 keys 目录，保留密钥才能让已有 token 在重启后继续使用。本轮不引入数据库 Schema 标准或历史升级层。
+业务 API 面向可信操作者，尚未接入终端用户认证。订阅 URI 会触发出站请求。HTTP 错误保留既有 ASP.NET Core google.rpc.Status JSON/ErrorInfo 与 AIP-193 外层 error 和 HTTP code 的差异。分页密钥位于数据库旁的 keys 目录，保留密钥才能让已有 token 在重启后继续使用。本轮不引入数据库 Schema 标准或历史升级层。

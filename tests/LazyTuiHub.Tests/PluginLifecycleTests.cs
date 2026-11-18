@@ -41,14 +41,20 @@ public sealed class PluginLifecycleTests
             await state.Started.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
             await service.StopAsync(TestContext.Current.CancellationToken);
             await state.Stopped.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
-            Assert.Equal("stopped", Assert.Single(runtime.Tasks()).State);
+            Assert.Equal(
+                "stopped",
+                Assert.Single(await runtime.TasksAsync(TestContext.Current.CancellationToken)).State
+            );
         }
         await using (var disabled = PluginTestHost.Create(workspace.Database, http, workspace.Plugins))
         {
             var runtime = disabled.Services.GetRequiredService<PluginRuntime>();
             Assert.Null(disabled.Services.GetService<ProbeState>());
             Assert.Empty(runtime.Workflows.Registry.Descriptors);
-            Assert.Equal("unavailable", Assert.Single(runtime.Tasks()).State);
+            Assert.Equal(
+                "unavailable",
+                Assert.Single(await runtime.TasksAsync(TestContext.Current.CancellationToken)).State
+            );
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 runtime.InvokeHookAsync("probe", "cleanup", disabled.Services, TestContext.Current.CancellationToken)
             );
@@ -67,7 +73,10 @@ public sealed class PluginLifecycleTests
         var manager = maintenance.Services.GetRequiredService<PluginRuntime>();
         Assert.Equal("maintenance", Assert.Single(manager.List()).Activation);
         Assert.Empty(manager.Workflows.Registry.Descriptors);
-        Assert.Equal("unavailable", Assert.Single(manager.Tasks()).State);
+        Assert.Equal(
+            "unavailable",
+            Assert.Single(await manager.TasksAsync(TestContext.Current.CancellationToken)).State
+        );
         var maintainedState = maintenance.Services.GetRequiredService<ProbeState>();
         Assert.Equal(0, maintainedState.Cleanups);
         Assert.Equal(0, maintainedState.Uninstalls);

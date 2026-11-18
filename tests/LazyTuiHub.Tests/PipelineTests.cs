@@ -206,12 +206,13 @@ public sealed class PipelineTests
             new[] { new DataPacket<Payload>(payload, reference) }.ToAsyncEnumerable()
         );
         var runner = new PipelineRunner(registry);
-        var plan = runner.CreatePlan(
+        var plan = await runner.CreatePlanAsync(
             new(
                 "typed",
                 [PipelineNode.Create("source", "source"), PipelineNode.Create("out", "capture")],
                 [new("source", "output", "out", "input")]
-            )
+            ),
+            TestContext.Current.CancellationToken
         );
         Assert.All(plan.Nodes, node => Assert.Equal("local", node.Instance));
         await runner.RunAsync(

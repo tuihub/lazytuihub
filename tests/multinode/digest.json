@@ -1,0 +1,12 @@
+{
+  "name": "text-digest",
+  "nodes": [
+    {"id": "text", "type": "builtin.text", "settings": {"text": "跨实例的文本计算"}},
+    {"id": "digest", "type": "builtin.text-digest", "requires": ["compute.batch"], "settings": {}},
+    {"id": "output", "type": "builtin.output-text", "settings": {}}
+  ],
+  "edges": [
+    {"source": "text", "sourcePort": "output", "target": "digest", "targetPort": "input"},
+    {"source": "digest", "sourcePort": "output", "target": "output", "targetPort": "input"}
+  ]
+}

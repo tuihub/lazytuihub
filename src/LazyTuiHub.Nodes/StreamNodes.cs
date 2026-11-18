@@ -11,14 +11,18 @@ public static class StreamNodes
         NodeRegistry registry,
         string type,
         string module,
-        Func<NodeContext, CancellationToken, IAsyncEnumerable<DataPacket<T>>> run
+        Func<NodeContext, CancellationToken, IAsyncEnumerable<DataPacket<T>>> run,
+        string? requiredResource = null
     )
         where T : notnull =>
-        registry.Register(new(type, module, [], [PortDescriptor.Stream<T>(Output)]), async (context, token) =>
-        {
-            await foreach (var packet in run(context, token).WithCancellation(token))
-                await context.WriteAsync(Output, packet.Value, token, packet.Reference);
-        });
+        registry.Register(
+            new(type, module, [], [PortDescriptor.Stream<T>(Output)], requiredResource),
+            async (context, token) =>
+            {
+                await foreach (var packet in run(context, token).WithCancellation(token))
+                    await context.WriteAsync(Output, packet.Value, token, packet.Reference);
+            }
+        );
 
     public static void Transform<TInput, TOutput>(
         NodeRegistry registry,

@@ -2,7 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Google.Protobuf.Reflection;
 using Google.Rpc;
+using LazyTuiHub.Api;
 using LazyTuiHub.Desktop;
+using LazyTuiHub.Execution;
 using LazyTuiHub.Plugins;
 
 namespace LazyTuiHub;
@@ -24,12 +26,17 @@ public static class ApplicationHost
         WebApplication? app = null;
         try
         {
+            var worker = builder.Configuration.GetValue<bool>("worker");
+            if (worker)
+                builder.Services.AddSingleton<IWorkerApi, WorkerApplication>();
             if (builder.Configuration.GetValue<bool>("demo"))
                 builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, 0));
-            else if (builder.Configuration["command"] is null)
+            else if (!worker && builder.Configuration["command"] is null)
                 builder.Services.AddHostedService<PluginTaskService>();
             app = builder.Build();
-            app.Services.GetRequiredService<PluginRuntime>().Activate(app.Services, app);
+            app.Services.GetRequiredService<PluginRuntime>().Activate(app.Services, worker ? null : app);
+            if (worker)
+                WorkerEndpoint.Map(app);
             return app;
         }
         catch

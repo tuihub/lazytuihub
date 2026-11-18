@@ -33,15 +33,19 @@ public sealed partial class WorkflowPage : UserControl
         PlanTabs.SelectionChanged += (_, _) => state.Tab = PlanTabs.SelectedIndex;
     }
 
-    private void SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (Definitions.SelectedItem is not PipelineDefinition definition)
             return;
         state.Selected = definition.Name;
         WorkflowTitle.Text = definition.Name;
-        var description = workflows.Describe(definition);
+        PlanStatus.Text = "Planning…";
+        Plan.Text = "";
+        var description = await workflows.DescribeAsync(definition, CancellationToken.None);
+        if (!ReferenceEquals(Definitions.SelectedItem, definition))
+            return;
         Definition.Text = JsonSerializer.Serialize(definition, PipelineStore.JsonOptions);
-        PlanStatus.Text = description.Executable ? "Ready to execute locally" : "Cannot execute";
+        PlanStatus.Text = description.Executable ? "Ready to execute" : "Cannot execute";
         if (!description.Executable)
         {
             Plan.Text = string.Join(
@@ -52,11 +56,13 @@ public sealed partial class WorkflowPage : UserControl
             );
             return;
         }
-        var plan = workflows.CreatePlan(definition);
+        var plan = description.ExecutablePlan();
         Plan.Text =
             string.Join(
                 Environment.NewLine,
-                plan.Nodes.Select(node => $"{node.Definition.Id} · {node.Descriptor.Type} · {node.Instance}")
+                plan.Nodes.Select(node =>
+                    $"{node.Definition.Id} · {node.Descriptor.Type} · {string.Join(" → ", node.Candidates)}"
+                )
             )
             + Environment.NewLine
             + Environment.NewLine

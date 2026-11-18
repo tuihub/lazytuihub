@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace LazyTuiHub.Framework;
 
 public sealed class NodeContext
@@ -5,14 +7,20 @@ public sealed class NodeContext
     private readonly Func<string, DataPacket, string?, CancellationToken, ValueTask> publish;
     private readonly Dictionary<string, PortDescriptor> outputs;
     private readonly IAsyncEnumerable<NodeInput> input;
+    private readonly PlannedNode planned;
+
+    private readonly ExecutionSnapshot inventory;
 
     internal NodeContext(
         PlannedNode node,
         PipelineContext run,
         IAsyncEnumerable<NodeInput> input,
-        Func<string, DataPacket, string?, CancellationToken, ValueTask> publish
+        Func<string, DataPacket, string?, CancellationToken, ValueTask> publish,
+        ExecutionSnapshot inventory
     )
     {
+        planned = node;
+        this.inventory = inventory;
         Node = node.Definition;
         Run = run;
         this.input = input;
@@ -24,6 +32,71 @@ public sealed class NodeContext
     public PipelineContext Run { get; }
 
     public IAsyncEnumerable<NodeInput> ReadEventsAsync() => input;
+
+    internal async Task<DataPacket<TOutput>> ExecutePacketAsync<TInput, TOutput>(
+        DataPacket<TInput> packet,
+        Func<DataPacket<TInput>, JsonElement, CancellationToken, Task<DataPacket<TOutput>>> execute,
+        CancellationToken token
+    )
+        where TInput : notnull
+        where TOutput : notnull
+    {
+        byte[]? wireInput = null;
+        var failures = new List<string>();
+        foreach (var target in planned.Targets)
+        {
+            token.ThrowIfCancellationRequested();
+            Report("attempt", target.Instance);
+            try
+            {
+                DataPacket<TOutput> result;
+                if (target.Peer is null)
+                    result = await execute(packet, Node.Settings, token);
+                else
+                {
+                    wireInput ??= JsonSerializer.SerializeToUtf8Bytes(packet, PipelineStore.JsonOptions);
+                    var bytes = await target.Peer.InvokeAsync(
+                        target.Instance,
+                        Node.Type,
+                        planned.Requirements,
+                        planned.Registration.Mode!.Value,
+                        Node.Settings,
+                        wireInput,
+                        token
+                    );
+                    result = PacketOperation.Decode<TOutput>(bytes);
+                }
+                Report("delivered", target.Instance);
+                return result;
+            }
+            catch (InstanceUnavailableException error)
+            {
+                token.ThrowIfCancellationRequested();
+                if (planned.Registration.Mode == PacketExecutionMode.Owned)
+                {
+                    Report("unconfirmed", target.Instance, error.Message);
+                    throw new UnconfirmedExecutionException(
+                        $"No response confirming '{Node.Type}' on {target.Instance}. Its outcome is unknown. {error.Message}",
+                        error
+                    );
+                }
+                Report("unavailable", target.Instance, error.Message);
+                failures.Add($"{target.Instance}: {error.Message}");
+            }
+            catch (PacketRejectedException error)
+            {
+                Report("rejected", target.Instance, error.Message);
+                throw new PacketRejectedException($"'{Node.Type}' on {target.Instance}: {error.Message}", error);
+            }
+        }
+        token.ThrowIfCancellationRequested();
+        throw new InstanceUnavailableException(
+            $"No instance completed '{Node.Type}'. {string.Join("; ", failures)} {inventory.Diagnostics()}"
+        );
+
+        void Report(string state, string instance, string? detail = null) =>
+            Run.Progress?.Invoke(new(Node.Id, state, Instance: instance, Detail: detail, Reference: packet.Reference));
+    }
 
     public ValueTask WriteAsync<T>(
         string port,

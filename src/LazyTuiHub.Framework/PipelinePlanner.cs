@@ -1,6 +1,6 @@
 namespace LazyTuiHub.Framework;
 
-public sealed class PipelinePlanner(NodeRegistry registry)
+public sealed class PipelinePlanner(NodeRegistry registry, ExecutionSnapshot snapshot)
 {
     public PipelinePlan Create(PipelineDefinition definition)
     {
@@ -8,7 +8,22 @@ public sealed class PipelinePlanner(NodeRegistry registry)
             throw new ArgumentOutOfRangeException(nameof(definition), "The queue capacity must be positive.");
         var nodes = definition.Nodes.ToDictionary(
             node => node.Id,
-            node => new PlannedNode(node, registry.Get(node.Type), "local"),
+            node =>
+            {
+                var registration = registry.Get(node.Type);
+                var requirements = (node.Requires ?? [])
+                    .Concat(
+                        registration.Descriptor.RequiredResource is { } resource ? [resource] : Array.Empty<string>()
+                    )
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+                return new PlannedNode(
+                    node,
+                    registration,
+                    snapshot.Place(node.Id, registration, requirements),
+                    requirements
+                );
+            },
             StringComparer.Ordinal
         );
         if (nodes.Count == 0)
@@ -33,7 +48,7 @@ public sealed class PipelinePlanner(NodeRegistry registry)
                 );
         }
         ValidateAcyclic(nodes.Keys, edges);
-        return new(definition.Name, nodes.Values.ToArray(), edges, definition.BufferCapacity);
+        return new(definition.Name, nodes.Values.ToArray(), edges, definition.BufferCapacity, snapshot);
     }
 
     private static void ValidateConnection(PipelineEdge edge, Dictionary<string, PlannedNode> nodes)

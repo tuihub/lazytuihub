@@ -182,6 +182,13 @@ description = "Test pipeline execution, RSS, SQLite, and local/HTTP behavior"
 wait_for = ["check:analyzers"]
 run = "dotnet run --project tests/LazyTuiHub.Tests"
 
+[tasks."test:multinode"]
+description = "Publish the host and exercise cross-instance execution on isolated Docker networks"
+run = [
+  "dotnet publish src/LazyTuiHub -c Release -p:UseAppHost=false --no-self-contained -o artifacts/multinode/app",
+  "node tests/multinode/run.mjs",
+]
+
 [tasks."demo:rss"]
 description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"
 wait_for = ["check:analyzers", "test", "demo:api", "demo:workflow"]
