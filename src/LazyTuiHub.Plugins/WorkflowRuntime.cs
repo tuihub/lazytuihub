@@ -75,7 +75,7 @@ public sealed class WorkflowRuntime : IWorkflowExecutor
     {
         var description = Describe(definition);
         if (!description.Executable)
-            throw new InvalidOperationException(
+            throw new WorkflowUnavailableException(
                 string.Join(
                     Environment.NewLine,
                     description.Problems.Select(problem =>

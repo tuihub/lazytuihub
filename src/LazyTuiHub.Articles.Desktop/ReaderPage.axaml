@@ -1,10 +1,10 @@
 <UserControl
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:LazyTuiHub.Rss.Desktop"
+    xmlns:local="using:LazyTuiHub.Articles.Desktop"
     xmlns:desktop="clr-namespace:LazyTuiHub.Desktop;assembly=LazyTuiHub.Desktop"
-    xmlns:rss="clr-namespace:LazyTuiHub.Api.Rss.V1;assembly=LazyTuiHub.Api"
-    x:Class="LazyTuiHub.Rss.Desktop.ReaderPage"
+    xmlns:articles="clr-namespace:LazyTuiHub.Api.Articles.V1;assembly=LazyTuiHub.Api"
+    x:Class="LazyTuiHub.Articles.Desktop.ReaderPage"
     x:DataType="local:ReaderModel"
     x:Name="ReaderRoot"
 >
@@ -25,6 +25,7 @@
                             </StackPanel>
                             <Button
                                 x:Name="AddFeedButton"
+                                IsVisible="{Binding CanSubscribe}"
                                 Classes="icon"
                                 Grid.Column="1"
                                 Click="AddFeedClick"
@@ -37,6 +38,7 @@
                         </Grid>
                         <ComboBox
                             x:Name="FeedPicker"
+                            IsVisible="{Binding CanSubscribe}"
                             ItemsSource="{Binding Feeds}"
                             HorizontalAlignment="Stretch"
                             SelectedItem="{Binding SelectedFeed, Mode=OneWay}"
@@ -103,7 +105,7 @@
                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         >
                             <ListBox.Styles>
-                                <Style Selector="ListBoxItem" x:DataType="rss:Article">
+                                <Style Selector="ListBoxItem" x:DataType="articles:Article">
                                     <Setter
                                         Property="AutomationProperties.Name"
                                         Value="{Binding Title}"
@@ -111,7 +113,7 @@
                                 </Style>
                             </ListBox.Styles>
                             <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="rss:Article">
+                                <DataTemplate x:DataType="articles:Article">
                                     <StackPanel Spacing="8">
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                             <TextBlock

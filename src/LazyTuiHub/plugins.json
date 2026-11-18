@@ -8,9 +8,15 @@
   },
   {
     "id": "rss",
-    "name": "RSS Reader",
+    "name": "RSS Sources",
     "assembly": "rss/LazyTuiHub.Rss.dll",
     "entryType": "LazyTuiHub.Rss.RssPlugin"
+  },
+  {
+    "id": "articles",
+    "name": "Article Library",
+    "assembly": "articles/LazyTuiHub.Articles.dll",
+    "entryType": "LazyTuiHub.Articles.ArticlePlugin"
   },
   {
     "id": "storage.sqlite",
@@ -20,12 +26,12 @@
     "required": true
   },
   {
-    "id": "rss.desktop",
-    "name": "RSS Reader UI",
-    "assembly": "rss-desktop/LazyTuiHub.Rss.Desktop.dll",
-    "entryType": "LazyTuiHub.Rss.Desktop.RssDesktopPlugin",
+    "id": "articles.desktop",
+    "name": "Article Reader",
+    "assembly": "articles-desktop/LazyTuiHub.Articles.Desktop.dll",
+    "entryType": "LazyTuiHub.Articles.Desktop.ArticleDesktopPlugin",
     "requires": [
-      "rss"
+      "articles"
     ]
   }
 ]

@@ -1,12 +1,12 @@
-# GET /v1/feeds/{feed}/articles/{article}
+# POST /v1/articles/{article}:markRead
 
-- **Method:** `GET`
-- **Path:** `/v1/feeds/{feed}/articles/{article}`
-- **Operation ID:** `RssService_GetArticle`
-- **Tags:** RssService
+- **Method:** `POST`
+- **Path:** `/v1/articles/{article}:markRead`
+- **Operation ID:** `ArticleService_MarkArticleRead`
+- **Tags:** ArticleService
 
-Reads an article without changing its read state. Unknown names return
-NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
+Marks an article as read and returns its current state. Repeating the call
+has the same effect. Unknown names return NOT_FOUND.
 
 ## Effective servers
 
@@ -14,12 +14,23 @@ NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
 
 ## Path parameters
 
-- **`feed` (required)**: `string`
-
-  The feed id.
 - **`article` (required)**: `string`
 
   The article id.
+
+## Request body
+
+**Required:** `true`
+
+**Content type:** `application/json`
+
+schema: [MarkArticleReadRequest](../models/MarkArticleReadRequest.md)
+
+Request for MarkArticleRead.
+
+- **`name` (required)**: `string`
+
+  Required. The article name, `articles/{article}`.
 
 ## Responses
 
@@ -29,7 +40,7 @@ NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
 
 schema: [Article](../models/Article.md)
 
-A feed entry persisted by the RSS ingestion pipeline.
+An article collected from a source in this workspace.
 
 - **`content`**: `string`, readOnly
 
@@ -37,13 +48,16 @@ A feed entry persisted by the RSS ingestion pipeline.
   a rendering client must sanitize it before displaying it as HTML.
 - **`name`**: `string`
 
-  Identifier. The article name, `feeds/{feed}/articles/{article}`.
+  Identifier. The article name, `articles/{article}`.
 - **`publishTime`**: `string`, format: `date-time`, readOnly
 
   Output only. The source publication time, omitted when absent or invalid.
 - **`read`**: `boolean`, readOnly
 
   Output only. Whether the user has marked this article as read.
+- **`source`**: `string`, readOnly
+
+  Output only. The source resource name supplied by the producer, such as `feeds/{feed}`.
 - **`title`**: `string`, readOnly
 
   Output only. The source entry title, which can be empty.

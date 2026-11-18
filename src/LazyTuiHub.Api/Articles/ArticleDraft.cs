@@ -1,9 +1,7 @@
-using LazyTuiHub.Framework;
-
-namespace LazyTuiHub.Rss;
+namespace LazyTuiHub.Api.Articles;
 
 public sealed record ArticleDraft(
-    string FeedId,
+    string Source,
     string EntryId,
     string Title,
     string Url,

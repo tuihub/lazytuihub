@@ -13,11 +13,11 @@ mise run run:desktop -- --database /path/to/workspace.db
 
 默认工作区位于 .NET 本地应用数据目录下的 `LazyTuiHub/workspace.db`，与 CLI／服务端模式共用。独立实验请显式指定数据库路径。相邻的 `keys/` 目录保存既有 API 分页密钥。应用加载发行目录中的 `plugins/plugins.json`；`--plugin-directory` 可指定另一套插件部署目录。
 
-在 Reader 中点击 Library 旁的 +，输入 HTTP／HTTPS 订阅地址和可选名称，点击 Subscribe。选择订阅后使用刷新按钮，通过 RSS 管线抓取文章。选择文章可阅读已存储的正文，点击 Mark read 标记已读，也可按已读／未读筛选。Load more 请求下一页，界面不限制文章总数。选择 All feeds 时，刷新按钮重新读取已保存的文章。刷新按钮的右键菜单也提供 Reload saved articles，用来读取包括后台刷新结果在内的工作区内容。正文以可选择的文本显示，源内容中的标记也会显示；尚未实现 HTML 渲染和打开外部链接。
+在 Reader 中点击 Library 旁的 +，输入 HTTP／HTTPS 订阅地址和可选名称，点击 Subscribe。选择订阅后使用刷新按钮，通过 RSS 管线抓取文章。选择文章可阅读已存储的正文，点击 Mark read 标记已读，也可按已读／未读筛选。Load more 请求下一页，界面不限制文章总数。选择 All sources 时，刷新按钮重新读取已保存的文章。刷新按钮的右键菜单也提供 Reload saved articles，用来读取包括后台刷新结果在内的工作区内容。正文以可选择的文本显示，源内容中的标记也会显示；尚未实现 HTML 渲染和打开外部链接。
 
 Workflows 展示已保存的定义、当前本地执行计划和不可执行原因。目前是只读检查器。保存和运行工作流定义使用既有 JSON／CLI 工具；该页面不提交执行或收集所需输入。
 
-Plugins 分别展示已保存的启用设置、本次启动的激活状态和文件可用性。启用／关闭在重启后生效，必要插件不能关闭。RSS Reader UI 插件（`rss.desktop`）可独立于 RSS 业务服务（`rss`）关闭；关闭 RSS 后，依赖它的界面也不可用。插件缺失或关闭时保留页面声明和既有数据；常规保留策略继续遵循存储约定。切换页面会保留页面实例及内存中的选择，重启不会保留选择和筛选条件，外观偏好则单独保存在本机。
+Plugins 分别展示已保存的启用设置、本次启动的激活状态和文件可用性。启用／关闭在重启后生效，必要插件不能关闭。阅读器（`articles.desktop`）依赖文章插件（`articles`）。关闭 RSS 后，抓取停止，订阅控件隐藏，已保存的文章仍可阅读。插件缺失或关闭时保留页面声明和既有数据；常规保留策略继续遵循存储约定。切换页面会保留页面实例及内存中的选择，重启不会保留选择和筛选条件，外观偏好则单独保存在本机。
 
 ## 外观
 
@@ -43,7 +43,7 @@ Fluent 使用 Avalonia 官方主题；macOS 使用 Devolutions 主题，尚未�
 | - | - |
 | [应用宿主](../../src/LazyTuiHub/) | 共用服务／插件装配；桌面模式使用通用宿主，HTTP／CLI 模式使用 Web 宿主。 |
 | [桌面层](../../src/LazyTuiHub.Desktop/) | Avalonia 应用／窗口、页面装配、工作流／插件检查器、界面操作跟踪及退出。 |
-| [RSS 桌面插件](../../src/LazyTuiHub.Rss.Desktop/) | 阅读控件与状态，直接调用共用的 IRssApi 契约。 |
+| [文章阅读插件](../../src/LazyTuiHub.Articles.Desktop/) | 阅读控件与状态，读取文章调用 IArticleApi，RSS 启用时通过 IRssApi 管理订阅。 |
 | [插件框架](../../src/LazyTuiHub.Plugins/) | 普通页面声明、所属插件、元数据保留、依赖激活和冷启动开关。 |
 
 桌面宿主启动相同的可用后台任务，不启动 HTTP 监听。业务和 DAO 代码不引用 Avalonia。桌面插件作为发行产物构建并动态加载，宿主不在运行时引用它的实现程序集。`AddDesktopPage` 同时提交普通页面声明和带键的 Avalonia 控件工厂；导航只接入已激活插件的页面，首次打开页面时才在 UI 线程创建控件。默认共享程序集上下文保持契约和 Avalonia 类型身份一致。

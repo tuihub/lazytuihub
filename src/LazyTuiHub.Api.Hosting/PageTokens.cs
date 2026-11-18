@@ -3,11 +3,25 @@ using System.Text.Json;
 using Grpc.Core;
 using Microsoft.AspNetCore.DataProtection;
 
-namespace LazyTuiHub.Rss.Application;
+namespace LazyTuiHub.Api.Hosting;
 
-internal sealed class PageTokens(IDataProtectionProvider provider)
+public sealed class PageTokens(IDataProtectionProvider provider)
 {
     private readonly IDataProtector protector = provider.CreateProtector("LazyTuiHub.Pagination");
+
+    private const int DefaultPageSize = 50;
+
+    public static int PageSize(int requested) =>
+        requested switch
+        {
+            < 0 => throw ApiErrors.Create(
+                StatusCode.InvalidArgument,
+                "INVALID_PAGE_SIZE",
+                "Page size cannot be negative."
+            ),
+            0 => DefaultPageSize,
+            _ => requested,
+        };
 
     public string Encode(string scope, string cursor) =>
         protector.Protect(JsonSerializer.Serialize(new Cursor(scope, cursor)));

@@ -51,7 +51,7 @@ category: architecture
 
 本轮 DaoRequirement 声明插件内的需求名称、Mode、Contract、Instance 及可选 Backend；DaoCapability 发布实际提供的档位、契约、实例和后端。默认实例名为 workspace，当前仅装配共享 SQLite 工作区。匹配使用这些字段，缺失或存在多个候选时给出原因，调用方通过 DaoScope.Get 取得相应服务。
 
-声明在 Configure 阶段独立保存。装配器先让可激活的提供者发布能力，再绑定依赖它的插件，避免清单顺序决定成败。SQLite 提供者实际尝试创建临时 FTS5 表，只在成功时发布搜索能力。本轮粒度为插件级必需需求：RSS 三项需求任一缺失就阻止 RSS 节点、路由、命令和任务激活；核心与诊断仍可运行。多实例配置、节点级可选能力及更丰富的探测结果仍待细化。
+声明在 Configure 阶段独立保存。装配器先让可激活的提供者发布能力，再绑定依赖它的插件，避免清单顺序决定成败。SQLite 提供者实际尝试创建临时 FTS5 表，只在成功时发布搜索能力。本轮粒度为插件级必需需求：RSS 需要原生连接和记录工具，文章需要原生连接和 FTS5，各项需求只影响声明它的插件；核心与诊断仍可运行。多实例配置、节点级可选能力及更丰富的探测结果仍待细化。
 
 例如，一个 RSS 插件可以为抓取明细申请统一 TTL 契约，为检索申请 FTS5 专项封装，并为其他操作申请某种原生连接。声明“全文搜索”是否足够，取决于使用方需要的分词、排序和查询行为是否已经包含在明确的契约中；框架不根据名称推断语义相等。
 
@@ -83,7 +83,7 @@ category: architecture
 | 运行状态与记录 | 执行计划、结果、输入快照、排队消息、同步组和节点状态具有不同的持久化要求。 |
 | 可回收数据 | 由明确的保留策略授权回收；不能仅因被称作“中间数据”或“缓存”就推断可丢弃。 |
 
-逻辑业务对象、某次不可变内容快照、内容所在位置和运行时载荷引用分别建模。文章 ID 可以在内容更新后保持不变；重放需要引用当次输入快照及必要上下文。当前 RSS 会更新同一文章的标题和正文，仅保留其 ID 不足以重现历史输入。同步输入的 messagekey 也不自动成为上述身份。
+逻辑业务对象、某次不可变内容快照、内容所在位置和运行时载荷引用分别建模。文章 ID 可以在内容更新后保持不变；重放需要引用当次输入快照及必要上下文。文章插件会更新同一文章的标题和正文，仅保留其 ID 不足以重现历史输入。同步输入的 messagekey 也不自动成为上述身份。
 
 进程内继续通过只读对象引用高效传递，不因引入持久存储而强制每条消息先落盘。有限重放需要保留输入、配置、节点实现信息及影响状态的同步输入和消费顺序。活动队列、未齐同步组与节点状态的恢复仍按框架／节点 Note 继续讨论，TTL 不自动解决这些问题。
 
@@ -117,7 +117,7 @@ TTL 工具可以由业务插件主动调用；统一后台清理需要通过 Plu
 
 ## 事务、后端选择与公网设备
 
-本轮继续以同一个 SQLite 工作区保存框架和 RSS 表。BusinessStorage 接受显式 IConnectionSource，仅对框架工作区的同一源提供业务写入与元数据登记原子性；其他源需要另行协调，不会被误当作同一事务。RSS 的 FTS 索引更新同样参与文章写入事务。SQLite WAL 下通过 ATTACH 访问多个数据库，不提供整组数据库的崩溃原子性。[SQLite WAL](https://www.sqlite.org/wal.html)
+本轮继续以同一个 SQLite 工作区保存框架、RSS 和文章表。BusinessStorage 接受显式 IConnectionSource，仅对框架工作区的同一源提供业务写入与元数据登记原子性；其他源需要另行协调，不会被误当作同一事务。文章的 FTS 索引更新同样参与文章写入事务。SQLite WAL 下通过 ATTACH 访问多个数据库，不提供整组数据库的崩溃原子性。[SQLite WAL](https://www.sqlite.org/wal.html)
 
 支持多 DAO 提供者和按数据集／功能绑定实例是设计方向，不等于所有数据能透明换库或共享一个事务。数据库与文件、外部索引或其他服务分别提交时，需要确定权威状态、元数据登记顺序、失败与未知结果的处理。当前同库原子性不能直接推广到这些组合。
 
@@ -145,7 +145,7 @@ TTL 工具可以由业务插件主动调用；统一后台清理需要通过 Plu
 
 [DAO 契约与工具入口](../../src/LazyTuiHub.Dao/) 不引用 SQLite 驱动；[SQLite 提供者插件](../../src/LazyTuiHub.Storage.Sqlite/) 实现统一记录工具、FTS5 专项服务及原生连接源。[SqliteDatabase](../../src/LazyTuiHub.Framework/SqliteDatabase.cs) 仍作为最小工作区基础设施；[BusinessStorage](../../src/LazyTuiHub.Framework/BusinessStorage.cs) 使用 DbConnection／DbTransaction 协调工作区原子登记。[PluginRegistration](../../src/LazyTuiHub.Plugins/PluginRegistration.cs) 通过 Daos、DaoServices 和 Retentions 收集声明，框架保存普通描述以支持提供者缺失诊断。
 
-[RssStore](../../src/LazyTuiHub.Rss/RssStore.cs) 使用 rss 命名空间并以原生源访问业务表，以专项工具更新／查询文章索引；[RssDetails](../../src/LazyTuiHub.Rss/RssDetails.cs) 将自己的 fetch_details 表传给统一记录工具。CLI 新增 dao list/clean/pause/resume 及 RSS search/details/keep-detail，既有 Proto／HTTP 契约保持。表名映射已变化，验证本轮原型应使用新的工作区；没有旧 Schema 迁移或自动清除旧表。[DataReference](../../src/LazyTuiHub.Framework/DataReference.cs) 仍只有 type 和 key。
+[RssStore](../../src/LazyTuiHub.Rss/RssStore.cs) 保存订阅，[RssDetails](../../src/LazyTuiHub.Rss/RssDetails.cs) 使用通用记录工具保存抓取明细。[ArticleStore](../../src/LazyTuiHub.Articles/ArticleStore.cs) 在 articles 命名空间管理文章及全文索引，通过同一事务提交内容、索引及可选的来源关联。关闭 RSS 后仍可阅读和搜索文章。新版表结构和默认图使用新的工作区。
 
 产品测试覆盖工具对多个目标的复用、命名空间与标识符安全、到期可见性、长期保留、暂停状态跨启动保留、拥有者关闭时继续受托清理、模式／实例／后端匹配、首次缺失能力、提供者 DLL 移走／恢复，以及搜索、业务与框架登记共同回滚。既有本地／HTTP、图和插件保留场景继续通过。当前只有一个实际后端，跨后端兼容性、其他专项能力、内容快照及持久运行状态仍需真实用例验证。
 
@@ -161,4 +161,4 @@ TTL 工具可以由业务插件主动调用；统一后台清理需要通过 Plu
 | 随部署与运维需要 | 物理布局及完整恢复 | 单库／分库、内容目录、Schema 初始化、备份快照一致性、迁移与导入导出。遵循 MVP 无历史兼容承诺，不提前建立通用迁移体系。 |
 | 随运行恢复与多设备需要 | 持久现场及资源策略 | 排队消息、未齐同步组、节点状态的持久性；并发、连接复用、资源预算、保留引用释放、远程可用性与数据搬迁。不会从某个默认 TTL 或有界队列推导整体恢复和内存保证。 |
 
-本轮通过 RSS 的三个实际访问需求及一次明细写入／到期流程落实了最小方案。后续继续按具体用例收敛上述边界，以明确、可替换的简单行为推进，不要求所有存储问题先获得最终答案。
+本轮通过 RSS 与文章插件涉及的三档访问需求及一次明细写入／到期流程落实了最小方案。后续继续按具体用例收敛上述边界，以明确、可替换的简单行为推进，不要求所有存储问题先获得最终答案。

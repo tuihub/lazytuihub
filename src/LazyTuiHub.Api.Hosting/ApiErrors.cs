@@ -3,11 +3,12 @@ using Google.Protobuf.WellKnownTypes;
 using Google.Rpc;
 using Grpc.Core;
 using LazyTuiHub.Framework;
-using LazyTuiHub.Rss;
+using LazyTuiHub.Plugins;
+using Microsoft.Extensions.Logging;
 
-namespace LazyTuiHub.Rss.Application;
+namespace LazyTuiHub.Api.Hosting;
 
-internal static partial class ApiErrors
+public static partial class ApiErrors
 {
     public static RpcException Create(StatusCode code, string reason, string message)
     {
@@ -19,23 +20,28 @@ internal static partial class ApiErrors
         );
     }
 
-    public static async Task<T> RunAsync<T>(Func<Task<T>> run, ILogger logger)
+    public static async Task<T> RunAsync<T>(
+        Func<Task<T>> run,
+        ILogger logger,
+        Func<Exception, RpcException?>? translate = null
+    )
     {
         try
         {
             return await run();
         }
+        catch (WorkflowUnavailableException exception)
+        {
+            throw Create(StatusCode.FailedPrecondition, "WORKFLOW_UNAVAILABLE", exception.Message);
+        }
         catch (PipelineExecutionException exception)
         {
-            if (exception.InnerException is not (RssConflictException or KeyNotFoundException))
+            if (exception.InnerException is { } cause && translate?.Invoke(cause) is { } known)
+                throw known;
+            if (exception.InnerException is not KeyNotFoundException)
                 LogPipelineFailure(logger, exception.NodeId, exception);
             throw exception.InnerException switch
             {
-                RssConflictException conflict => Create(
-                    conflict.Reason is "FEED_EXISTS" ? StatusCode.AlreadyExists : StatusCode.InvalidArgument,
-                    conflict.Reason,
-                    conflict.Message
-                ),
                 KeyNotFoundException => Create(
                     StatusCode.NotFound,
                     "RESOURCE_NOT_FOUND",

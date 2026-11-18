@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Xml;
+using LazyTuiHub.Articles;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Nodes;
@@ -32,7 +33,7 @@ public sealed class RssTests
                 Guid.NewGuid().ToString("D")
             );
             var feed = Assert.Single(
-                await workspace.RunAsync<FeedRecord>(
+                await workflows.CollectAsync<FeedRecord>(
                     "rss.subscribe",
                     request,
                     cancellationToken: TestContext.Current.CancellationToken
@@ -42,16 +43,16 @@ public sealed class RssTests
                 2,
                 await workspace.RefreshAsync(new(feed.Id), cancellationToken: TestContext.Current.CancellationToken)
             );
-            var articles = await workspace.RunAsync<ArticleRecord>(
-                "rss.articles",
+            var articles = await workflows.CollectAsync<ArticleRecord>(
+                "articles.list",
                 cancellationToken: TestContext.Current.CancellationToken
             );
             Assert.Null(Assert.Single(app.Services.GetRequiredService<RssDetails>().Read()).ExpiresAt);
-            Assert.Single(app.Services.GetRequiredService<RssStore>().Search("streaming"));
+            Assert.Single(app.Services.GetRequiredService<ArticleStore>().Search("streaming"));
             var article = articles[0];
-            await workspace.RunAsync<ArticleRecord>(
-                "rss.mark-read",
-                new ArticleSelection(feed.Id, article.Id),
+            await workflows.CollectAsync<ArticleRecord>(
+                "articles.mark-read",
+                article.Id,
                 cancellationToken: TestContext.Current.CancellationToken
             );
             workflows.Save(workflows.Get("rss.ingest") with { BufferCapacity = 1 });
@@ -62,7 +63,7 @@ public sealed class RssTests
             Assert.Equal(
                 feed,
                 Assert.Single(
-                    await restarted.RunAsync<FeedRecord>(
+                    await restartedWorkflows.CollectAsync<FeedRecord>(
                         "rss.subscribe",
                         request,
                         cancellationToken: TestContext.Current.CancellationToken
@@ -74,20 +75,20 @@ public sealed class RssTests
                 2,
                 await restarted.RefreshAsync(new(feed.Id), cancellationToken: TestContext.Current.CancellationToken)
             );
-            var refreshed = await restarted.RunAsync<ArticleRecord>(
-                "rss.articles",
+            var refreshed = await restartedWorkflows.CollectAsync<ArticleRecord>(
+                "articles.list",
                 cancellationToken: TestContext.Current.CancellationToken
             );
             Assert.Equal(2, refreshed.Count);
-            Assert.Empty(restartedApp.Services.GetRequiredService<RssStore>().Search("streaming"));
-            Assert.Single(restartedApp.Services.GetRequiredService<RssStore>().Search("Updated"));
+            Assert.Empty(restartedApp.Services.GetRequiredService<ArticleStore>().Search("streaming"));
+            Assert.Single(restartedApp.Services.GetRequiredService<ArticleStore>().Search("Updated"));
             Assert.Equal(2, restartedApp.Services.GetRequiredService<RssDetails>().Read().Count);
             Assert.True(refreshed.Single(value => value.Id == article.Id).IsRead);
             Assert.Contains(refreshed, value => value.Article.Title == "Updated title");
             Assert.Equal(2, restartedWorkflows.Catalog.ReadRelations(feed.Reference).Count);
             Assert.Equal(1, restartedWorkflows.Get("rss.ingest").BufferCapacity);
             var conflict = await Assert.ThrowsAsync<PipelineExecutionException>(() =>
-                restarted.RunAsync<FeedRecord>(
+                restartedWorkflows.CollectAsync<FeedRecord>(
                     "rss.subscribe",
                     request with
                     {

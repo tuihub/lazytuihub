@@ -6,7 +6,7 @@
 
 MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。首轮本地运行器支持具名流式／同步端口和可执行的本地计划。[框架 Note](../../.agents/notes/2026-11-17-mvp-framework.zh.md) 与[节点执行 Note](../../.agents/notes/2026-11-17-mvp-node-execution.zh.md) 区分当前选择和后续设计。MVP 合入主分支前，Note 保持可自由编辑的提案状态；每轮将代码和对应 Note 一起提交。
 
-当前通过 Avalonia 桌面阅读器、CLI、进程内 API 和生成的 HTTP 客户端交互，没有可视化图编辑器或分布式执行。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮将 RSS 表移入编码后的插件命名空间，不迁移旧表。
+当前通过 Avalonia 桌面阅读器、CLI、进程内 API 和生成的 HTTP 客户端交互，没有可视化图编辑器或分布式执行。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮文章表和默认抓取图均已变更，请使用新工作区。
 
 [桌面 MVP 指南](desktop-mvp.zh.md) 介绍可运行的 Avalonia 界面、真实 RSS／SQLite 操作、工作流查看和插件可用性。[UI 比较指南](ui-comparison.zh.md) 保留此前的独立实验。
 
@@ -20,13 +20,16 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。首轮本地运行
 | [DAO 工具包](../../src/LazyTuiHub.Dao/) | 不依赖数据库驱动的契约、访问需求／能力及命名空间表目标。 |
 | [SQLite 提供者](../../src/LazyTuiHub.Storage.Sqlite/) | 必要存储插件，提供通用 JSON 记录／TTL、SQLite FTS5、原生连接及委托清理。 |
 | [核心插件](../../src/LazyTuiHub.CorePlugin/) | 发行清单要求的问候功能及内置节点注册。 |
-| [RSS 插件](../../src/LazyTuiHub.Rss/) | 订阅、解析、存储、查询、已读状态、API／CLI 适配及后台刷新。 |
+| [RSS 插件](../../src/LazyTuiHub.Rss/) | 订阅、定时抓取、抓取明细和 RSS／Atom 解析。 |
+| [文章插件](../../src/LazyTuiHub.Articles/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
 | [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
-| [桌面层](../../src/LazyTuiHub.Desktop/)／[RSS UI](../../src/LazyTuiHub.Rss.Desktop/) | Avalonia 外壳与诊断／动态加载、调用 IRssApi 的阅读器。 |
+| [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
 
-PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。RSS 通过 BusinessStorage 写业务表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
+PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。各业务插件通过 BusinessStorage 写自己的表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
 
-rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.parse、rss.store 和有类型的输出消费者。其他模块可以在解析后分支，不必修改运行器。阅读及其他直接 RSS 操作目前也经过工作流，让工作流成为可选能力仍待后续实现。本地和 HTTP 调用共享 IRssApi；字段、路由、分页、去重及错误见[生成的 API 参考](../api/index.md)。
+rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.parse、articles.store 和 articles.output。其他模块可以在解析后分支，不必修改运行器。阅读及其他直接 RSS 操作目前也经过工作流，让工作流成为可选能力仍待后续实现。本地和 HTTP 调用共享 IRssApi 订阅契约和 IArticleApi 文章契约；字段、路由、分页、去重及错误见[生成的 API 参考](../api/index.md)。
+
+接入新的文章来源时，让节点输出 [ArticleDraft](../../src/LazyTuiHub.Api/Articles/ArticleDraft.cs)，并连接 articles.store。来源资源名与来源内的条目 ID 共同标识文章。例如 notebooks/a 和 notebooks/b 可以各自使用条目 ID 1。同一来源再次提交该条目时会更新内容、保留文章名称和已读状态。若数据包附有已登记的来源引用，入库会同时登记来源与文章的关联。
 
 ## 端口与执行计划
 
@@ -65,11 +68,11 @@ mise run run -- --command rss --action help
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action feeds
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action articles --unread true
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action read --name feeds/FEED_ID/articles/ARTICLE_ID
+mise run run -- --database ./artifacts/rss/workspace.db --command articles --action list --unread true
+mise run run -- --database ./artifacts/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
 ```
 
-将 feed URI 替换成实际地址。add 返回订阅名称，articles 返回文章名称和后续分页 token，通过 --page-token 继续查询。read 标记已读并输出 Proto JSON，不执行 HTML。
+将 feed URI 替换成实际地址。add 返回订阅名称，articles list 返回文章名称和后续分页 token，通过 --page-token 继续查询。read 标记已读并输出 Proto JSON，不执行 HTML。
 
 不传 --database 时，工作区位于系统 LocalApplicationData 下的 LazyTuiHub/workspace.db。启动 HTTP 服务同时启动可用且所需工作流能生成计划的插件任务，首次创建图时默认周期为 15 分钟，可用 --refresh-interval 00:05:00 修改；已有图定义保留。定时器积压采用 PeriodicTimer 合并，不重放每个错过的时刻。刷新失败记录日志，在下一周期重试。
 
@@ -79,7 +82,7 @@ mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:
 
 ## 冷启动插件
 
-宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将 core、rss、storage.sqlite 入口 DLL 及依赖描述放入对应目录。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。
+宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将 core、rss、articles、articles.desktop、storage.sqlite 入口 DLL 及依赖描述放入对应目录。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。
 
 ```sh
 mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
@@ -101,14 +104,14 @@ mise run run -- --database ./artifacts/rss/workspace.db --command plugins --acti
 
 插件通过 registration.Daos.Requirements 声明所需档位、契约、访问实例及可选底层。当前实例为 workspace。提供者支持三档：通用 records.ttl 契约的 IRecordDao、sqlite.fts5 契约的 ISqliteSearch，以及 relational.connection 契约的原生 IConnectionSource。公开契约使用 BCL 的 DbConnection／DbTransaction，不出现 SQLite 驱动类型。当前仅实现 SQLite；声明不依赖底层的需求不代表已经提供其他后端。
 
-插件通过自身 DaoScope 取得工具，每次调用传入 DaoTable。scope.Table("fetch_details") 组合插件身份和本地名称，DaoNames 将两部分编码为安全 SQL 标识符。插件负责 Schema 创建及私有表，普通工具调用不要求逐表登记。原生连接由调用者释放，专用 SQL 可以保留 SQLite 特性。启动时实际探测 FTS5，RSS 将其作为必要能力，不静默切换搜索语义。
+插件通过自身 DaoScope 取得工具，每次调用传入 DaoTable。scope.Table("fetch_details") 组合插件身份和本地名称，DaoNames 将两部分编码为安全 SQL 标识符。插件负责 Schema 创建及私有表，普通工具调用不要求逐表登记。原生连接由调用者释放，专用 SQL 可以保留 SQLite 特性。启动时实际探测 FTS5，文章插件将其作为索引所需的能力。
 
-通用记录工具创建 key／JSON／可空到期时间表。Put 同时替换值和显式到期时间，null 表示长期保留。读取隐藏绝对毫秒时间戳已到期的记录；includeExpired 可查看尚未物理删除的记录。Keep 清除到期时间，也可用于已到期但未删除的记录；它不会将观察记录转为 RSS 文章或框架数据对象。
+通用记录工具创建 key／JSON／可空到期时间表。Put 同时替换值和显式到期时间，null 表示长期保留。读取隐藏绝对毫秒时间戳已到期的记录；includeExpired 可查看尚未物理删除的记录。Keep 清除到期时间，也可用于已到期但未删除的记录；它不会将观察记录转为 文章或框架数据对象。
 
-RSS 在解析入口记录成功 HTTP 抓取的 URL、字节数和完成时间，不保存响应正文、输入检查点或重放状态。文章单独长期保存。搜索暂时使用 FTS5 查询语法返回文章 ID；这些新操作只提供 CLI／服务入口，没有新增 Proto 接口。
+RSS 在解析入口记录成功 HTTP 抓取的 URL、字节数和完成时间，不保存响应正文、输入检查点或重放状态。文章单独长期保存。搜索暂时使用 FTS5 查询语法返回文章 ID；全文搜索通过 articles search 命令提供。
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action search --query example
+mise run run -- --database ./artifacts/rss/workspace.db --command articles --action search --query example
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action details --include-expired true
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
 mise run run -- --database ./artifacts/rss/workspace.db --command dao --action list

@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package lazytuihub.articles.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "lazytuihub/articles/v1/article.proto";
+
+option csharp_namespace = "LazyTuiHub.Api.Articles.V1";
+option go_package = "github.com/tuihub/lazytuihub/api/articles/apiv1;articlespb";
+option java_multiple_files = true;
+option java_outer_classname = "ArticleServiceProto";
+option java_package = "io.github.tuihub.lazytuihub.articles.v1";
+
+// Manages articles collected from any source in this workspace.
+service ArticleService {
+  // Lists articles newest-ingested first through the reading pipeline.
+  // The optional filter supports source equality,
+  // `read = true` and `read = false`; an empty filter includes both states.
+  // Pagination is a live keyset traversal, not a snapshot across refreshes or
+  // read-state changes. A token is bound to the filter.
+  rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse) {
+    option (google.api.http) = { get: "/v1/articles" };
+    option (google.api.method_signature) = "";
+  }
+
+  // Reads an article without changing its read state. Unknown names return
+  // NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
+  rpc GetArticle(GetArticleRequest) returns (Article) {
+    option (google.api.http) = { get: "/v1/{name=articles/*}" };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Marks an article as read and returns its current state. Repeating the call
+  // has the same effect. Unknown names return NOT_FOUND.
+  rpc MarkArticleRead(MarkArticleReadRequest) returns (Article) {
+    option (google.api.http) = { post: "/v1/{name=articles/*}:markRead" body: "*" };
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// Request for ListArticles.
+message ListArticlesRequest {
+  // Optional. Number of articles per page. Zero uses 50; negative values return
+  // INVALID_ARGUMENT. This prototype has no additional maximum.
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Optional. An opaque token from a response with the same filter.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Optional. Equality on source (a quoted string) and read (true or false).
+  // Combine the two with AND, for example `source = "feeds/abc" AND read = false`.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListArticles.
+message ListArticlesResponse {
+  // The articles in this page.
+  repeated Article articles = 1;
+  // A continuation token, or empty at the end of the collection.
+  string next_page_token = 2;
+}
+
+// Request for GetArticle.
+message GetArticleRequest {
+  // Required. The article name, `articles/{article}`.
+  string name = 1 [(google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "lazytuihub.tuihub.org/Article"];
+}
+
+// Request for MarkArticleRead.
+message MarkArticleReadRequest {
+  // Required. The article name, `articles/{article}`.
+  string name = 1 [(google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "lazytuihub.tuihub.org/Article"];
+}

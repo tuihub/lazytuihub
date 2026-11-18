@@ -7,7 +7,6 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/field_info.proto";
 import "google/api/resource.proto";
-import "lazytuihub/rss/v1/article.proto";
 import "lazytuihub/rss/v1/feed.proto";
 
 option csharp_namespace = "LazyTuiHub.Api.Rss.V1";
@@ -64,32 +63,9 @@ service RssService {
   // This method does not promise atomic feed snapshots or exactly-once delivery.
   // An unknown subscription returns NOT_FOUND. Upstream or parsing failure
   // returns UNAVAILABLE; callers can retry a refresh without duplicating entries.
+  // A missing node in the configured pipeline returns FAILED_PRECONDITION.
   rpc RefreshFeed(RefreshFeedRequest) returns (RefreshFeedResponse) {
     option (google.api.http) = { post: "/v1/{name=feeds/*}:refresh" body: "*" };
-    option (google.api.method_signature) = "name";
-  }
-
-  // Lists articles newest-ingested first through the reading pipeline.
-  // Use `feeds/-` to aggregate subscriptions. The optional filter supports
-  // `read = true` and `read = false`; an empty filter includes both states.
-  // Pagination is a live keyset traversal, not a snapshot across refreshes or
-  // read-state changes. A token is bound to the parent and filter.
-  rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse) {
-    option (google.api.http) = { get: "/v1/{parent=feeds/*}/articles" };
-    option (google.api.method_signature) = "parent";
-  }
-
-  // Reads an article without changing its read state. Unknown names return
-  // NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
-  rpc GetArticle(GetArticleRequest) returns (Article) {
-    option (google.api.http) = { get: "/v1/{name=feeds/*/articles/*}" };
-    option (google.api.method_signature) = "name";
-  }
-
-  // Marks an article as read and returns its current state. Repeating the call
-  // has the same effect. Unknown names return NOT_FOUND.
-  rpc MarkArticleRead(MarkArticleReadRequest) returns (Article) {
-    option (google.api.http) = { post: "/v1/{name=feeds/*/articles/*}:markRead" body: "*" };
     option (google.api.method_signature) = "name";
   }
 }
@@ -142,40 +118,4 @@ message RefreshFeedRequest {
 message RefreshFeedResponse {
   // Number of entries processed, including existing entries that were updated.
   int32 processed_article_count = 1;
-}
-
-// Request for ListArticles.
-message ListArticlesRequest {
-  // Required. The subscription name, or `feeds/-` for all subscriptions.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).child_type = "lazytuihub.tuihub.org/Article"];
-  // Optional. Number of articles per page. Zero uses 50; negative values return
-  // INVALID_ARGUMENT. This prototype has no additional maximum.
-  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
-  // Optional. An opaque token from a response with the same parent and filter.
-  string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
-  // Optional. Empty, `read = true`, or `read = false`.
-  string filter = 4 [(google.api.field_behavior) = OPTIONAL];
-}
-
-// Response for ListArticles.
-message ListArticlesResponse {
-  // The articles in this page.
-  repeated Article articles = 1;
-  // A continuation token, or empty at the end of the collection.
-  string next_page_token = 2;
-}
-
-// Request for GetArticle.
-message GetArticleRequest {
-  // Required. The article name, `feeds/{feed}/articles/{article}`.
-  string name = 1 [(google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "lazytuihub.tuihub.org/Article"];
-}
-
-// Request for MarkArticleRead.
-message MarkArticleReadRequest {
-  // Required. The article name, `feeds/{feed}/articles/{article}`.
-  string name = 1 [(google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "lazytuihub.tuihub.org/Article"];
 }

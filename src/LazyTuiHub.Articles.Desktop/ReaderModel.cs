@@ -1,16 +1,23 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using LazyTuiHub.Api;
+using LazyTuiHub.Api.Articles;
+using LazyTuiHub.Api.Articles.V1;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Desktop;
 using Microsoft.Extensions.Logging;
 
-namespace LazyTuiHub.Rss.Desktop;
+namespace LazyTuiHub.Articles.Desktop;
 
-public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<ReaderModel> logger)
-    : PageModel(session, logger)
+public sealed class ReaderModel(
+    IArticleApi articles,
+    DesktopSession session,
+    ILogger<ReaderModel> logger,
+    IRssApi? subscriptions = null
+) : PageModel(session, logger)
 {
-    private const string AllFeeds = "feeds/-";
+    private const string AllSources = "";
+    public bool CanSubscribe => subscriptions is not null;
     private Article? selectedArticle;
     private string nextPage = string.Empty;
     private bool initialized;
@@ -42,10 +49,11 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
     public string EmptyMessage =>
         Filter switch
         {
-            "read = false" => "No unread articles here. Try another feed or show all articles.",
+            "read = false" => "No unread articles here. Choose another source or show all articles.",
             "read = true" => "Articles you mark as read will appear here.",
             _ when CanRefresh => "Use refresh to fetch the latest articles from this feed.",
             _ when Feeds.Count > 1 => "Choose a subscription and refresh it to start reading.",
+            _ when !CanSubscribe => "Articles collected from your sources will appear here.",
             _ => "Add a subscription to collect your favorite reads here.",
         };
     public bool HasArticles => Articles.Count > 0;
@@ -54,7 +62,7 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
         SelectedArticle?.PublishTime?.ToDateTime().ToLocalTime().ToString("f", CultureInfo.CurrentCulture)
         ?? string.Empty;
     public bool HasMore => !string.IsNullOrEmpty(nextPage);
-    public bool CanRefresh => SelectedFeed is { Name: not AllFeeds };
+    public bool CanRefresh => SelectedFeed is { Name: not AllSources };
     public bool CanMarkRead => Idle && SelectedArticle is { Read: false };
     public Article? SelectedArticle
     {
@@ -84,12 +92,14 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
     public Task SubscribeAsync() =>
         RunAsync(async token =>
         {
+            if (subscriptions is null)
+                return;
             var request = new CreateFeedRequest
             {
                 Feed = new() { Uri = FeedUri, DisplayName = FeedTitle },
                 RequestId = Guid.NewGuid().ToString("D"),
             };
-            var feed = await Task.Run(() => api.CreateFeedAsync(request, token), token);
+            var feed = await Task.Run(() => subscriptions.CreateFeedAsync(request, token), token);
             FeedUri = string.Empty;
             FeedTitle = string.Empty;
             await LoadFeedsAsync(feed.Name, token);
@@ -117,9 +127,12 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
     public Task RefreshAsync() =>
         RunAsync(async token =>
         {
-            if (!CanRefresh)
+            if (subscriptions is null || !CanRefresh)
                 return;
-            var result = await Task.Run(() => api.RefreshFeedAsync(new() { Name = SelectedFeed!.Name }, token), token);
+            var result = await Task.Run(
+                () => subscriptions.RefreshFeedAsync(new() { Name = SelectedFeed!.Name }, token),
+                token
+            );
             await LoadArticlesAsync(false, token);
             Status = $"Fetched {result.ProcessedArticleCount} articles. {Status}";
         });
@@ -129,7 +142,10 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
         {
             if (SelectedArticle is not { Read: false } article)
                 return;
-            var updated = await Task.Run(() => api.MarkArticleReadAsync(new() { Name = article.Name }, token), token);
+            var updated = await Task.Run(
+                () => articles.MarkArticleReadAsync(new() { Name = article.Name }, token),
+                token
+            );
             var index = Articles.IndexOf(article);
             if (string.Equals(Filter, "read = false", StringComparison.Ordinal))
             {
@@ -149,11 +165,13 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
         var feeds = await Task.Run(
             async () =>
             {
-                var result = new List<FeedChoice> { new(AllFeeds, "All feeds") };
+                var result = new List<FeedChoice> { new(AllSources, "All sources") };
+                if (subscriptions is null)
+                    return result;
                 var request = new ListFeedsRequest();
                 do
                 {
-                    var page = await api.ListFeedsAsync(request, token);
+                    var page = await subscriptions.ListFeedsAsync(request, token);
                     result.AddRange(
                         page.Feeds.Select(feed => new FeedChoice(
                             feed.Name,
@@ -186,18 +204,14 @@ public sealed class ReaderModel(IRssApi api, DesktopSession session, ILogger<Rea
         }
         var request = new ListArticlesRequest
         {
-            Parent = SelectedFeed?.Name ?? AllFeeds,
-            Filter = Filter,
+            Filter = ArticleFilters.ForSource(SelectedFeed?.Name, Filter),
             PageToken = append ? nextPage : string.Empty,
         };
-        var page = await Task.Run(() => api.ListArticlesAsync(request, token), token);
+        var page = await Task.Run(() => articles.ListArticlesAsync(request, token), token);
         foreach (var article in page.Articles)
             Articles.Add(article);
         nextPage = page.NextPageToken;
         SelectedArticle ??= Articles.FirstOrDefault();
-        Status =
-            Articles.Count == 0
-                ? "No articles. Add a subscription or fetch a selected feed."
-                : $"{Articles.Count} articles loaded.";
+        Status = Articles.Count == 0 ? "No articles match this selection." : $"{Articles.Count} articles loaded.";
     }
 }

@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="src/LazyTuiHub/LazyTuiHub.csproj" />
   <Project Path="src/LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
+  <Project Path="src/LazyTuiHub.Articles/LazyTuiHub.Articles.csproj" />
+  <Project Path="src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
   <Project Path="src/LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
   <Project Path="src/LazyTuiHub.Dao/LazyTuiHub.Dao.csproj" />
   <Project Path="src/LazyTuiHub.Storage.Sqlite/LazyTuiHub.Storage.Sqlite.csproj" />
@@ -11,5 +13,5 @@
   <Project Path="src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
   <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
   <Project Path="src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
-  <Project Path="src/LazyTuiHub.Rss.Desktop/LazyTuiHub.Rss.Desktop.csproj" />
+  <Project Path="src/LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" />
 </Solution>

@@ -272,6 +272,8 @@ public sealed partial class PluginRuntime : IDisposable
             )
             .ToArray();
 
+    public bool IsActive(string id) => active.Contains(id);
+
     public void SetEnabled(string id, bool enabled) => catalog.SetEnabled(id, enabled);
 
     public void SetSettings(string id, JsonElement settings) => catalog.SetSettings(id, settings);

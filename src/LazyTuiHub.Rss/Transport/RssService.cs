@@ -18,13 +18,4 @@ internal sealed class RssService(IRssApi application) : RssContract.RssServiceBa
 
     public override Task<RefreshFeedResponse> RefreshFeed(RefreshFeedRequest request, ServerCallContext context) =>
         application.RefreshFeedAsync(request, context.CancellationToken);
-
-    public override Task<ListArticlesResponse> ListArticles(ListArticlesRequest request, ServerCallContext context) =>
-        application.ListArticlesAsync(request, context.CancellationToken);
-
-    public override Task<Article> GetArticle(GetArticleRequest request, ServerCallContext context) =>
-        application.GetArticleAsync(request, context.CancellationToken);
-
-    public override Task<Article> MarkArticleRead(MarkArticleReadRequest request, ServerCallContext context) =>
-        application.MarkArticleReadAsync(request, context.CancellationToken);
 }

@@ -1,27 +1,27 @@
 syntax = "proto3";
 
-package lazytuihub.rss.v1;
+package lazytuihub.articles.v1;
 
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 
-option csharp_namespace = "LazyTuiHub.Api.Rss.V1";
-option go_package = "github.com/tuihub/lazytuihub/api/rss/apiv1;rsspb";
+option csharp_namespace = "LazyTuiHub.Api.Articles.V1";
+option go_package = "github.com/tuihub/lazytuihub/api/articles/apiv1;articlespb";
 option java_multiple_files = true;
 option java_outer_classname = "ArticleProto";
-option java_package = "io.github.tuihub.lazytuihub.rss.v1";
+option java_package = "io.github.tuihub.lazytuihub.articles.v1";
 
-// A feed entry persisted by the RSS ingestion pipeline.
+// An article collected from a source in this workspace.
 message Article {
   option (google.api.resource) = {
     type: "lazytuihub.tuihub.org/Article"
-    pattern: "feeds/{feed}/articles/{article}"
+    pattern: "articles/{article}"
     singular: "article"
     plural: "articles"
   };
 
-  // Identifier. The article name, `feeds/{feed}/articles/{article}`.
+  // Identifier. The article name, `articles/{article}`.
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // Output only. The source entry title, which can be empty.
@@ -39,4 +39,8 @@ message Article {
 
   // Output only. Whether the user has marked this article as read.
   bool read = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output only. The source resource name supplied by the producer, such as `feeds/{feed}`.
+  string source = 7 [(google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "*"];
 }

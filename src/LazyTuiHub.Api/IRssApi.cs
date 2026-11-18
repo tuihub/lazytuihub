@@ -11,10 +11,4 @@ public interface IRssApi
         RefreshFeedRequest request,
         CancellationToken cancellationToken = default
     );
-    Task<ListArticlesResponse> ListArticlesAsync(
-        ListArticlesRequest request,
-        CancellationToken cancellationToken = default
-    );
-    Task<Article> GetArticleAsync(GetArticleRequest request, CancellationToken cancellationToken = default);
-    Task<Article> MarkArticleReadAsync(MarkArticleReadRequest request, CancellationToken cancellationToken = default);
 }

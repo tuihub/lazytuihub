@@ -1,4 +1,4 @@
-namespace LazyTuiHub.Rss.Desktop;
+namespace LazyTuiHub.Articles.Desktop;
 
 public sealed record FeedChoice(string Name, string Title)
 {

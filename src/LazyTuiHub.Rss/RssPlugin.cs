@@ -23,9 +23,6 @@ public sealed class RssPlugin : IApplicationPlugin
         if (interval <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(registration), "Refresh interval must be positive.");
         registration.Daos.Requirements.Add(new("database", DaoMode.Native, DaoContracts.Relational, Backend: "sqlite"));
-        registration.Daos.Requirements.Add(
-            new("search", DaoMode.BackendSpecific, DaoContracts.SqliteSearch, Backend: "sqlite")
-        );
         registration.Daos.Requirements.Add(new("details", DaoMode.Unified, DaoContracts.Records));
         registration.Retentions.Add(new("details", registration.Daos.Table("fetch_details")));
         var retention =
@@ -44,7 +41,6 @@ public sealed class RssPlugin : IApplicationPlugin
         registration.Services.AddSingleton<IRssApi, RssApplication>();
         registration.Services.AddSingleton<RssRefreshWorker>();
         registration.DataTypes.Add("rss.feed");
-        registration.DataTypes.Add("rss.article");
         registration.RegisterNodes = (nodes, services) =>
             RssModule.Register(
                 nodes,

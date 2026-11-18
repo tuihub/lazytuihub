@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using LazyTuiHub.Framework;
+using LazyTuiHub.Api.Articles;
 using LazyTuiHub.Nodes;
 
 namespace LazyTuiHub.Rss;
@@ -73,7 +73,7 @@ public static class FeedParser
         if (string.IsNullOrWhiteSpace(id))
             id = string.IsNullOrEmpty(url) ? StableContentId(title, published, content) : url;
         return new(
-            document.Source.Key,
+            $"feeds/{document.Source.Key}",
             id,
             title,
             url,

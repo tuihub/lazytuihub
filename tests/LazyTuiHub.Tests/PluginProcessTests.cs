@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Google.Protobuf;
 using LazyTuiHub.Api;
+using LazyTuiHub.Api.Articles.V1;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Examples;
@@ -34,10 +35,10 @@ public sealed class PluginProcessTests
             );
             await workspace.SuccessAsync("rss", "refresh", "--name", feed.Name);
             var articles = JsonParser.Default.Parse<ListArticlesResponse>(
-                await workspace.SuccessAsync("rss", "articles")
+                await workspace.SuccessAsync("articles", "list")
             );
             var article = articles.Articles[0];
-            await workspace.SuccessAsync("rss", "read", "--name", article.Name);
+            await workspace.SuccessAsync("articles", "read", "--name", article.Name);
             var definition = await workspace.JsonAsync<PipelineDefinition>(
                 "workflow",
                 "definition",
@@ -85,6 +86,12 @@ public sealed class PluginProcessTests
             await workspace.SuccessAsync("plugins", "disable", "--plugin", "rss");
             var disabled = await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss");
             Assert.False(disabled.Saved.Enabled);
+            Assert.Equal(
+                2,
+                JsonParser
+                    .Default.Parse<ListArticlesResponse>(await workspace.SuccessAsync("articles", "list"))
+                    .Articles.Count
+            );
             Assert.Equal("disabled", disabled.Activation);
             Assert.NotEmpty(disabled.Saved.Declaration.Nodes);
             Assert.Equal("00:00:07", disabled.Saved.Settings.GetProperty("refreshInterval").GetString());
@@ -126,7 +133,7 @@ public sealed class PluginProcessTests
             Assert.Equal("active", restored.Activation);
             Assert.True(restored.Saved.Settings.GetProperty("custom").GetBoolean());
             var retained = JsonParser.Default.Parse<ListArticlesResponse>(
-                await workspace.SuccessAsync("rss", "articles")
+                await workspace.SuccessAsync("articles", "list")
             );
             Assert.Equal(2, retained.Articles.Count);
             Assert.True(retained.Articles.Single(value => value.Name == article.Name).Read);
@@ -149,7 +156,7 @@ public sealed class PluginProcessTests
                 (await workspace.RunAsync("workflow", "plan", "--pipeline-name", "rss.ingest")).Output
             );
             Assert.Contains(
-                "rss.article",
+                "articles.article",
                 await workspace.SuccessAsync(
                     "workflow",
                     "relations",

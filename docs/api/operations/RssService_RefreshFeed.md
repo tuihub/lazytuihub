@@ -15,6 +15,7 @@ Cancellation or a node error can leave already committed entries in place.
 This method does not promise atomic feed snapshots or exactly-once delivery.
 An unknown subscription returns NOT_FOUND. Upstream or parsing failure
 returns UNAVAILABLE; callers can retry a refresh without duplicating entries.
+A missing node in the configured pipeline returns FAILED_PRECONDITION.
 
 ## Effective servers
 

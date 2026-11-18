@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 
-namespace LazyTuiHub.Rss.Desktop;
+namespace LazyTuiHub.Articles.Desktop;
 
 public sealed partial class ReaderPage : UserControl
 {

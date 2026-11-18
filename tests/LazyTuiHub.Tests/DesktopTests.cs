@@ -6,9 +6,9 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using LazyTuiHub.Api;
+using LazyTuiHub.Articles.Desktop;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Plugins;
-using LazyTuiHub.Rss.Desktop;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -96,7 +96,7 @@ public sealed partial class DesktopTests
                         tabs.SelectedIndex = 0;
                         Assert.Same(page, window.GetVisualDescendants().OfType<ReaderPage>().Single());
                         window = await SwitchDesignsAsync(host, window, token);
-                        host.Services.GetRequiredService<PluginRuntime>().SetEnabled("rss.desktop", false);
+                        host.Services.GetRequiredService<PluginRuntime>().SetEnabled("articles.desktop", false);
                         Assert.Equal(3, window.Navigation.Count);
                         await CloseAsync(window, token);
                     }
@@ -107,7 +107,7 @@ public sealed partial class DesktopTests
                             disabled.Services.GetRequiredService<DesktopAppearance>().Preferences
                         );
                         var plugins = disabled.Services.GetRequiredService<PluginRuntime>();
-                        var record = plugins.List().Single(plugin => plugin.Saved.Spec.Id == "rss.desktop");
+                        var record = plugins.List().Single(plugin => plugin.Saved.Spec.Id == "articles.desktop");
                         Assert.Equal("disabled", record.Activation);
                         Assert.Equal("Reader", Assert.Single(record.Saved.Declaration.Pages).Title);
                         var window = new ShellWindow(disabled);
@@ -116,21 +116,21 @@ public sealed partial class DesktopTests
                         Assert.True(
                             (
                                 await disabled
-                                    .Services.GetRequiredService<IRssApi>()
+                                    .Services.GetRequiredService<IArticleApi>()
                                     .GetArticleAsync(new() { Name = savedArticle }, token)
                             ).Read
                         );
-                        plugins.SetEnabled("rss.desktop", true);
+                        plugins.SetEnabled("articles.desktop", true);
                         await CloseAsync(window, token);
                     }
-                    var dll = Path.Combine(workspace.Plugins, "rss-desktop", "LazyTuiHub.Rss.Desktop.dll");
+                    var dll = Path.Combine(workspace.Plugins, "articles-desktop", "LazyTuiHub.Articles.Desktop.dll");
                     File.Move(dll, dll + ".absent");
                     using (var missing = CreateHost(workspace))
                     {
                         var record = missing
                             .Services.GetRequiredService<PluginRuntime>()
                             .List()
-                            .Single(plugin => plugin.Saved.Spec.Id == "rss.desktop");
+                            .Single(plugin => plugin.Saved.Spec.Id == "articles.desktop");
                         Assert.Equal("missing", record.Availability);
                         Assert.True(record.Saved.Enabled);
                         Assert.Single(record.Saved.Declaration.Pages);
@@ -140,7 +140,7 @@ public sealed partial class DesktopTests
                     using (var restored = CreateHost(workspace))
                     {
                         var page = Assert.IsType<ReaderPage>(
-                            DesktopPages.Resolve(restored.Services, "rss.desktop", "reader")
+                            DesktopPages.Resolve(restored.Services, "articles.desktop", "reader")
                         );
                         await page.Model.LoadAsync();
                         await page.Model.SetFilterAsync("read = true");
@@ -151,12 +151,17 @@ public sealed partial class DesktopTests
                     {
                         var plugins = businessMissing.Services.GetRequiredService<PluginRuntime>();
                         Assert.Equal(
-                            "blocked",
-                            plugins.List().Single(plugin => plugin.Saved.Spec.Id == "rss.desktop").Activation
+                            "active",
+                            plugins.List().Single(plugin => plugin.Saved.Spec.Id == "articles.desktop").Activation
                         );
                         var window = new ShellWindow(businessMissing);
                         window.Show();
-                        Assert.Equal(2, window.Navigation.Count);
+                        Assert.Equal(3, window.Navigation.Count);
+                        var page = window.GetVisualDescendants().OfType<ReaderPage>().Single();
+                        await WaitIdleAsync(page.Model, token);
+                        Assert.False(page.Model.CanSubscribe);
+                        await page.Model.SetFilterAsync("read = true");
+                        Assert.Equal(savedArticle, Assert.Single(page.Model.Articles).Name);
                         Assert.NotEmpty(plugins.Workflows.Describe(plugins.Workflows.Get("rss.ingest")).Problems);
                         await CloseAsync(window, token);
                     }

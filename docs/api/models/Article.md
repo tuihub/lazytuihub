@@ -2,7 +2,7 @@
 
 **Type:** `object`
 
-A feed entry persisted by the RSS ingestion pipeline.
+An article collected from a source in this workspace.
 
 - **`content`**: `string`, readOnly
 
@@ -10,13 +10,16 @@ A feed entry persisted by the RSS ingestion pipeline.
   a rendering client must sanitize it before displaying it as HTML.
 - **`name`**: `string`
 
-  Identifier. The article name, `feeds/{feed}/articles/{article}`.
+  Identifier. The article name, `articles/{article}`.
 - **`publishTime`**: `string`, format: `date-time`, readOnly
 
   Output only. The source publication time, omitted when absent or invalid.
 - **`read`**: `boolean`, readOnly
 
   Output only. Whether the user has marked this article as read.
+- **`source`**: `string`, readOnly
+
+  Output only. The source resource name supplied by the producer, such as `feeds/{feed}`.
 - **`title`**: `string`, readOnly
 
   Output only. The source entry title, which can be empty.
@@ -33,6 +36,7 @@ A feed entry persisted by the RSS ingestion pipeline.
   "uri": "",
   "content": "",
   "publishTime": "2000-01-01T00:00:00.000Z",
-  "read": true
+  "read": true,
+  "source": ""
 }
 ```

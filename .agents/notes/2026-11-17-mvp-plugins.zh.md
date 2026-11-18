@@ -91,11 +91,11 @@ Factorio 明确说明[原型移除会使存储引用失效](https://lua-api.fact
 
 ## 当前原型与验证
 
-后续[桌面实现](2026-11-17-mvp-ui-comparison.zh.md) 将普通页面身份／标题声明纳入框架拥有的插件元数据。Avalonia 工厂位于桌面层，rss.desktop 作为独立 DLL 依赖 rss。导航只接入已激活插件，缺失／关闭的页面声明仍可读取。桌面与 Web 宿主共用服务装配，桌面激活接收服务提供者，不映射 HTTP 端点；既有任务和冷启动保留语义对两种宿主均生效。
+后续[桌面实现](2026-11-17-mvp-ui-comparison.zh.md) 将普通页面身份／标题声明纳入框架拥有的插件元数据。Avalonia 工厂位于桌面层，articles.desktop 依赖 articles，rss 激活时提供订阅操作。导航只接入已激活插件，缺失／关闭的页面声明仍可读取。桌面与 Web 宿主共用服务装配，桌面激活接收服务提供者，不映射 HTTP 端点；既有任务和冷启动保留语义对两种宿主均生效。
 
-宿主构建 core、RSS 和 storage.sqlite 发行产物，不在运行时依赖它们的实现程序集。从应用输出目录的 plugins/plugins.json 或 --plugin-directory 读取显式清单；清单声明身份、入口 DLL／类型、核心标记和必要服务依赖。plugin_catalog 独立于部署目录，保留清单观察、启用意图、不透明 JSON 配置及普通声明快照。清单或文件缺失时仍保留历史目录记录；即使程序集身份已缓存，也先检查文件是否存在。
+宿主构建 core、rss、articles、articles.desktop 和 storage.sqlite 发行产物，不在运行时依赖它们的实现程序集。从应用输出目录的 plugins/plugins.json 或 --plugin-directory 读取显式清单；清单声明身份、入口 DLL／类型、核心标记和必要服务依赖。plugin_catalog 独立于部署目录，保留清单观察、启用意图、不透明 JSON 配置及普通声明快照。清单或文件缺失时仍保留历史目录记录；即使程序集身份已缓存，也先检查文件是否存在。
 
-LazyTuiHub.CorePlugin、LazyTuiHub.Rss 和 LazyTuiHub.Storage.Sqlite 使用同一入口契约。公开 DAO 契约位于 LazyTuiHub.Dao，插件声明访问需求，与具体表目标分开；提供者发布能力，使用者匹配档位／契约／实例／底层后激活，不依赖清单顺序。首次启动无法激活的使用者也保留需求／提供声明。存储插件提供记录／TTL、FTS5、原生连接及委托清理；缺失时最小框架元数据仍可用。RSS 拥有自己的 API 实现、协议适配、CLI 命令、初始化和刷新任务。最小宿主保留插件管理、DAO 诊断／保留控制及工作流查看、编辑、执行入口。WorkflowRuntime 负责图存储、注册与计划，业务服务获得 IWorkflowExecutor。既有 RSS 业务操作仍通过工作流，让它们不再强制依赖工作流留待后续迭代。
+LazyTuiHub.CorePlugin、LazyTuiHub.Rss、LazyTuiHub.Articles 和 LazyTuiHub.Storage.Sqlite 使用同一入口契约。公开 DAO 契约位于 LazyTuiHub.Dao，插件声明访问需求，与具体表目标分开；提供者发布能力，使用者匹配档位／契约／实例／底层后激活，不依赖清单顺序。首次启动无法激活的使用者也保留需求／提供声明。存储插件提供记录／TTL、FTS5、原生连接及委托清理；缺失时最小框架元数据仍可用。RSS 拥有自己的 API 实现、协议适配、CLI 命令、初始化和刷新任务。最小宿主保留插件管理、DAO 诊断／保留控制及工作流查看、编辑、执行入口。WorkflowRuntime 负责图存储、注册与计划，业务服务获得 IWorkflowExecutor。既有 RSS 业务操作仍通过工作流，让它们不再强制依赖工作流留待后续迭代。
 
 --command plugins 提供 list/inspect、enable/disable、不透明配置及显式 cleanup/uninstall hook 调用。修改保存后要求重启，不改变本次激活状态。禁用插件作为维护目标时可在冷启动加载服务／hook，但不激活节点、路由、命令和任务。hook 暂时返回 Task，命令报告完成、异常和取消，不验证清理语义，也没有专用进度协议。RSS 尚未提供这两种 hook。uninstall 仅调用可选 hook，不删除代码或目录记录。
 

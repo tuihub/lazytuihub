@@ -6,7 +6,7 @@ English | [中文](streaming-mvp.zh.md)
 
 The MVP uses an RSS reader and SQLite to explore reusable nodes across business modules. The first local runtime supports named streaming/synchronized ports and executable local plans. The proposed [framework Note](../../.agents/notes/2026-11-17-mvp-framework.en.md) and [node execution Note](../../.agents/notes/2026-11-17-mvp-node-execution.en.md) distinguish current choices from further design. MVP Notes remain editable proposals until merge into main; each increment commits code and corresponding Notes together.
 
-Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. This increment moves RSS tables into encoded plugin namespaces without migrating old tables.
+Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. There is no visual graph editor or distributed execution. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. Use a fresh database for the split article schema and default ingestion graph.
 
 The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real RSS/SQLite operations, workflow inspection, and plugin availability. The [UI comparison guide](ui-comparison.en.md) retains the earlier independent experiments.
 
@@ -20,13 +20,16 @@ The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real
 | [DAO toolkit](../../src/LazyTuiHub.Dao/) | Backend-neutral contracts, access requirements/capabilities, and namespaced table targets. |
 | [SQLite provider](../../src/LazyTuiHub.Storage.Sqlite/) | Required storage plugin supplying common JSON records/TTL, SQLite FTS5, native connections, and delegated cleanup. |
 | [Core plugin](../../src/LazyTuiHub.CorePlugin/) | Required distribution plugin for greetings and built-in node registration. |
-| [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, parsing, storage, queries, read state, API/CLI adapters, and background refresh. |
+| [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, scheduled fetching, fetch observations, and RSS/Atom parsing. |
+| [Articles](../../src/LazyTuiHub.Articles/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
 | [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, desktop/web composition, shared DI infrastructure, and lifecycle. |
-| [Desktop](../../src/LazyTuiHub.Desktop/) / [RSS UI](../../src/LazyTuiHub.Rss.Desktop/) | Avalonia shell and diagnostics / dynamically loaded reader using IRssApi. |
+| [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
 
-PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. RSS writes its business tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
+PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. Each business plugin writes its own tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
 
-The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, rss.store, and a typed output consumer. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP calls share IRssApi; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
+The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, articles.store, and articles.output. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP callers use IRssApi for subscriptions and IArticleApi for articles; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
+
+To connect another source, emit [ArticleDraft](../../src/LazyTuiHub.Api/Articles/ArticleDraft.cs) and connect the output to articles.store. The source resource name and its entry ID identify the article together. For example, notebooks/a and notebooks/b can both use entry ID 1. Repeating an entry updates its content and preserves its article name and read state. A packet carrying a registered origin reference also records the relationship in the same transaction.
 
 ## Ports and execution plans
 
@@ -65,11 +68,11 @@ mise run run -- --command rss --action help
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action feeds
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action articles --unread true
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action read --name feeds/FEED_ID/articles/ARTICLE_ID
+mise run run -- --database ./artifacts/rss/workspace.db --command articles --action list --unread true
+mise run run -- --database ./artifacts/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
 ```
 
-Replace the feed URI with a real address. add returns the subscription name; articles returns article names and a continuation token, accepted by --page-token. read marks the article read and prints Proto JSON without executing HTML.
+Replace the feed URI with a real address. add returns the subscription name; articles list returns article names and a continuation token, accepted by --page-token. read marks the article read and prints Proto JSON without executing HTML.
 
 Without --database, the workspace is LazyTuiHub/workspace.db under system LocalApplicationData. Hosting HTTP starts available plugin tasks whose required workflows can plan. The initial graph uses a 15-minute interval, configurable with --refresh-interval 00:05:00 when first created; existing graph definitions are preserved. Timer backlog uses PeriodicTimer coalescing without replaying every missed tick. Refresh failures are logged and retried on the next interval.
 
@@ -79,7 +82,7 @@ mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:
 
 ## Cold-start plugins
 
-The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core, rss, and storage.sqlite entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
+The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core, rss, articles, articles.desktop, and storage.sqlite entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
 
 ```sh
 mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
@@ -101,14 +104,14 @@ To contribute a plugin, implement IApplicationPlugin.Configure(PluginRegistratio
 
 Plugins declare required mode, contract, access instance, and optional backend using registration.Daos.Requirements. The current instance is workspace. The provider offers three modes: IRecordDao under a common records.ttl contract, ISqliteSearch under sqlite.fts5, and a native IConnectionSource under relational.connection. Public contracts use BCL DbConnection/DbTransaction, without SQLite driver types. SQLite is currently the only implementation; declaring a backend-neutral requirement alone does not provide another backend.
 
-Plugins obtain tools through their DaoScope and pass DaoTable targets at each call. scope.Table("fetch_details") combines the plugin identity and local name; DaoNames encodes both components into safe SQL identifiers. Plugins own schema creation and private tables. No per-table catalog entry is required for ordinary tool use. Native connections are disposed by callers; specialized SQL may retain SQLite-specific behavior. FTS5 availability is probed at startup, and RSS requires it rather than silently falling back to another search behavior.
+Plugins obtain tools through their DaoScope and pass DaoTable targets at each call. scope.Table("fetch_details") combines the plugin identity and local name; DaoNames encodes both components into safe SQL identifiers. Plugins own schema creation and private tables. No per-table catalog entry is required for ordinary tool use. Native connections are disposed by callers; specialized SQL may retain SQLite-specific behavior. FTS5 availability is probed at startup, and the articles plugin requires it for search.
 
-The common record tool creates a key/JSON/nullable-expiry table. Put replaces both value and explicit expiry; null is permanent. Reads hide records whose absolute millisecond expiry has arrived; includeExpired exposes undeleted records for inspection. Keep removes expiry, including on an expired record not yet physically deleted. It does not turn observations into RSS articles or framework data objects.
+The common record tool creates a key/JSON/nullable-expiry table. Put replaces both value and explicit expiry; null is permanent. Reads hide records whose absolute millisecond expiry has arrived; includeExpired exposes undeleted records for inspection. Keep removes expiry, including on an expired record not yet physically deleted. It does not turn observations into articles or framework data objects.
 
-RSS records successful HTTP fetch URL, byte count, and completion time at parse ingress. It does not retain the response body, input checkpoints, or replay state. Article storage remains separate and permanent. Search currently returns article IDs using FTS5 query syntax; these new operations are CLI/service features without new Proto endpoints.
+RSS records successful HTTP fetch URL, byte count, and completion time at parse ingress. It does not retain the response body, input checkpoints, or replay state. Article storage remains separate and permanent. Search currently returns article IDs using FTS5 query syntax; the articles search command exposes full-text search.
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action search --query example
+mise run run -- --database ./artifacts/rss/workspace.db --command articles --action search --query example
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action details --include-expired true
 mise run run -- --database ./artifacts/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
 mise run run -- --database ./artifacts/rss/workspace.db --command dao --action list

@@ -19,31 +19,8 @@ public sealed class RssOperations(IWorkflowExecutor workflows, TimeSpan refreshI
         ValueTask Count(DataPacket packet, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            if (packet.Payload is ArticleRecord)
+            if (packet.Reference is { Type: "articles.article" })
                 Interlocked.Increment(ref count);
-            return ValueTask.CompletedTask;
-        }
-    }
-
-    public async Task<IReadOnlyList<T>> RunAsync<T>(
-        string pipeline,
-        object? input = null,
-        CancellationToken cancellationToken = default
-    )
-        where T : class
-    {
-        var result = new List<T>();
-        await workflows.RunAsync(pipeline, new(input, Collect), cancellationToken);
-        return result;
-
-        ValueTask Collect(DataPacket packet, CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-            if (packet.Payload is T item)
-            {
-                lock (result)
-                    result.Add(item);
-            }
             return ValueTask.CompletedTask;
         }
     }

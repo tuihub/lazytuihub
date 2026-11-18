@@ -6,6 +6,95 @@ info:
     title: LazyTuiHub API
     version: v1
 paths:
+    /v1/articles:
+        get:
+            tags:
+                - ArticleService
+            description: |-
+                Lists articles newest-ingested first through the reading pipeline.
+                 The optional filter supports source equality,
+                 `read = true` and `read = false`; an empty filter includes both states.
+                 Pagination is a live keyset traversal, not a snapshot across refreshes or
+                 read-state changes. A token is bound to the filter.
+            operationId: ArticleService_ListArticles
+            parameters:
+                - name: pageSize
+                  in: query
+                  description: |-
+                    Optional. Number of articles per page. Zero uses 50; negative values return
+                     INVALID_ARGUMENT. This prototype has no additional maximum.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: Optional. An opaque token from a response with the same filter.
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Optional. Equality on source (a quoted string) and read (true or false).
+                     Combine the two with AND, for example `source = "feeds/abc" AND read = false`.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListArticlesResponse'
+    /v1/articles/{article}:
+        get:
+            tags:
+                - ArticleService
+            description: |-
+                Reads an article without changing its read state. Unknown names return
+                 NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
+            operationId: ArticleService_GetArticle
+            parameters:
+                - name: article
+                  in: path
+                  description: The article id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Article'
+    /v1/articles/{article}:markRead:
+        post:
+            tags:
+                - ArticleService
+            description: |-
+                Marks an article as read and returns its current state. Repeating the call
+                 has the same effect. Unknown names return NOT_FOUND.
+            operationId: ArticleService_MarkArticleRead
+            parameters:
+                - name: article
+                  in: path
+                  description: The article id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MarkArticleReadRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Article'
     /v1/feeds:
         get:
             tags:
@@ -100,111 +189,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Feed'
-    /v1/feeds/{feed}/articles:
-        get:
-            tags:
-                - RssService
-            description: |-
-                Lists articles newest-ingested first through the reading pipeline.
-                 Use `feeds/-` to aggregate subscriptions. The optional filter supports
-                 `read = true` and `read = false`; an empty filter includes both states.
-                 Pagination is a live keyset traversal, not a snapshot across refreshes or
-                 read-state changes. A token is bound to the parent and filter.
-            operationId: RssService_ListArticles
-            parameters:
-                - name: feed
-                  in: path
-                  description: The feed id.
-                  required: true
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Optional. Number of articles per page. Zero uses 50; negative values return
-                     INVALID_ARGUMENT. This prototype has no additional maximum.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: Optional. An opaque token from a response with the same parent and filter.
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: Optional. Empty, `read = true`, or `read = false`.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListArticlesResponse'
-    /v1/feeds/{feed}/articles/{article}:
-        get:
-            tags:
-                - RssService
-            description: |-
-                Reads an article without changing its read state. Unknown names return
-                 NOT_FOUND. Entry content is untrusted source text, not sanitized HTML.
-            operationId: RssService_GetArticle
-            parameters:
-                - name: feed
-                  in: path
-                  description: The feed id.
-                  required: true
-                  schema:
-                    type: string
-                - name: article
-                  in: path
-                  description: The article id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Article'
-    /v1/feeds/{feed}/articles/{article}:markRead:
-        post:
-            tags:
-                - RssService
-            description: |-
-                Marks an article as read and returns its current state. Repeating the call
-                 has the same effect. Unknown names return NOT_FOUND.
-            operationId: RssService_MarkArticleRead
-            parameters:
-                - name: feed
-                  in: path
-                  description: The feed id.
-                  required: true
-                  schema:
-                    type: string
-                - name: article
-                  in: path
-                  description: The article id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/MarkArticleReadRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Article'
     /v1/feeds/{feed}:refresh:
         post:
             tags:
@@ -220,6 +204,7 @@ paths:
                  This method does not promise atomic feed snapshots or exactly-once delivery.
                  An unknown subscription returns NOT_FOUND. Upstream or parsing failure
                  returns UNAVAILABLE; callers can retry a refresh without duplicating entries.
+                 A missing node in the configured pipeline returns FAILED_PRECONDITION.
             operationId: RssService_RefreshFeed
             parameters:
                 - name: feed
@@ -293,7 +278,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: Identifier. The article name, `feeds/{feed}/articles/{article}`.
+                    description: Identifier. The article name, `articles/{article}`.
                 title:
                     readOnly: true
                     type: string
@@ -317,7 +302,11 @@ components:
                     readOnly: true
                     type: boolean
                     description: Output only. Whether the user has marked this article as read.
-            description: A feed entry persisted by the RSS ingestion pipeline.
+                source:
+                    readOnly: true
+                    type: string
+                    description: Output only. The source resource name supplied by the producer, such as `feeds/{feed}`.
+            description: An article collected from a source in this workspace.
         Feed:
             required:
                 - uri
@@ -386,7 +375,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: Required. The article name, `feeds/{feed}/articles/{article}`.
+                    description: Required. The article name, `articles/{article}`.
             description: Request for MarkArticleRead.
         RefreshFeedRequest:
             required:
@@ -406,6 +395,8 @@ components:
                     format: int32
             description: Response for RefreshFeed.
 tags:
+    - name: ArticleService
+      description: Manages articles collected from any source in this workspace.
     - name: GreetingService
       description: Generates greetings without changing application state.
     - name: RssService

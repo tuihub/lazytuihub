@@ -6,12 +6,12 @@
 
 ## Operations
 
+- [GET /v1/articles](operations/ArticleService_ListArticles.md)
+- [GET /v1/articles/{article}](operations/ArticleService_GetArticle.md)
+- [POST /v1/articles/{article}:markRead](operations/ArticleService_MarkArticleRead.md)
 - [GET /v1/feeds](operations/RssService_ListFeeds.md)
 - [POST /v1/feeds](operations/RssService_CreateFeed.md)
 - [GET /v1/feeds/{feed}](operations/RssService_GetFeed.md)
-- [GET /v1/feeds/{feed}/articles](operations/RssService_ListArticles.md)
-- [GET /v1/feeds/{feed}/articles/{article}](operations/RssService_GetArticle.md)
-- [POST /v1/feeds/{feed}/articles/{article}:markRead](operations/RssService_MarkArticleRead.md)
 - [POST /v1/feeds/{feed}:refresh](operations/RssService_RefreshFeed.md)
 - [POST /v1:generateGreeting](operations/GreetingService_GenerateGreeting.md)
 
@@ -29,7 +29,8 @@
 
 ## Source declarations
 
+- [lazytuihub/articles/v1/article.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/articles/v1/article.proto)
+- [lazytuihub/articles/v1/article_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/articles/v1/article_service.proto)
 - [lazytuihub/greeting/v1/greeting_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/greeting/v1/greeting_service.proto)
-- [lazytuihub/rss/v1/article.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/article.proto)
 - [lazytuihub/rss/v1/feed.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/feed.proto)
 - [lazytuihub/rss/v1/rss_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/rss/v1/rss_service.proto)

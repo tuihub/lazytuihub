@@ -25,44 +25,10 @@ public partial class RssHttpClient : IRssApi
         CancellationToken cancellationToken = default
     ) => RefreshFeedAsync(FeedSegment(request.Name), request, cancellationToken);
 
-    public Task<ListArticlesResponse> ListArticlesAsync(
-        ListArticlesRequest request,
-        CancellationToken cancellationToken = default
-    ) =>
-        ListArticlesAsync(
-            FeedSegment(request.Parent),
-            request.PageSize,
-            request.PageToken,
-            request.Filter,
-            cancellationToken
-        );
-
-    public Task<Article> GetArticleAsync(GetArticleRequest request, CancellationToken cancellationToken = default)
-    {
-        var (feed, article) = ArticleSegments(request.Name);
-        return GetArticleAsync(feed, article, cancellationToken);
-    }
-
-    public Task<Article> MarkArticleReadAsync(
-        MarkArticleReadRequest request,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var (feed, article) = ArticleSegments(request.Name);
-        return MarkArticleReadAsync(feed, article, request, cancellationToken);
-    }
-
     private static string FeedSegment(string name)
     {
         return name.Split('/') is ["feeds", var feed]
             ? feed
             : throw new ArgumentException("Expected feeds/{feed}.", nameof(name));
-    }
-
-    private static (string Feed, string Article) ArticleSegments(string name)
-    {
-        return name.Split('/') is ["feeds", var feed, "articles", var article]
-            ? (feed, article)
-            : throw new ArgumentException("Expected feeds/{feed}/articles/{article}.", nameof(name));
     }
 }

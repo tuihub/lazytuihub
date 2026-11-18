@@ -6,7 +6,7 @@ Request for MarkArticleRead.
 
 - **`name` (required)**: `string`
 
-  Required. The article name, `feeds/{feed}/articles/{article}`.
+  Required. The article name, `articles/{article}`.
 
 **Example:**
 

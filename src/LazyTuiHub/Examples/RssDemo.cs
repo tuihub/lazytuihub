@@ -1,4 +1,6 @@
 using LazyTuiHub.Api;
+using LazyTuiHub.Api.Articles;
+using LazyTuiHub.Api.Articles.V1;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Framework;
@@ -72,6 +74,8 @@ public static class RssDemo
         var local = app.Services.GetRequiredService<IRssApi>();
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
         var remote = new RssHttpClient(http);
+        var remoteArticles = new ArticleHttpClient(http);
+        var localArticles = app.Services.GetRequiredService<IArticleApi>();
         var request = new CreateFeedRequest
         {
             Feed = new() { Uri = new Uri(http.BaseAddress, "fixture.xml").AbsoluteUri, DisplayName = "MVP fixture" },
@@ -87,10 +91,10 @@ public static class RssDemo
             refresh.ProcessedArticleCount == fixtureEntries,
             "The ingestion pipeline did not process both entries."
         );
-        var query = new ListArticlesRequest { Parent = feed.Name };
-        var articles = await remote.ListArticlesAsync(query, cancellationToken);
+        var query = new ListArticlesRequest { Filter = ArticleFilters.ForSource(feed.Name) };
+        var articles = await remoteArticles.ListArticlesAsync(query, cancellationToken);
         Require(
-            articles.Equals(await local.ListArticlesAsync(query, cancellationToken)),
+            articles.Equals(await localArticles.ListArticlesAsync(query, cancellationToken)),
             "Local and HTTP articles differ."
         );
         Require(
@@ -99,14 +103,14 @@ public static class RssDemo
             "Missing entries or publication timestamps."
         );
         var article = articles.Articles[0];
-        await remote.MarkArticleReadAsync(new() { Name = article.Name }, cancellationToken);
+        await remoteArticles.MarkArticleReadAsync(new() { Name = article.Name }, cancellationToken);
         await remote.RefreshFeedAsync(new() { Name = feed.Name }, cancellationToken);
         Require(
-            (await local.GetArticleAsync(new() { Name = article.Name }, cancellationToken)).Read,
+            (await localArticles.GetArticleAsync(new() { Name = article.Name }, cancellationToken)).Read,
             "Refresh lost read state."
         );
         Require(
-            (await remote.ListArticlesAsync(query, cancellationToken)).Articles.Count == fixtureEntries,
+            (await remoteArticles.ListArticlesAsync(query, cancellationToken)).Articles.Count == fixtureEntries,
             "Refresh duplicated entries."
         );
         Require(

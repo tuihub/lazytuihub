@@ -15,7 +15,7 @@ public sealed class DaoPluginTests
         using var workspace = new PluginWorkspace();
         await workspace.SuccessAsync("plugins", "list");
         var status = await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss");
-        Assert.Equal(3, status.Saved.Declaration.DaoRequirements.Count);
+        Assert.Equal(2, status.Saved.Declaration.DaoRequirements.Count);
         Assert.Equal("active", status.Activation);
         await workspace.SuccessAsync("rss", "add", "--feed-url", "https://example.com/feed");
         var saved = await workspace.SuccessAsync("workflow", "definition", "--pipeline-name", "rss.ingest");
@@ -24,8 +24,11 @@ public sealed class DaoPluginTests
         var missing = await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss");
         Assert.Equal("blocked", missing.Activation);
         Assert.Contains(DaoContracts.Records, missing.Reason);
-        Assert.Contains(DaoContracts.SqliteSearch, missing.Reason);
-        Assert.Equal(3, missing.Saved.Declaration.DaoRequirements.Count);
+        Assert.Contains(
+            DaoContracts.SqliteSearch,
+            (await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "articles")).Reason
+        );
+        Assert.Equal(2, missing.Saved.Declaration.DaoRequirements.Count);
         Assert.Equal(saved, await workspace.SuccessAsync("workflow", "definition", "--pipeline-name", "rss.ingest"));
         var report = await workspace.SuccessAsync("dao", "list");
         Assert.Contains("unavailable", report);
@@ -76,8 +79,11 @@ public sealed class DaoPluginTests
         var runtime = app.Services.GetRequiredService<PluginRuntime>();
         var rss = runtime.List().Single(view => view.Saved.Spec.Id == "rss");
         Assert.Equal("blocked", rss.Activation);
-        Assert.Equal(3, rss.Saved.Declaration.DaoRequirements.Count);
-        Assert.Contains(DaoContracts.SqliteSearch, rss.Reason);
+        Assert.Equal(2, rss.Saved.Declaration.DaoRequirements.Count);
+        Assert.Contains(
+            DaoContracts.SqliteSearch,
+            runtime.List().Single(view => view.Saved.Spec.Id == "articles").Reason
+        );
         Assert.Contains(DaoContracts.Records, rss.Reason);
         Assert.Single(runtime.Daos.List());
         Assert.Equal("active", runtime.List().Single(view => view.Saved.Spec.Id == "core").Activation);

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using LazyTuiHub.Api;
+using LazyTuiHub.Api.Articles;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Examples;
@@ -31,6 +32,7 @@ public sealed class RssApiTests
                 {
                     using var http = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
                     IRssApi remote = new RssHttpClient(http);
+                    var articleApi = new ArticleHttpClient(http);
                     request.Feed = new()
                     {
                         Uri = new Uri(http.BaseAddress, "fixture").AbsoluteUri,
@@ -51,17 +53,17 @@ public sealed class RssApiTests
                         new() { Name = saved.Name },
                         cancellationToken: TestContext.Current.CancellationToken
                     );
-                    var first = await remote.ListArticlesAsync(
-                        new() { Parent = saved.Name, PageSize = 1 },
+                    var first = await articleApi.ListArticlesAsync(
+                        new() { Filter = ArticleFilters.ForSource(saved.Name), PageSize = 1 },
                         cancellationToken: TestContext.Current.CancellationToken
                     );
                     Assert.Single(first.Articles);
                     Assert.NotEmpty(first.NextPageToken);
                     pageToken = first.NextPageToken;
-                    var second = await remote.ListArticlesAsync(
+                    var second = await articleApi.ListArticlesAsync(
                         new()
                         {
-                            Parent = saved.Name,
+                            Filter = ArticleFilters.ForSource(saved.Name),
                             PageSize = 5,
                             PageToken = pageToken,
                         },
@@ -71,12 +73,11 @@ public sealed class RssApiTests
                     Assert.NotEqual(first.Articles[0].Name, second.Articles[0].Name);
                     Assert.Empty(second.NextPageToken);
 
-                    var error = await Assert.ThrowsAsync<RssApiException>(() =>
-                        remote.ListArticlesAsync(
+                    var error = await Assert.ThrowsAsync<ArticleApiException>(() =>
+                        articleApi.ListArticlesAsync(
                             new()
                             {
-                                Parent = saved.Name,
-                                Filter = "read = false",
+                                Filter = ArticleFilters.ForSource(saved.Name, "read = false"),
                                 PageToken = pageToken,
                             },
                             cancellationToken: TestContext.Current.CancellationToken
@@ -116,10 +117,12 @@ public sealed class RssApiTests
             );
             Assert.Single(
                 (
-                    await local.ListArticlesAsync(
-                        new() { Parent = saved.Name, PageToken = pageToken },
-                        cancellationToken: TestContext.Current.CancellationToken
-                    )
+                    await restarted
+                        .Services.GetRequiredService<IArticleApi>()
+                        .ListArticlesAsync(
+                            new() { Filter = ArticleFilters.ForSource(saved.Name), PageToken = pageToken },
+                            cancellationToken: TestContext.Current.CancellationToken
+                        )
                 ).Articles
             );
         }

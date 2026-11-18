@@ -1,8 +1,8 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
-using LazyTuiHub.Api.Rss.V1;
+using LazyTuiHub.Api.Articles.V1;
 
-namespace LazyTuiHub.Rss.Desktop;
+namespace LazyTuiHub.Articles.Desktop;
 
 public static class ArticleDisplay
 {
@@ -13,7 +13,7 @@ public static class ArticleDisplay
         new(article =>
             Uri.TryCreate(article?.Uri, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.Host)
                 ? uri.Host
-                : "Saved article"
+                : article?.Source ?? string.Empty
         );
 
     public static FuncValueConverter<Article?, string> Date { get; } =

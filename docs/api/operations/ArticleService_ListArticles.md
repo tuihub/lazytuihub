@@ -1,25 +1,19 @@
-# GET /v1/feeds/{feed}/articles
+# GET /v1/articles
 
 - **Method:** `GET`
-- **Path:** `/v1/feeds/{feed}/articles`
-- **Operation ID:** `RssService_ListArticles`
-- **Tags:** RssService
+- **Path:** `/v1/articles`
+- **Operation ID:** `ArticleService_ListArticles`
+- **Tags:** ArticleService
 
 Lists articles newest-ingested first through the reading pipeline.
-Use `feeds/-` to aggregate subscriptions. The optional filter supports
+The optional filter supports source equality,
 `read = true` and `read = false`; an empty filter includes both states.
 Pagination is a live keyset traversal, not a snapshot across refreshes or
-read-state changes. A token is bound to the parent and filter.
+read-state changes. A token is bound to the filter.
 
 ## Effective servers
 
 - `/`
-
-## Path parameters
-
-- **`feed` (required)**: `string`
-
-  The feed id.
 
 ## Query parameters
 
@@ -29,10 +23,11 @@ read-state changes. A token is bound to the parent and filter.
   INVALID_ARGUMENT. This prototype has no additional maximum.
 - **`pageToken`**: `string`
 
-  Optional. An opaque token from a response with the same parent and filter.
+  Optional. An opaque token from a response with the same filter.
 - **`filter`**: `string`
 
-  Optional. Empty, `read = true`, or `read = false`.
+  Optional. Equality on source (a quoted string) and read (true or false).
+  Combine the two with AND, for example `source = "feeds/abc" AND read = false`.
 
 ## Responses
 
