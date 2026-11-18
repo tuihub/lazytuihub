@@ -27,6 +27,8 @@ Plugins 分别展示已保存的启用设置、本次启动的激活状态和文
 
 插件页面使用标准 Avalonia 控件。主操作用 `accent`，次要操作用 `secondary`，文本按钮用 `quiet`，图标按钮用 `icon` 并设置无障碍名称。在 ListBox 上使用 `navigation` 或 `collection` 即可获得对应的选中与键盘焦点反馈。文字角色包括 `title`、`headline`、`section`、`item-title`、`reading`、`caption` 和 `metadata`。自定义布局通过动态资源获取 `SurfaceBrush`、`DividerBrush` 或 `SecondaryText`。其他标准控件继承当前基础主题。`AddDesktopPage` 注册瞬态视图工厂；需要跨设计切换保留的状态放入插件自己的服务／模型。数据按模型初始化一次，避免每次加载视图都重新读取。外壳在当前窗口内缓存视图，切换设计不重新加载插件程序集。
 
+在图标按钮中使用 `<PathIcon Classes="action" Data="{DynamicResource ActionIconRefresh}" />`。和文字并排时把类设为 `action inline`。图标随当前设计和前景色变化。工具提示和无障碍名称设置在按钮上。新增操作时，在三套主题的[图标字典](../../src/LazyTuiHub.Desktop/Appearance/Icons/)中定义同一个资源键。
+
 Fluent 使用 Avalonia 官方主题；macOS 使用 Devolutions 主题，尚未覆盖的控件回退到其内置 Fluent 样式；Material 使用 CCSWE Material，并接入项目维护的 M3 色板、Roboto 字体和按钮模板。原生标题栏继续遵循操作系统。主题选择不代表已完成全部原生交互、完整 Material 3 规范或 Android 支持。
 
 ## 响应式内容组织

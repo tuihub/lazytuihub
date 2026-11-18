@@ -5,6 +5,9 @@
 >
     <Styles.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Appearance/Icons/MacOS.axaml" />
+            </ResourceDictionary.MergedDictionaries>
             <FontFamily x:Key="DesignFont">SF Pro Text, Helvetica Neue, $Default</FontFamily>
             <x:Double x:Key="PageTitleSize">22</x:Double>
             <x:Double x:Key="HeadlineSize">26</x:Double>

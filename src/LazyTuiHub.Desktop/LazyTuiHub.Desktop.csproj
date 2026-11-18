@@ -13,6 +13,7 @@
     <PackageReference Include="Devolutions.AvaloniaTheme.MacOS" Version="2026.11.5" />
     <PackageReference Include="CCSWE.Avalonia.Material" Version="12.2.1" />
     <AvaloniaResource Include="Appearance/Fonts/*.ttf" />
+    <None Update="Appearance/Icons/*-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Appearance/Fonts/OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

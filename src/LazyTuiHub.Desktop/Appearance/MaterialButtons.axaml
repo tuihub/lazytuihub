@@ -19,46 +19,48 @@
             <Setter Property="ClipToBounds" Value="False" />
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Panel>
-                        <Border
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                        />
-                        <Border
-                            Name="Hover"
-                            Background="{TemplateBinding Foreground}"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            Opacity="0"
-                            IsHitTestVisible="False"
-                        />
-                        <Border
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            ClipToBounds="True"
-                            IsHitTestVisible="False"
-                        >
-                            <local:MaterialInk Pressed="{TemplateBinding IsPressed}" />
-                        </Border>
-                        <ContentPresenter
-                            Name="PART_ContentPresenter"
-                            Padding="{TemplateBinding Padding}"
-                            Content="{TemplateBinding Content}"
-                            ContentTemplate="{TemplateBinding ContentTemplate}"
-                            RecognizesAccessKey="True"
-                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
-                        />
-                        <Border
-                            Name="FocusRing"
-                            BorderBrush="{DynamicResource Secondary}"
-                            BorderThickness="3"
-                            Margin="-5"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            IsHitTestVisible="False"
-                            IsVisible="False"
-                        />
-                    </Panel>
+                    <Border Background="Transparent">
+                        <Panel Name="ActionSurface">
+                            <Border
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                            />
+                            <Border
+                                Name="Hover"
+                                Background="{TemplateBinding Foreground}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Opacity="0"
+                                IsHitTestVisible="False"
+                            />
+                            <Border
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                ClipToBounds="True"
+                                IsHitTestVisible="False"
+                            >
+                                <local:MaterialInk Pressed="{TemplateBinding IsPressed}" />
+                            </Border>
+                            <ContentPresenter
+                                Name="PART_ContentPresenter"
+                                Padding="{TemplateBinding Padding}"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                RecognizesAccessKey="True"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            />
+                            <Border
+                                Name="FocusRing"
+                                BorderBrush="{DynamicResource Secondary}"
+                                BorderThickness="3"
+                                Margin="-5"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                IsHitTestVisible="False"
+                                IsVisible="False"
+                            />
+                        </Panel>
+                    </Border>
                 </ControlTemplate>
             </Setter>
             <Style Selector="^.accent">
@@ -73,9 +75,15 @@
                 <Setter Property="Padding" Value="12,0" />
             </Style>
             <Style Selector="^.icon">
-                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="MinWidth" Value="48" />
+                <Setter Property="MinHeight" Value="48" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Padding" Value="8" />
                 <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+            </Style>
+            <Style Selector="^.icon /template/ Panel#ActionSurface">
+                <Setter Property="Margin" Value="4" />
             </Style>
             <Style Selector="^:pointerover /template/ Border#Hover">
                 <Setter Property="Opacity" Value="0.08" />

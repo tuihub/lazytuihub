@@ -19,11 +19,14 @@
             <Grid ColumnDefinitions="Auto,*">
                 <Button
                     x:Name="MenuButton"
-                    Classes="quiet"
-                    Content="Menu"
+                    Classes="icon"
+                    AutomationProperties.Name="Navigation menu"
+                    ToolTip.Tip="Navigation menu"
                     Click="MenuClick"
                     Margin="0,0,16,0"
-                />
+                >
+                    <PathIcon Classes="action" Data="{DynamicResource ActionIconNavigation}" />
+                </Button>
                 <TextBlock
                     Grid.Column="1"
                     Text="LazyTuiHub"
@@ -63,10 +66,17 @@
                         <Button
                             x:Name="AppearanceButton"
                             Classes="quiet"
-                            Content="Appearance"
+                            AutomationProperties.Name="Appearance"
                             HorizontalAlignment="Stretch"
                             Margin="0"
                         >
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon
+                                    Classes="action inline"
+                                    Data="{DynamicResource ActionIconAppearance}"
+                                />
+                                <TextBlock Text="Appearance" VerticalAlignment="Center" />
+                            </StackPanel>
                             <Button.Flyout>
                                 <Flyout Placement="RightEdgeAlignedBottom">
                                     <StackPanel Spacing="12" Width="240" Margin="8">

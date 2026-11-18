@@ -20,6 +20,8 @@ Fluent 以桌面 Fluent 为目标，采用 Avalonia 官方主题及其强调按�
 
 Material 通过 CCSWE 提供文本编辑、选择器、菜单和浮层等标准控件。项目维护填充、描边、文本和图标按钮模板、从指针落点扩散的波纹、键盘焦点环、M3 语义配色及阅读排版。Roboto Regular 和 Medium 来自 Uno.Fonts.Roboto 2.10.1，随附 OFL 许可。页面和 CCSWE 控件使用同一套浅深色语义色板。业务页面在三个设计中使用相同的角色。
 
+按钮采用 waiter 按操作名称选择图标的做法。页面引用添加、刷新、导航、返回、关闭和外观六种语义资源，宿主按当前设计解析矢量轮廓，保留原始画框和留白，图标随按钮前景色变化。Fluent 使用微软 Regular 20，macOS 使用 Cupertino Icons 1.0.9，Material 使用 Material Symbols Outlined（光学尺寸 24、字重 400、未填充、grade 0）。独立图标分别以 20、18 和 24 个逻辑单位绘制；文字旁的图标分别为 20、16 和 18。Material 工具栏按钮在 48 的点击区域内绘制 40 的状态层。各主题的图标字典保留上游名称，发行时随附许可。[waiter 操作映射](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/packages/universal_ui/lib/src/icons.dart)、[Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons)、[Cupertino Icons](https://pub.dev/packages/cupertino_icons/versions/1.0.9)、[Material Symbols 源码版本](https://github.com/google/material-design-icons/tree/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/variablefont)。
+
 产品无窗口场景在三套设计下操作订阅面板，验证键盘焦点和激活，记录宽窄布局、外观弹层和深色模式。测试还验证 Material 主按钮实际解析 Roboto，并响应指针按下和释放。JSON 快照包含实际解析的主字体。独立的五套组件库样板保留原始库的外观，供将来升级时对照。
 
 ## 已验证的参照与方法

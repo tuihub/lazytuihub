@@ -1,0 +1,31 @@
+<ResourceDictionary
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+>
+    <x:Double x:Key="ActionIconSize">20</x:Double>
+    <x:Double x:Key="InlineActionIconSize">20</x:Double>
+    <!-- Add20Regular -->
+    <StreamGeometry x:Key="ActionIconAdd">
+        F1 M10 2.5c.28 0 .5.22.5.5v6.5H17a.5.5 0 0 1 0 1h-6.5V17a.5.5 0 0 1-1 0v-6.5H3a.5.5 0 0 1 0-1h6.5V3c0-.28.22-.5.5-.5
+    </StreamGeometry>
+    <!-- ArrowClockwise20Regular -->
+    <StreamGeometry x:Key="ActionIconRefresh">
+        F1 M4 10a6 6 0 0 1 10.47-4H12.5a.5.5 0 0 0 0 1h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-1 0v1.6a7 7 0 1 0 1.98 4.36.5.5 0 1 0-1 .08L16 10a6 6 0 0 1-12 0
+    </StreamGeometry>
+    <!-- Navigation20Regular -->
+    <StreamGeometry x:Key="ActionIconNavigation">
+        F1 M2 4.5c0-.28.22-.5.5-.5h15a.5.5 0 0 1 0 1h-15a.5.5 0 0 1-.5-.5m0 5c0-.28.22-.5.5-.5h15a.5.5 0 0 1 0 1h-15a.5.5 0 0 1-.5-.5m.5 4.5a.5.5 0 0 0 0 1h15a.5.5 0 0 0 0-1z
+    </StreamGeometry>
+    <!-- ArrowLeft20Regular -->
+    <StreamGeometry x:Key="ActionIconBack">
+        F1 M9.16 16.87a.5.5 0 1 0 .67-.74L3.67 10.5H17.5a.5.5 0 0 0 0-1H3.67l6.16-5.63a.5.5 0 0 0-.67-.74L2.24 9.44a.75.75 0 0 0 0 1.11z
+    </StreamGeometry>
+    <!-- Dismiss20Regular -->
+    <StreamGeometry x:Key="ActionIconClose">
+        F1 m4.09 4.22.06-.07a.5.5 0 0 1 .63-.06l.07.06L10 9.29l5.15-5.14a.5.5 0 0 1 .63-.06l.07.06c.18.17.2.44.06.63l-.06.07L10.71 10l5.14 5.15c.18.17.2.44.06.63l-.06.07a.5.5 0 0 1-.63.06l-.07-.06L10 10.71l-5.15 5.14a.5.5 0 0 1-.63.06l-.07-.06a.5.5 0 0 1-.06-.63l.06-.07L9.29 10 4.15 4.85a.5.5 0 0 1-.06-.63l.06-.07z
+    </StreamGeometry>
+    <!-- DarkTheme20Regular -->
+    <StreamGeometry x:Key="ActionIconAppearance">
+        F1 M10 3a7 7 0 1 1 0 14zm0-1a8 8 0 1 0 0 16 8 8 0 0 0 0-16
+    </StreamGeometry>
+</ResourceDictionary>

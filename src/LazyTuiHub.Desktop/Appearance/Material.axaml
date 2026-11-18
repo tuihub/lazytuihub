@@ -5,6 +5,9 @@
 >
     <Styles.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Appearance/Icons/Material.axaml" />
+            </ResourceDictionary.MergedDictionaries>
             <FontFamily x:Key="DesignFont">
                 avares://LazyTuiHub.Desktop/Appearance/Fonts#Roboto
             </FontFamily>

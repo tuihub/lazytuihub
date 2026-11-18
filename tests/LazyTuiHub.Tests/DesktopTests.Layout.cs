@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
@@ -117,7 +118,21 @@ public sealed partial class DesktopTests
 
     private static async Task ExerciseActionsAsync(DesktopUiDriver driver, ReaderPage reader, DesignSystem design)
     {
-        await driver.ClickAsync(reader.FindControl<Button>("AddFeedButton")!);
+        var add = reader.FindControl<Button>("AddFeedButton")!;
+        var glyph = Assert.IsType<PathIcon>(add.Content);
+        Assert.NotNull(glyph.Data);
+        Assert.True(glyph.Data.Bounds.Width > 0 && glyph.Data.Bounds.Height > 0);
+        Assert.Equal("Add subscription", AutomationProperties.GetName(add));
+        if (design == DesignSystem.Material)
+        {
+            var edge = add.TranslatePoint(new Point(1, 1), driver.Window)!.Value;
+            driver.Window.MouseMove(edge);
+            driver.Window.MouseDown(edge, MouseButton.Left);
+            driver.Window.MouseUp(edge, MouseButton.Left);
+            await driver.SettleAsync();
+        }
+        else
+            await driver.ClickAsync(add);
         Assert.True(reader.Model.AddingSubscription, $"{design}: open subscription panel");
         var submit = reader.FindControl<Button>("SubscribeButton")!;
         Assert.True(reader.FindControl<TextBox>("FeedUriInput")!.IsFocused);

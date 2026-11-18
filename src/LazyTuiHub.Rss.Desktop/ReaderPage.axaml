@@ -32,11 +32,7 @@
                                 ToolTip.Tip="Add a subscription"
                                 AutomationProperties.Name="Add subscription"
                             >
-                                <PathIcon
-                                    Data="M7,0 H9 V7 H16 V9 H9 V16 H7 V9 H0 V7 H7 Z"
-                                    Width="16"
-                                    Height="16"
-                                />
+                                <PathIcon Classes="action" Data="{DynamicResource ActionIconAdd}" />
                             </Button>
                         </Grid>
                         <ComboBox
@@ -80,9 +76,8 @@
                                 AutomationProperties.Name="{Binding RefreshLabel}"
                             >
                                 <PathIcon
-                                    Data="M14,8 A6,6 0 1 1 12,3 L12,0 L16,4 L12,8 L12,5 A4,4 0 1 0 12,9 Z"
-                                    Width="16"
-                                    Height="16"
+                                    Classes="action"
+                                    Data="{DynamicResource ActionIconRefresh}"
                                 />
                                 <Button.ContextMenu>
                                     <ContextMenu>
@@ -275,10 +270,16 @@
                             <Button
                                 Grid.Column="1"
                                 x:Name="CloseSubscriptionButton"
-                                Content="Close"
-                                Classes="quiet"
+                                ToolTip.Tip="Close"
+                                AutomationProperties.Name="Close subscription form"
+                                Classes="icon"
                                 Click="CloseSubscriptionClick"
-                            />
+                            >
+                                <PathIcon
+                                    Classes="action"
+                                    Data="{DynamicResource ActionIconClose}"
+                                />
+                            </Button>
                         </Grid>
                         <TextBlock
                             Text="Follow a site by adding its RSS or Atom feed."

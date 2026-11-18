@@ -27,6 +27,8 @@ Changing the design rebuilds the window while retaining the current page, reader
 
 Use standard Avalonia controls in plugin pages. Apply `accent` to the main action, `secondary` to a supporting action, `quiet` to a text action and `icon` to an icon button with an accessible name. Set `navigation` or `collection` on a ListBox to use the corresponding selection and keyboard focus treatment. Text roles include `title`, `headline`, `section`, `item-title`, `reading`, `caption` and `metadata`. Use dynamic resources such as `SurfaceBrush`, `DividerBrush` and `SecondaryText` for custom composition. Other standard controls inherit the active base theme. `AddDesktopPage` registers a transient view factory; keep state in plugin-owned services/models when it should survive a design switch. Initialize data once per model rather than on every view load. The shell caches views within their window; design changes do not reload plugin assemblies.
 
+Place `<PathIcon Classes="action" Data="{DynamicResource ActionIconRefresh}" />` in an icon button. Use `action inline` beside text. Icons follow the active design and foreground color. Put the tooltip and accessible name on the button. For a new action, define the same resource key in each [design's icon dictionary](../../src/LazyTuiHub.Desktop/Appearance/Icons/).
+
 Fluent uses Avalonia's official theme; macOS uses Devolutions' theme with Fluent fallbacks for uncovered controls; Material uses CCSWE Material with the project’s M3 palette, Roboto type, and button templates. Native title bars remain controlled by the operating system. Complete native interaction, full Material 3 conformance, and Android support are not established by theme selection.
 
 ## Responsive content
