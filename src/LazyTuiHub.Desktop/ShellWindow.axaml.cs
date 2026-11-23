@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -27,6 +28,7 @@ public sealed partial class ShellWindow : Window
         appearance.Initialize((DesktopApp)Application.Current!);
         InitializeComponent();
         var plugins = host.Services.GetRequiredService<PluginRuntime>();
+        var access = host.Services.GetRequiredService<ResourceAccess>();
         Navigation =
         [
             .. plugins
@@ -37,6 +39,17 @@ public sealed partial class ShellWindow : Window
                         DesktopPages.Resolve(host.Services, plugin.Saved.Spec.Id, page.Id)
                     ))
                 ),
+            .. access.Allows(ResourceUri.SystemControl("operations"), AccessMode.Write) ? ManagementPages(plugins) : [],
+        ];
+        Pages.ItemsSource = Navigation;
+        Pages.SelectedIndex = selectedPage;
+        ShowAppearance();
+        Closing += WindowClosing;
+        SizeChanged += (_, _) => UpdateNavigation();
+    }
+
+    private NavigationPage[] ManagementPages(PluginRuntime plugins) =>
+        [
             new("Workflows", () =>
                 new WorkflowPage(plugins.Workflows, host.Services.GetRequiredService<WorkflowPageState>())
             ),
@@ -48,12 +61,6 @@ public sealed partial class ShellWindow : Window
                 )
             ),
         ];
-        Pages.ItemsSource = Navigation;
-        Pages.SelectedIndex = selectedPage;
-        ShowAppearance();
-        Closing += WindowClosing;
-        SizeChanged += (_, _) => UpdateNavigation();
-    }
 
     private void UpdateNavigation()
     {

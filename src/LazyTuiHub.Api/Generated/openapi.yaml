@@ -226,6 +226,44 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/RefreshFeedResponse'
+    /v1/sessions:authenticateUser:
+        post:
+            tags:
+                - SessionService
+            description: Exchanges a username and password for a revocable user session.
+            operationId: SessionService_AuthenticateUser
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthenticateUserRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthenticateUserResponse'
+    /v1/sessions:revokeSession:
+        post:
+            tags:
+                - SessionService
+            description: Revokes the session presented as the bearer credential for this call.
+            operationId: SessionService_RevokeSession
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RevokeSessionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RevokeSessionResponse'
     /v1:describeWorker:
         get:
             tags:
@@ -347,6 +385,41 @@ components:
                     type: string
                     description: Output only. The source resource name supplied by the producer, such as `feeds/{feed}`.
             description: An article collected from a source in this workspace.
+        AuthenticateUserRequest:
+            required:
+                - username
+                - password
+            type: object
+            properties:
+                username:
+                    type: string
+                    description: Required. The user's configured sign-in name.
+                password:
+                    type: string
+                    description: Required. The user's password.
+            description: Request for AuthenticateUser.
+        AuthenticateUserResponse:
+            type: object
+            properties:
+                token:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        Output only. Present this credential in the Authorization header as a
+                         bearer token. RevokeSession invalidates the token before it would expire.
+                account:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        Output only. The user's personal account ID. Business calls default to this
+                         account. Use the X-LazyTuiHub-Account header to select an account that
+                         shares specific resources with the user.
+                expireTime:
+                    readOnly: true
+                    type: string
+                    description: Output only. Time at which the credential expires.
+                    format: date-time
+            description: Response for AuthenticateUser.
         DescribeWorkerResponse:
             type: object
             properties:
@@ -502,6 +575,14 @@ components:
                     description: Number of entries processed, including existing entries that were updated.
                     format: int32
             description: Response for RefreshFeed.
+        RevokeSessionRequest:
+            type: object
+            properties: {}
+            description: Request for RevokeSession.
+        RevokeSessionResponse:
+            type: object
+            properties: {}
+            description: Response for RevokeSession.
 tags:
     - name: ArticleService
       description: Manages articles collected from any source in this workspace.
@@ -516,5 +597,7 @@ tags:
          code is the canonical gRPC number and details includes google.rpc.ErrorInfo.
          The outer error envelope and HTTP-valued code described by AIP-193 are not
          implemented in this prototype; clients must use the HTTP response status.
+    - name: SessionService
+      description: Signs in first-party clients and revokes their active sessions.
     - name: WorkerService
       description: Reports instance resources and executes explicitly exported packet operations.

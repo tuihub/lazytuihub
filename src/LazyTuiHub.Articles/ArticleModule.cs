@@ -17,7 +17,8 @@ public static class ArticleModule
                 Module,
                 [PortDescriptor.Stream<ArticleDraft>(StreamNodes.Input)],
                 [PortDescriptor.Stream<ArticleRecord>(StreamNodes.Output)],
-                ExecutionTopology.PrimaryWorkspace
+                ExecutionTopology.PrimaryWorkspace,
+                new("articles", "articles", AccessMode.Write)
             ),
             (packet, _, _) =>
             {

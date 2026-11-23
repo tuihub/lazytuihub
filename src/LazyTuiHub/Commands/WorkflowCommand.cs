@@ -37,11 +37,14 @@ internal static class WorkflowCommand
                 );
                 break;
             case "relations":
+                var access = app.Services.GetRequiredService<ResourceAccess>();
+                access.Require(ResourceUri.AccountRelations(access.Account), AccessMode.Read);
                 CommandJson.Write(
                     workflows.Catalog.ReadRelations(
                         new(
                             CommandJson.Required(configuration, "data-type"),
-                            CommandJson.Required(configuration, "data-key")
+                            CommandJson.Required(configuration, "data-key"),
+                            access.Account
                         )
                     )
                 );

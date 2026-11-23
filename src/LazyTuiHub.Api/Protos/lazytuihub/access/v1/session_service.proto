@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package lazytuihub.access.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "LazyTuiHub.Api.Access.V1";
+option go_package = "github.com/tuihub/lazytuihub/api/access/apiv1;accesspb";
+option java_multiple_files = true;
+option java_outer_classname = "SessionServiceProto";
+option java_package = "io.github.tuihub.lazytuihub.access.v1";
+
+// Signs in first-party clients and revokes their active sessions.
+service SessionService {
+  // Exchanges a username and password for a revocable user session.
+  rpc AuthenticateUser(AuthenticateUserRequest) returns (AuthenticateUserResponse) {
+    option (google.api.http) = { post: "/v1/sessions:authenticateUser" body: "*" };
+  }
+
+  // Revokes the session presented as the bearer credential for this call.
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse) {
+    option (google.api.http) = { post: "/v1/sessions:revokeSession" body: "*" };
+  }
+}
+
+// Request for AuthenticateUser.
+message AuthenticateUserRequest {
+  // Required. The user's configured sign-in name.
+  string username = 1 [(google.api.field_behavior) = REQUIRED];
+  // Required. The user's password.
+  string password = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Response for AuthenticateUser.
+message AuthenticateUserResponse {
+  // Output only. Present this credential in the Authorization header as a
+  // bearer token. RevokeSession invalidates the token before it would expire.
+  string token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Output only. The user's personal account ID. Business calls default to this
+  // account. Use the X-LazyTuiHub-Account header to select an account that
+  // shares specific resources with the user.
+  string account = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Output only. Time at which the credential expires.
+  google.protobuf.Timestamp expire_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Request for RevokeSession.
+message RevokeSessionRequest {}
+
+// Response for RevokeSession.
+message RevokeSessionResponse {}

@@ -1,3 +1,4 @@
+using LazyTuiHub.Access;
 using LazyTuiHub.Execution;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
@@ -7,7 +8,11 @@ namespace LazyTuiHub;
 
 internal static class HostComposition
 {
-    public static PluginRuntime Configure(IServiceCollection services, IConfiguration configuration)
+    public static PluginRuntime Configure(
+        IServiceCollection services,
+        IConfiguration configuration,
+        bool desktop = false
+    )
     {
         var path = configuration["database"]
             ?? Path.Combine(
@@ -30,10 +35,26 @@ internal static class HostComposition
                 )
                 : new HttpClient()
         );
+        var database = new SqliteDatabase(path);
+        var enabled = configuration.GetValue<bool>("Access:Enabled");
+        var authority =
+            enabled && !configuration.GetValue<bool>("worker")
+                ? new AccountAuthority(database, configuration, TimeProvider.System)
+                : null;
+        if (authority is not null)
+            services.AddSingleton(authority);
+        var principal =
+            desktop && authority is not null
+                ? authority.Authenticate(
+                    configuration["Access:Session"] ?? throw new AccessRequiredException(),
+                    configuration["Access:Account"]
+                )
+                : null;
         var plugins = new PluginRuntime(
-            new SqliteDatabase(path),
+            database,
             configuration,
-            configuration["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins")
+            configuration["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
+            new ResourceAccess(singleAccount: !enabled, principal)
         );
         try
         {

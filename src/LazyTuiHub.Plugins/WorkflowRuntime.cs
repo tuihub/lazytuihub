@@ -7,19 +7,21 @@ public sealed class WorkflowRuntime : IWorkflowExecutor
     private readonly PipelineStore pipelines;
     private readonly Dictionary<string, string> owners = new(StringComparer.Ordinal);
     private readonly Func<string, string?> retainedOwner;
+    private readonly ResourceAccess access;
 
-    internal WorkflowRuntime(SqliteDatabase database, Func<string, string?> retainedOwner)
+    internal WorkflowRuntime(SqliteDatabase database, Func<string, string?> retainedOwner, ResourceAccess access)
     {
         pipelines = new(database);
         Catalog = new(database);
         this.retainedOwner = retainedOwner;
-        Runner = new(Registry);
+        this.access = access;
+        Runner = new(Registry, access: access);
     }
 
     public NodeRegistry Registry { get; } = new();
     public PipelineRunner Runner { get; private set; }
 
-    internal void PlaceOn(ExecutionTopology topology) => Runner = new(Registry, topology);
+    internal void PlaceOn(ExecutionTopology topology) => Runner = new(Registry, topology, access);
 
     public DataCatalog Catalog { get; }
 
@@ -67,7 +69,10 @@ public sealed class WorkflowRuntime : IWorkflowExecutor
             {
                 plan = await Runner.CreatePlanAsync(definition, token);
             }
-            catch (Exception error) when (error is ArgumentException or InvalidOperationException)
+            catch (Exception error)
+                when (error is ArgumentException
+                    || error is InvalidOperationException and not (AccessDeniedException or AccessRequiredException)
+                )
             {
                 problems.Add(new(null, null, null, error.Message));
             }

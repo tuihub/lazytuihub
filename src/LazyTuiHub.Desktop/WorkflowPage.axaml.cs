@@ -41,7 +41,17 @@ public sealed partial class WorkflowPage : UserControl
         WorkflowTitle.Text = definition.Name;
         PlanStatus.Text = "Planning…";
         Plan.Text = "";
-        var description = await workflows.DescribeAsync(definition, CancellationToken.None);
+        WorkflowDescription description;
+        try
+        {
+            description = await workflows.DescribeAsync(definition, CancellationToken.None);
+        }
+        catch (Exception error) when (error is AccessRequiredException or AccessDeniedException or KeyNotFoundException)
+        {
+            if (ReferenceEquals(Definitions.SelectedItem, definition))
+                PlanStatus.Text = error.Message;
+            return;
+        }
         if (!ReferenceEquals(Definitions.SelectedItem, definition))
             return;
         Definition.Text = JsonSerializer.Serialize(definition, PipelineStore.JsonOptions);

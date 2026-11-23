@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using LazyTuiHub.Api;
 using LazyTuiHub.Dao;
+using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using LazyTuiHub.Rss.Application;
 using LazyTuiHub.Rss.Commands;
@@ -32,8 +33,17 @@ public sealed class RssPlugin : IApplicationPlugin
                 : (TimeSpan?)null;
         if (retention is { } configured && configured <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(registration), "Detail retention must be positive.");
-        registration.Services.AddSingleton(_ => new RssStore(registration.Daos, registration.Storage));
-        registration.Services.AddSingleton(_ => new RssDetails(registration.Daos, retention, TimeProvider.System));
+        registration.Services.AddSingleton(services => new RssStore(
+            registration.Daos,
+            registration.Storage,
+            services.GetRequiredService<ResourceAccess>()
+        ));
+        registration.Services.AddSingleton(services => new RssDetails(
+            registration.Daos,
+            retention,
+            TimeProvider.System,
+            services.GetRequiredService<ResourceAccess>()
+        ));
         registration.Services.AddSingleton(services => new RssOperations(
             services.GetRequiredService<IWorkflowExecutor>(),
             interval

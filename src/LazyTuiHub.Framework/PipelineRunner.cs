@@ -2,7 +2,11 @@ using System.Runtime.ExceptionServices;
 
 namespace LazyTuiHub.Framework;
 
-public sealed class PipelineRunner(NodeRegistry registry, ExecutionTopology? topology = null)
+public sealed class PipelineRunner(
+    NodeRegistry registry,
+    ExecutionTopology? topology = null,
+    ResourceAccess? access = null
+)
 {
     public async Task<PipelinePlan> CreatePlanAsync(PipelineDefinition definition, CancellationToken token = default)
     {
@@ -11,7 +15,7 @@ public sealed class PipelineRunner(NodeRegistry registry, ExecutionTopology? top
         var inventory = definition.Nodes.Any(node => registry.Get(node.Type).InvokePacket is not null)
             ? await instances.InspectAsync(token)
             : instances.LocalInventory;
-        return new PipelinePlanner(registry, inventory).Create(definition);
+        return new PipelinePlanner(registry, inventory, access).Create(definition);
     }
 
     public async Task RunAsync(
@@ -50,7 +54,7 @@ public sealed class PipelineRunner(NodeRegistry registry, ExecutionTopology? top
                 var placement = node.Candidates.Count == 1 ? node.Instance : null;
                 run.Progress?.Invoke(new(node.Definition.Id, "running", Instance: placement));
                 var inputs = inboxes[node.Definition.Id].ReadAsync(stopping.Token);
-                var nodeContext = new NodeContext(node, run, inputs, PublishAsync, plan.Inventory);
+                var nodeContext = new NodeContext(node, run, inputs, PublishAsync, plan.Inventory, access);
                 await node.Registration.Run(nodeContext, stopping.Token);
                 inboxes[node.Definition.Id].Stop();
                 foreach (var edge in outgoing)

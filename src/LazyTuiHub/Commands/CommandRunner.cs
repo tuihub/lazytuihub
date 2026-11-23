@@ -1,5 +1,7 @@
 using System.Data.Common;
 using Grpc.Core;
+using LazyTuiHub.Access;
+using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 
 namespace LazyTuiHub.Commands;
@@ -17,6 +19,15 @@ internal static class CommandRunner
         try
         {
             var action = app.Configuration["action"] ?? "help";
+            if (string.Equals(command, "access", StringComparison.Ordinal))
+            {
+                AccessCommand.Run(app, action);
+                return;
+            }
+            using var access = ApplicationHost.EnterLocal(app.Services, app.Configuration);
+            if (command is "dao" or "plugins" or "workflow")
+                app.Services.GetRequiredService<ResourceAccess>()
+                    .Require(AccountAuthority.OperationsUri, AccessMode.Write);
             var token = app.Lifetime.ApplicationStopping;
             switch (command)
             {

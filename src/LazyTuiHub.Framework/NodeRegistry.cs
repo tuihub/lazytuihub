@@ -8,6 +8,9 @@ public sealed class NodeRegistry
 
     public IEnumerable<NodeDescriptor> Descriptors => nodes.Values.Select(node => node.Descriptor);
 
+    public AccountResourceAccess? DataAccess(string operation) =>
+        nodes.GetValueOrDefault(operation)?.Descriptor.DataAccess;
+
     public IEnumerable<string> PacketOperations(PacketExecutionMode mode) =>
         nodes.Values.Where(node => node.Mode == mode).Select(node => node.Descriptor.Type);
 

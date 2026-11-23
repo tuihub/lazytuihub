@@ -2,13 +2,15 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Google.Protobuf;
+using LazyTuiHub.Access;
 using LazyTuiHub.Api.Execution.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Execution;
 
-internal sealed class WorkerPeer(Uri address, string credential, IHttpClientFactory clients) : IExecutionPeer
+internal sealed class WorkerPeer(Uri address, string credential, IHttpClientFactory clients, ResourceAccess access)
+    : IExecutionPeer
 {
     public string Endpoint => address.AbsoluteUri;
 
@@ -68,6 +70,8 @@ internal sealed class WorkerPeer(Uri address, string credential, IHttpClientFact
         using var http = clients.CreateClient(nameof(WorkerPeer));
         http.BaseAddress = address;
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credential);
+        if (!inspecting && !access.IsSingleAccount)
+            http.DefaultRequestHeaders.Add(AccessHosting.AccountHeader, access.Account);
         try
         {
             return await request(new WorkerHttpClient(http));

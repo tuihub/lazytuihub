@@ -32,7 +32,12 @@ internal static class ClusterConfiguration
                         throw new InvalidOperationException(
                             "Worker connections require HTTPS or an explicitly configured trusted HTTP network."
                         );
-                    return new WorkerPeer(address, Required(peer, "Token"), clients);
+                    return new WorkerPeer(
+                        address,
+                        Required(peer, "Token"),
+                        clients,
+                        provider.GetRequiredService<ResourceAccess>()
+                    );
                 })
                 .ToArray();
             return new ExecutionTopology(Required(cluster, "Id"), Set(cluster, "Resources"), peers);

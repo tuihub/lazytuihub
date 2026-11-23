@@ -3,6 +3,7 @@ using Grpc.Core;
 using LazyTuiHub.Api;
 using LazyTuiHub.Api.Hosting;
 using LazyTuiHub.Api.Rss.V1;
+using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using Microsoft.AspNetCore.DataProtection;
 
@@ -12,7 +13,8 @@ public sealed class RssApplication(
     RssOperations workspace,
     IWorkflowExecutor workflows,
     IDataProtectionProvider protection,
-    ILogger<RssApplication> logger
+    ILogger<RssApplication> logger,
+    ResourceAccess access
 ) : IRssApi
 {
     private const string FeedCollection = "feeds";
@@ -62,7 +64,8 @@ public sealed class RssApplication(
         RunAsync(async () =>
         {
             var size = PageTokens.PageSize(request.PageSize);
-            var after = tokens.Decode(FeedCollection, request.PageToken, string.Empty);
+            var scope = ResourceUri.InAccount("rss", access.Account, FeedCollection);
+            var after = tokens.Decode(scope, request.PageToken, string.Empty);
             var feeds = await workflows.CollectAsync<FeedRecord>(
                 "rss.feeds",
                 new FeedSelection(AfterId: after, Count: (long)size + 1),
@@ -71,7 +74,7 @@ public sealed class RssApplication(
             var response = new ListFeedsResponse();
             response.Feeds.AddRange(feeds.Take(size).Select(ToFeed));
             if (feeds.Count > size)
-                response.NextPageToken = tokens.Encode(FeedCollection, feeds[size - 1].Id);
+                response.NextPageToken = tokens.Encode(scope, feeds[size - 1].Id);
             return response;
         });
 
@@ -85,6 +88,7 @@ public sealed class RssApplication(
         RunAsync(async () =>
         {
             var id = FeedId(request.Name);
+            access.Require(ResourceUri.InAccount("rss", access.Account, FeedCollection, id), AccessMode.Write);
             await FindFeedAsync(id, cancellationToken);
             return new RefreshFeedResponse
             {

@@ -5,5 +5,6 @@ public sealed record NodeDescriptor(
     string Module,
     IReadOnlyList<PortDescriptor> Inputs,
     IReadOnlyList<PortDescriptor> Outputs,
-    string? RequiredResource = null
+    string? RequiredResource = null,
+    AccountResourceAccess? DataAccess = null
 );

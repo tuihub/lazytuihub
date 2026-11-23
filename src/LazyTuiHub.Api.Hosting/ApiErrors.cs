@@ -30,6 +30,18 @@ public static partial class ApiErrors
         {
             return await run();
         }
+        catch (AccessRequiredException exception)
+        {
+            throw Create(StatusCode.Unauthenticated, "SESSION_REQUIRED", exception.Message);
+        }
+        catch (AccessDeniedException exception)
+        {
+            throw Create(StatusCode.PermissionDenied, "ACCESS_DENIED", exception.Message);
+        }
+        catch (KeyNotFoundException)
+        {
+            throw Create(StatusCode.NotFound, "RESOURCE_NOT_FOUND", "The requested resource does not exist.");
+        }
         catch (WorkflowUnavailableException exception)
         {
             throw Create(StatusCode.FailedPrecondition, "WORKFLOW_UNAVAILABLE", exception.Message);
@@ -62,6 +74,12 @@ public static partial class ApiErrors
                     "RESOURCE_NOT_FOUND",
                     "The requested resource does not exist."
                 ),
+                AccessRequiredException required => Create(
+                    StatusCode.Unauthenticated,
+                    "SESSION_REQUIRED",
+                    required.Message
+                ),
+                AccessDeniedException denied => Create(StatusCode.PermissionDenied, "ACCESS_DENIED", denied.Message),
                 _ => Create(
                     StatusCode.Unavailable,
                     "PIPELINE_FAILED",

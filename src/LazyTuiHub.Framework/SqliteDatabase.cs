@@ -23,19 +23,21 @@ public sealed class SqliteDatabase : IConnectionSource
         command.CommandText = """
             PRAGMA journal_mode = WAL;
             CREATE TABLE IF NOT EXISTS data_objects (
+                account TEXT NOT NULL,
                 type TEXT NOT NULL,
                 key TEXT NOT NULL,
-                PRIMARY KEY (type, key)
+                PRIMARY KEY (account, type, key)
             );
             CREATE TABLE IF NOT EXISTS data_relations (
+                account TEXT NOT NULL,
                 source_type TEXT NOT NULL,
                 source_key TEXT NOT NULL,
                 target_type TEXT NOT NULL,
                 target_key TEXT NOT NULL,
                 kind TEXT NOT NULL,
-                PRIMARY KEY (source_type, source_key, target_type, target_key, kind),
-                FOREIGN KEY (source_type, source_key) REFERENCES data_objects(type, key),
-                FOREIGN KEY (target_type, target_key) REFERENCES data_objects(type, key)
+                PRIMARY KEY (account, source_type, source_key, target_type, target_key, kind),
+                FOREIGN KEY (account, source_type, source_key) REFERENCES data_objects(account, type, key),
+                FOREIGN KEY (account, target_type, target_key) REFERENCES data_objects(account, type, key)
             );
             CREATE TABLE IF NOT EXISTS pipelines (
                 name TEXT PRIMARY KEY NOT NULL,

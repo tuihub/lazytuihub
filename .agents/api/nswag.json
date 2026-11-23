@@ -3,7 +3,8 @@
     {"service": "GreetingService", "className": "GreetingHttpClient", "additionalNamespaceUsages": ["LazyTuiHub.Api.Greeting.V1"]},
     {"service": "RssService", "className": "RssHttpClient", "exceptionClass": "RssApiException", "additionalNamespaceUsages": ["LazyTuiHub.Api.Rss.V1"]},
     {"service": "ArticleService", "className": "ArticleHttpClient", "exceptionClass": "ArticleApiException", "additionalNamespaceUsages": ["LazyTuiHub.Api.Articles.V1"]},
-    {"service": "WorkerService", "className": "WorkerHttpClient", "exceptionClass": "WorkerApiException", "additionalNamespaceUsages": ["LazyTuiHub.Api.Execution.V1"]}
+    {"service": "WorkerService", "className": "WorkerHttpClient", "exceptionClass": "WorkerApiException", "additionalNamespaceUsages": ["LazyTuiHub.Api.Execution.V1"]},
+    {"service": "SessionService", "className": "SessionHttpClient", "exceptionClass": "SessionApiException", "additionalNamespaceUsages": ["LazyTuiHub.Api.Access.V1"]}
   ],
   "namespace": "LazyTuiHub.Client",
   "generateDtoTypes": false,

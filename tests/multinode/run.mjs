@@ -66,6 +66,35 @@ function digest(instance) {
     assert(events.some(event => event.nodeId === 'digest' && event.state === 'delivered' && event.instance === instance));
     record('text digest on ' + instance, {attempts: events.filter(event => event.state === 'attempt').map(event => event.instance), digest: digestExpected});
 }
+function verifyAccountScopedWrite() {
+    env.A_ACCESS_ENABLED = 'true';
+    cmd('up', '-d', 'a'); ready('a');
+    const adminPassword = randomUUID();
+    const options = ['--Access:Enabled', 'true', '--Access:AdminUser', 'operator', '--Access:AdminPassword', adminPassword];
+    const invoke = (domain, action, ...args) =>
+        JSON.parse(docker(on('d', domain, action, ...options, ...args)).stdout);
+    const session = invoke('access', 'login', '--username', 'operator', '--Access:Password', adminPassword);
+    options.push('--Access:Session', session.token);
+    docker(on('d', 'access', 'set-device-owner', ...options, '--device', 'D', '--username', 'operator'));
+    const shared = invoke('rss', 'add', '--feed-url', 'http://shared-feed:8080/feed.xml?scoped').name;
+    const plan = invoke('workflow', 'plan', '--pipeline-name', 'rss.ingest');
+    assert.deepEqual(plan.nodes.find(node => node.id === 'fetch').candidates, ['D']);
+    assert.deepEqual(plan.nodes.find(node => node.id === 'store').candidates, ['A']);
+    assert.equal(invoke('rss', 'refresh', '--name', shared).processedArticleCount, 1);
+
+    const query = `import json,pathlib,shutil,sqlite3,sys,tempfile
+with tempfile.TemporaryDirectory() as snapshot:
+    for name in ('main.db', 'main.db-wal'):
+        source = pathlib.Path('/primary') / name
+        if source.exists():
+            shutil.copy(source, snapshot)
+    with sqlite3.connect(pathlib.Path(snapshot) / 'main.db') as db:
+        rows = db.execute("SELECT account FROM data_relations WHERE source_type = 'rss.feed' AND source_key = ?", (sys.argv[1],))
+        print(json.dumps([row[0] for row in rows]))`;
+    const accounts = JSON.parse(cmd('exec', '-T', 'shared-feed', 'python', '-c', query, shared.split('/')[1]));
+    assert.deepEqual(accounts, [session.account]);
+    record('account-scoped write on remote storage without its job grant', {fetch: 'D', store: 'A', accountVerified: true});
+}
 try {
     await rm(resultFile, {force: true});
     cmd('up', '-d', '--wait', '--wait-timeout', '90');
@@ -180,6 +209,7 @@ try {
     const committed = list().find(item => item.source === unconfirmed);
     assert(committed);
     record('lost write acknowledgement', {confirmedByCoordinator: false, committedOnA: committed.name, writeRequests: writes});
+    verifyAccountScopedWrite();
     await writeFile(resultFile, JSON.stringify(evidence, null, 2) + '\n');
 } finally {
     cmd('down', '--volumes');

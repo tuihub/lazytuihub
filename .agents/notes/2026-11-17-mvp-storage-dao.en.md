@@ -14,6 +14,8 @@ Under the [MVP maintenance agreement](../../AGENTS.md), this Note remains propos
 
 ## Established design direction
 
+Plugin namespaces identify table ownership. Resources inside a table also have account scope. Calls through all three DAO access modes should obtain that scope from a trusted context. Reads, writes, queries, indexes, and data relations in shared physical storage must preserve account isolation. The [account service and access control Note](2026-11-19-mvp-account-identity.en.md) defines initial owner access and the two-account acceptance case.
+
 - Classify all DAO access into three modes: consistent wrappers across underlying implementations, wrappers specific to an underlying implementation, and direct native access.
 - Supply reusable DAO logic as a loosely coupled toolkit. Plugins pass tables or other access targets when calling it and own business table creation, structure, and use. Bind access capabilities separately from concrete operation targets.
 - Plugins declare actual requirements, providers declare contracts and capabilities they actually supply, and the framework checks satisfaction to produce bindings or missing-requirement explanations.

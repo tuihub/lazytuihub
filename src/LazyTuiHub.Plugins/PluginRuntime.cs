@@ -21,6 +21,7 @@ public sealed partial class PluginRuntime : IDisposable
     private readonly ConcurrentDictionary<(string Plugin, string Task), string> taskStates = new();
     private readonly IConfiguration configuration;
     private readonly BusinessStorage storage;
+    private readonly ResourceAccess access;
     private readonly IConnectionSource workspace;
     public DaoRegistry Daos { get; } = new();
     public RetentionRuntime Retention { get; }
@@ -28,7 +29,12 @@ public sealed partial class PluginRuntime : IDisposable
     public WorkflowRuntime Workflows { get; }
     public string? DiscoveryError { get; private set; }
 
-    public PluginRuntime(SqliteDatabase database, IConfiguration configuration, string directory)
+    public PluginRuntime(
+        SqliteDatabase database,
+        IConfiguration configuration,
+        string directory,
+        ResourceAccess? resourceAccess = null
+    )
     {
         this.configuration = configuration;
         this.directory = Path.GetFullPath(directory);
@@ -36,11 +42,13 @@ public sealed partial class PluginRuntime : IDisposable
         workspace = database;
         Retention = new(database, Daos);
         storage = new(database);
-        Workflows = new(database, RetainedOwner);
+        access = resourceAccess ?? new(singleAccount: true);
+        Workflows = new(database, RetainedOwner, access);
     }
 
     public void Configure(IServiceCollection services)
     {
+        services.AddSingleton(access);
         var specs = ReadManifest();
         foreach (var spec in specs)
             catalog.Observe(spec);
@@ -277,7 +285,11 @@ public sealed partial class PluginRuntime : IDisposable
 
     public bool IsActive(string id) => active.Contains(id);
 
-    public void SetEnabled(string id, bool enabled) => catalog.SetEnabled(id, enabled);
+    public void SetEnabled(string id, bool enabled)
+    {
+        access.Require(ResourceUri.SystemControl("operations"), AccessMode.Write);
+        catalog.SetEnabled(id, enabled);
+    }
 
     public void SetSettings(string id, JsonElement settings) => catalog.SetSettings(id, settings);
 

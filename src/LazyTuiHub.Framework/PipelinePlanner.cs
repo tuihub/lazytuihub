@@ -1,6 +1,6 @@
 namespace LazyTuiHub.Framework;
 
-public sealed class PipelinePlanner(NodeRegistry registry, ExecutionSnapshot snapshot)
+public sealed class PipelinePlanner(NodeRegistry registry, ExecutionSnapshot snapshot, ResourceAccess? access = null)
 {
     public PipelinePlan Create(PipelineDefinition definition)
     {
@@ -11,6 +11,8 @@ public sealed class PipelinePlanner(NodeRegistry registry, ExecutionSnapshot sna
             node =>
             {
                 var registration = registry.Get(node.Type);
+                if (access is not null && registration.Descriptor.DataAccess is { } data)
+                    access.Require(data.UriFor(access.Account), data.Mode);
                 var requirements = (node.Requires ?? [])
                     .Concat(
                         registration.Descriptor.RequiredResource is { } resource ? [resource] : Array.Empty<string>()
@@ -20,7 +22,7 @@ public sealed class PipelinePlanner(NodeRegistry registry, ExecutionSnapshot sna
                 return new PlannedNode(
                     node,
                     registration,
-                    snapshot.Place(node.Id, registration, requirements),
+                    snapshot.Place(node.Id, registration, requirements, access),
                     requirements
                 );
             },

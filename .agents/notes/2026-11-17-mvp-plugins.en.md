@@ -29,6 +29,12 @@ The host owns startup configuration, discovery/composition, the shared service c
 
 Treat required service dependencies separately from workflow data connections. A graph connecting RSS to another business does not make that plugin an intrinsic dependency of RSS. Missing node implementations explain affected workflows; missing required services explain why a plugin or capability cannot activate, while independent capabilities remain available.
 
+## Plugin identity and resource namespaces
+
+Each business plugin declares a stable, unique plugin ID in the manifest. A host composes at most one plugin instance per ID in a process. Deployments of the same plugin on different devices retain the same ID. Device IDs identify deployment locations separately.
+
+When a business plugin contributes access-controlled resources, its plugin ID is the first naming component in their URIs. The framework binds the namespace to the plugin ID established during loading. The plugin defines resource identifiers and read/write semantics within that namespace. Each resource declaration supplies its own account ownership and identity. [Account identity and access control Note](2026-11-19-mvp-account-identity.en.md)
+
 ## Framework metadata ownership
 
 The framework exclusively owns writes and lifecycle for its metadata. Plugins contribute capability declarations, business results, and necessary relationship intent for the framework to register at registration or business-submission boundaries. Plugins must not directly modify core metadata tables or receive unrestricted metadata CRUD interfaces. This boundary supports both direct business calls and node execution without requiring every write to traverse a workflow.

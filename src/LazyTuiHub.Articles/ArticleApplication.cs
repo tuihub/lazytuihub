@@ -4,6 +4,7 @@ using Grpc.Core;
 using LazyTuiHub.Api;
 using LazyTuiHub.Api.Articles.V1;
 using LazyTuiHub.Api.Hosting;
+using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using Microsoft.AspNetCore.DataProtection;
 
@@ -12,7 +13,8 @@ namespace LazyTuiHub.Articles;
 internal sealed class ArticleApplication(
     IWorkflowExecutor workflows,
     IDataProtectionProvider protection,
-    ILogger<ArticleApplication> logger
+    ILogger<ArticleApplication> logger,
+    ResourceAccess access
 ) : IArticleApi
 {
     private readonly PageTokens tokens = new(protection);
@@ -25,7 +27,7 @@ internal sealed class ArticleApplication(
         {
             var size = PageTokens.PageSize(request.PageSize);
             var (source, read) = ArticleFilter.Parse(request.Filter);
-            var scope = $"articles:{request.Filter}";
+            var scope = $"{access.Account}:articles:{request.Filter}";
             var before = long.Parse(
                 tokens.Decode(scope, request.PageToken, long.MaxValue.ToString(CultureInfo.InvariantCulture)),
                 CultureInfo.InvariantCulture

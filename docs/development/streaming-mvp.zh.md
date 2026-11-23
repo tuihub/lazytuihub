@@ -95,6 +95,21 @@ mise run run -- --database ./artifacts/rss/workspace.db --command articles --act
 mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:5080
 ```
 
+## 启用账户与资源授权
+
+使用新建的 SQLite 工作区。主节点设置 `Access__Enabled=true`，并在首次初始化时通过 `Access__AdminUser` 和 `Access__AdminPassword` 提供管理员凭据。给主节点配置 HTTPS 地址和受客户端信任的证书。使用账户模式时，RSS 从显式刷新运行。
+
+```sh
+mise run run -- --command access --action login --endpoint https://primary.example --username admin
+mise run run -- --database ./artifacts/account/workspace.db --command access --action create-user --username reader
+mise run run -- --database ./artifacts/account/workspace.db --command access --action set-device-owner --device fetcher --username admin
+mise run run -- --database ./artifacts/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
+```
+
+登录时终端隐藏密码。将结果中的会话令牌通过 `Access__Session` 传给主节点上运行的管理命令、本地 CLI 或桌面。远程请求在 `Authorization` 头中携带 Bearer 令牌，默认访问自己的账户。需要访问获分享的资源时，用 `X-LazyTuiHub-Account` 选择目标账户。分享订阅可将 `--uri` 设为 `lazytuihub://rss/accounts/ACCOUNT_ID/feeds/FEED_ID` 并授予 `read`。撤权将同一命令的 `--action` 改为 `revoke`，省略 `--mode`。远程会话用同一 HTTPS 地址执行 `--action logout` 撤销。
+
+账户模式下，协调器根据资源清单和用户的设备任务入口写权限选择抓取端。`--device` 使用实例配置中的 ID，独立运行的实例使用 `local`。文章写入按工作区绑定路由，并检查文章集合的写权限。参与该工作流的工作节点也要设置 `Access__Enabled=true`。[账户与 URI 授权 Note](../../.agents/notes/2026-11-19-mvp-account-identity.zh.md) · [会话 API](../api/operations/SessionService_AuthenticateUser.md)
+
 ## 冷启动插件
 
 宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将 core、rss、articles、articles.desktop、storage.sqlite 入口 DLL 及依赖描述放入对应目录。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。

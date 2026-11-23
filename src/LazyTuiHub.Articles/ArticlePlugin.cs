@@ -1,5 +1,6 @@
 using LazyTuiHub.Api;
 using LazyTuiHub.Dao;
+using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 
 namespace LazyTuiHub.Articles;
@@ -12,7 +13,11 @@ public sealed class ArticlePlugin : IApplicationPlugin
         registration.Daos.Requirements.Add(
             new("search", DaoMode.BackendSpecific, DaoContracts.SqliteSearch, Backend: "sqlite")
         );
-        registration.Services.AddSingleton(_ => new ArticleStore(registration.Daos, registration.Storage));
+        registration.Services.AddSingleton(services => new ArticleStore(
+            registration.Daos,
+            registration.Storage,
+            services.GetRequiredService<ResourceAccess>()
+        ));
         registration.Services.AddSingleton<IArticleApi, ArticleApplication>();
         registration.DataTypes.Add("articles.article");
         registration.RegisterNodes = (nodes, services) =>

@@ -9,7 +9,9 @@ public sealed class DataCatalog(SqliteDatabase database)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "INSERT INTO data_objects(type, key) VALUES ($type, $key) ON CONFLICT DO NOTHING";
+        command.CommandText =
+            "INSERT INTO data_objects(account, type, key) VALUES ($account, $type, $key) ON CONFLICT DO NOTHING";
+        command.AddValue("$account", reference.Account);
         command.AddValue("$type", reference.Type);
         command.AddValue("$key", reference.Key);
         command.ExecuteNonQuery();
@@ -17,12 +19,15 @@ public sealed class DataCatalog(SqliteDatabase database)
 
     private static void Relate(DbConnection connection, DbTransaction transaction, DataRelation relation)
     {
+        if (!string.Equals(relation.Source.Account, relation.Target.Account, StringComparison.Ordinal))
+            throw new ArgumentException("Relations must stay within the same account.", nameof(relation));
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
-            INSERT INTO data_relations(source_type, source_key, target_type, target_key, kind)
-            VALUES ($sourceType, $sourceKey, $targetType, $targetKey, $kind) ON CONFLICT DO NOTHING
+            INSERT INTO data_relations(account, source_type, source_key, target_type, target_key, kind)
+            VALUES ($account, $sourceType, $sourceKey, $targetType, $targetKey, $kind) ON CONFLICT DO NOTHING
             """;
+        command.AddValue("$account", relation.Source.Account);
         command.AddValue("$sourceType", relation.Source.Type);
         command.AddValue("$sourceKey", relation.Source.Key);
         command.AddValue("$targetType", relation.Target.Type);
@@ -45,8 +50,9 @@ public sealed class DataCatalog(SqliteDatabase database)
         using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT target_type, target_key, kind FROM data_relations
-            WHERE source_type = $type AND source_key = $key ORDER BY target_type, target_key, kind
+            WHERE account = $account AND source_type = $type AND source_key = $key ORDER BY target_type, target_key, kind
             """;
+        command.AddValue("$account", source.Account);
         command.AddValue("$type", source.Type);
         command.AddValue("$key", source.Key);
         using var reader = command.ExecuteReader();
@@ -57,7 +63,8 @@ public sealed class DataCatalog(SqliteDatabase database)
                     source,
                     new(
                         reader.GetString(reader.GetOrdinal("target_type")),
-                        reader.GetString(reader.GetOrdinal("target_key"))
+                        reader.GetString(reader.GetOrdinal("target_key")),
+                        source.Account
                     ),
                     reader.GetString(reader.GetOrdinal("kind"))
                 )

@@ -1,3 +1,4 @@
+using LazyTuiHub.Client;
 using LazyTuiHub.Commands;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Examples;
@@ -29,6 +30,23 @@ public static class Program
         if (args.Contains("--rss-demo", StringComparer.Ordinal))
         {
             await RssDemo.RunAsync();
+            return;
+        }
+        using var options = new ConfigurationManager();
+        options.AddEnvironmentVariables().AddCommandLine(args);
+        if (
+            string.Equals(options["command"], "access", StringComparison.Ordinal) && options["endpoint"] is { } endpoint
+        )
+        {
+            try
+            {
+                await AccessCommand.RunRemoteAsync(options, endpoint, CancellationToken.None);
+            }
+            catch (Exception error) when (error is SessionApiException or HttpRequestException or ArgumentException)
+            {
+                await Console.Error.WriteLineAsync(error.Message.AsMemory(), CancellationToken.None);
+                Environment.ExitCode = 1;
+            }
             return;
         }
         await using var app = ApplicationHost.Create(args);

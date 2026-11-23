@@ -95,6 +95,21 @@ Without --database, the workspace is LazyTuiHub/workspace.db under system LocalA
 mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:5080
 ```
 
+## Enabling accounts and resource authorization
+
+Use a fresh SQLite workspace. Set `Access__Enabled=true` on the primary and supply `Access__AdminUser` and `Access__AdminPassword` for initial provisioning. Configure an HTTPS listener with a certificate your clients trust. In account mode, start RSS ingestion through an explicit refresh.
+
+```sh
+mise run run -- --command access --action login --endpoint https://primary.example --username admin
+mise run run -- --database ./artifacts/account/workspace.db --command access --action create-user --username reader
+mise run run -- --database ./artifacts/account/workspace.db --command access --action set-device-owner --device fetcher --username admin
+mise run run -- --database ./artifacts/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
+```
+
+The terminal hides the password prompt input. Supply the session token from the response through `Access__Session` for administration on the primary, local CLI, or the desktop app. Remote requests use the Bearer token in the `Authorization` header and select the user's own account by default. To access a shared resource, select its account with `X-LazyTuiHub-Account`. To share a subscription, set `--uri` to `lazytuihub://rss/accounts/ACCOUNT_ID/feeds/FEED_ID` and grant `read`. Revoke a grant using `--action revoke` with the same URI and username. Revoke a remote session with `--action logout` and the same HTTPS endpoint.
+
+In account mode, the coordinator selects a fetcher using both its advertised resources and the user's write access to its job endpoint. Use the configured instance ID for `--device`. A standalone instance uses `local`. Article writes follow the workspace binding and require write access to the article collection. Workers in this workflow also use `Access__Enabled=true`. [Account and URI authorization Note](../../.agents/notes/2026-11-19-mvp-account-identity.en.md) · [Session API](../api/operations/SessionService_AuthenticateUser.md)
+
 ## Cold-start plugins
 
 The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core, rss, articles, articles.desktop, and storage.sqlite entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.

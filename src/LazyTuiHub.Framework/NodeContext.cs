@@ -10,17 +10,20 @@ public sealed class NodeContext
     private readonly PlannedNode planned;
 
     private readonly ExecutionSnapshot inventory;
+    private readonly ResourceAccess? access;
 
     internal NodeContext(
         PlannedNode node,
         PipelineContext run,
         IAsyncEnumerable<NodeInput> input,
         Func<string, DataPacket, string?, CancellationToken, ValueTask> publish,
-        ExecutionSnapshot inventory
+        ExecutionSnapshot inventory,
+        ResourceAccess? access
     )
     {
         planned = node;
         this.inventory = inventory;
+        this.access = access;
         Node = node.Definition;
         Run = run;
         this.input = input;
@@ -46,6 +49,11 @@ public sealed class NodeContext
         foreach (var target in planned.Targets)
         {
             token.ThrowIfCancellationRequested();
+            if (!AuthorizeAttempt(target))
+            {
+                Report("denied", target.Instance, "The device-use grant is unavailable.");
+                continue;
+            }
             Report("attempt", target.Instance);
             try
             {
@@ -90,12 +98,24 @@ public sealed class NodeContext
             }
         }
         token.ThrowIfCancellationRequested();
+        if (failures.Count == 0)
+            throw new AccessDeniedException();
         throw new InstanceUnavailableException(
             $"No instance completed '{Node.Type}'. {string.Join("; ", failures)} {inventory.Diagnostics()}"
         );
 
         void Report(string state, string instance, string? detail = null) =>
             Run.Progress?.Invoke(new(Node.Id, state, Instance: instance, Detail: detail, Reference: packet.Reference));
+    }
+
+    private bool AuthorizeAttempt(ExecutionTarget target)
+    {
+        if (access is null)
+            return true;
+        if (planned.Descriptor.DataAccess is { } data)
+            access.Require(data.UriFor(access.Account), data.Mode);
+        return planned.Registration.Mode != PacketExecutionMode.Repeatable
+            || access.Allows(ResourceUri.DeviceJobs(target.Instance), AccessMode.Write);
     }
 
     public ValueTask WriteAsync<T>(
