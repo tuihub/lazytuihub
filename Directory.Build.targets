@@ -1,4 +1,8 @@
 <Project>
+  <ItemGroup Condition="'$(_IsPublishing)' == 'true'">
+    <!-- The CLI is also referenced as a managed command library by the host and plugins. -->
+    <ProjectReference Update="../LazyTuiHub.Cli/LazyTuiHub.Cli.csproj" AdditionalProperties="PublishSelfContained=false" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>

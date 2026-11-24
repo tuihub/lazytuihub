@@ -59,7 +59,7 @@ mise run check:ui
 
 ## 当前证据
 
-2026-11-17，两边的 Release 构建与无窗口检查均在 macOS ARM64、.NET 11.0 上通过。两边都从独立 DLL 创建了真实的框架原生控件视图，并支持共同的阅读器和画布机制。Uno 额外需要 XAML 资源初始化和异步搜索事件处理；Avalonia 为缩放表面提供了布局变换包装控件。两边都仍需实现节点编辑器的交互逻辑。
+2026-11-24，两边的 Release 构建与无窗口检查均在 macOS ARM64、.NET 10.0 上通过。两边都从独立 DLL 创建了真实的框架原生控件视图，并支持共同的阅读器和画布机制。Uno 额外需要 XAML 资源初始化和异步搜索事件处理；Avalonia 为缩放表面提供了布局变换包装控件。两边都仍需实现节点编辑器的交互逻辑。
 
 随后已实际操作两个 macOS 应用。初始尺寸统一为 1180 × 800 个逻辑单位；Uno 的 AppWindow 使用物理像素，现按其 [macOS 调整尺寸实现](https://github.com/unoplatform/uno/blob/30034eefe42ecf5f3e3fff7d49a05340aaa0152e/src/Uno.UI.Runtime.MacOS/UI/Xaml/Window/MacOSWindowWrapper.cs)，通过 XamlRoot.RasterizationScale 换算。这修正了 2× Retina 屏幕上的原型尺寸差异，不是框架布局缺陷。两个常规窗口的截图均为包含标题栏的 2360 × 1656 像素。
 

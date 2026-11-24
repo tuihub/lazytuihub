@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(fileURLToPath(import.meta.url));
 const [command = 'check', requested = 'both', ...extra] = process.argv.slice(2);
 const configurations = {
-  avalonia: { project: 'Avalonia', tfm: 'net11.0', assembly: 'UiComparison.Avalonia' },
-  uno: { project: 'Uno', tfm: 'net11.0-desktop', assembly: 'UiComparison.Uno' },
+  avalonia: { project: 'Avalonia', assembly: 'UiComparison.Avalonia' },
+  uno: { project: 'Uno', assembly: 'UiComparison.Uno' },
 };
 const selected = requested === 'both' ? Object.keys(configurations) : [requested];
 if (!['check', 'run', 'bundle'].includes(command) || selected.some(name => !configurations[name])) {
@@ -28,8 +28,8 @@ for (const name of selected) {
   const config = configurations[name];
   const project = join(root, config.project, config.project + '.csproj');
   exec('dotnet', ['build', project, '-c', 'Release', '--disable-build-servers', '-m:1', '-nr:false', '-warnaserror']);
-  const output = join(root, config.project, 'bin', 'Release', config.tfm);
-  const dll = join(output, config.assembly + '.dll');
+  const dll = exec('dotnet', ['msbuild', project, '-p:Configuration=Release', '-getProperty:TargetPath'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).stdout.trim();
+  const output = dirname(dll);
   const env = { ...process.env, UI_COMPARISON_ARTIFACTS: join(artifacts, name) };
   if (command === 'check') {
     exec('dotnet', [dll, '--verify'], { env });

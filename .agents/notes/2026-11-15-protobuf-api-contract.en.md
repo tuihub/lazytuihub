@@ -1,6 +1,8 @@
 ---
-status: implemented
+status: superseded
 category: architecture
+superseded_by:
+    - 2026-11-24-dotnet-lts.en.md
 ---
 # Proto contracts and HTTP communication
 

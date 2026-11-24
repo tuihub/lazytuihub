@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Google.Protobuf;
 using LazyTuiHub.Api;
+using LazyTuiHub.Cli;
 using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Articles;
@@ -12,7 +12,7 @@ internal static class ArticleCommand
         if (command is "help")
         {
             Console.WriteLine(
-                "Articles: list [--source NAME] [--unread true], read --name articles/ID, search --query TEXT"
+                "Articles: list [--source NAME] [--unread true], get/read --name articles/ID, search --query TEXT"
             );
             return;
         }
@@ -21,24 +21,9 @@ internal static class ArticleCommand
         switch (command)
         {
             case "list":
-                Print(
-                    await api.ListArticlesAsync(
-                        new()
-                        {
-                            Filter = Api.Articles.ArticleFilters.ForSource(
-                                configuration["source"],
-                                configuration.GetValue<bool>("unread") ? "read = false" : string.Empty
-                            ),
-                            PageToken = configuration["page-token"] ?? string.Empty,
-                        },
-                        cancellationToken
-                    )
-                );
-                break;
+            case "get":
             case "read":
-                Print(
-                    await api.MarkArticleReadAsync(new() { Name = Required(configuration, "name") }, cancellationToken)
-                );
+                await ReaderCommands.ArticlesAsync(api, configuration, command, cancellationToken);
                 break;
             case "search":
                 Console.WriteLine(
@@ -57,6 +42,4 @@ internal static class ArticleCommand
         configuration[key] is { Length: > 0 } value
             ? value
             : throw new ArgumentException($"Provide --{key}.", nameof(configuration));
-
-    private static void Print(IMessage message) => Console.WriteLine(JsonFormatter.Default.Format(message));
 }

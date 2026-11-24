@@ -1,14 +1,14 @@
 x-application: &application
-  image: mcr.microsoft.com/dotnet/aspnet:${DOTNET_RUNTIME_TAG}
+  image: mcr.microsoft.com/dotnet/runtime-deps:${DOTNET_RUNTIME_TAG}
   working_dir: /app
-  volumes: ["../../artifacts/multinode/app:/app:ro"]
+  volumes: ["${TEST_PUBLISH_DIR}:/app:ro"]
 x-worker: &worker
   <<: *application
-  command: ["dotnet", "LazyTuiHub.dll", "--worker", "true", "--database", "/workspace/worker.db", "--urls", "http://+:8080"]
+  command: ["./LazyTuiHub", "--worker", "true", "--database", "/workspace/worker.db", "--urls", "http://+:8080"]
   tmpfs: ["/workspace"]
   networks: [control, private]
   volumes:
-    - ../../artifacts/multinode/app:/app:ro
+    - ${TEST_PUBLISH_DIR}:/app:ro
     - ./worker-plugins.json:/app/plugins/plugins.json:ro
 x-worker-environment: &worker-environment
   Cluster__AllowInsecureHttp: "true"
@@ -28,10 +28,10 @@ x-fixture: &fixture
 services:
   a:
     <<: *application
-    command: ["dotnet", "LazyTuiHub.dll", "--worker", "true", "--database", "/workspace/main.db", "--urls", "http://+:8080"]
+    command: ["./LazyTuiHub", "--worker", "true", "--database", "/workspace/main.db", "--urls", "http://+:8080"]
     networks: [control]
     volumes:
-      - ../../artifacts/multinode/app:/app:ro
+      - ${TEST_PUBLISH_DIR}:/app:ro
       - primary:/workspace
       - ./digest.json:/scenario/digest.json:ro
     environment:

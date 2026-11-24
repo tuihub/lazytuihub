@@ -22,7 +22,7 @@ category: architecture
 
 主节点首次初始化账户库时，从部署配置取得首位管理员的用户名和初始秘密，通过 ASP.NET Core Identity 创建用户并授予初始系统管理权限。用户、初始授权和初始化标记一同提交。后续启动保留库中的密码和授权，停用管理员也不会触发重新创建。部署可从受保护的文件或环境注入秘密。其余用户由具有开户权限的管理员创建，MVP 不开放自助注册。开户与授予管理权限分别校验。
 
-官方 CLI 和桌面 client 可以在主节点的 HTTPS 账户服务建立第一方会话。以 CLI 为例，用户在终端输入账户名及不回显的密码，client 验证预先选定的主节点，直接向它提交登录请求。主节点用 ASP.NET Core Identity 验证账户及密码、执行适用的登录限制，再签发可撤销的用户会话。业务从节点只接收面向该服务的凭据，账户密码只提交给主节点。首次登录无需浏览器、第二台设备或设备登记。官方 CLI 和桌面 client 属于本产品既有的信任范围。直接登录时由它们接收密码并交给主节点验证。若改用系统浏览器，则由主节点登录页接收密码，client 只取得授权结果。项目负责第一方会话的签发、到期、续期和撤销。密码哈希继续复用 Identity。实测 .NET 11 的 IdentityV3 使用 PBKDF2-HMAC-SHA512、128 位随机盐和 256 位派生值，默认迭代 100,000 次。[OpenBao 的账户密码登录](https://openbao.org/docs/auth/userpass/) · [Argo CD 的本地登录与 SSO](https://argo-cd.readthedocs.io/en/latest/user-guide/commands/argocd_login/) · [Identity 密码实现](https://github.com/dotnet/aspnetcore/blob/v11.0.0/src/Identity/Extensions.Core/src/PasswordHasher.cs)
+官方 CLI 和桌面 client 可以在主节点的 HTTPS 账户服务建立第一方会话。以 CLI 为例，用户在终端输入账户名及不回显的密码，client 验证预先选定的主节点，直接向它提交登录请求。主节点用 ASP.NET Core Identity 验证账户及密码、执行适用的登录限制，再签发可撤销的用户会话。业务从节点只接收面向该服务的凭据，账户密码只提交给主节点。首次登录无需浏览器、第二台设备或设备登记。官方 CLI 和桌面 client 属于本产品既有的信任范围。直接登录时由它们接收密码并交给主节点验证。若改用系统浏览器，则由主节点登录页接收密码，client 只取得授权结果。项目负责第一方会话的签发、到期、续期和撤销。密码哈希继续复用 Identity。ASP.NET Core 的 IdentityV3 使用 PBKDF2-HMAC-SHA512、128 位随机盐和 256 位派生值，默认迭代 100,000 次。[OpenBao 的账户密码登录](https://openbao.org/docs/auth/userpass/) · [Argo CD 的本地登录与 SSO](https://argo-cd.readthedocs.io/en/latest/user-guide/commands/argocd_login/) · [Identity 密码实现](https://github.com/dotnet/aspnetcore/blob/v10.0.15/src/Identity/Extensions.Core/src/PasswordHasher.cs)
 
 OAuth 也适用于同一产品。浏览器授权码与 PKCE 可让密码只进入主节点的登录页，RFC 8628 可让用户在另一台终端确认。它们适用于需要统一登录页、外部身份提供方或显式委托的场合。项目自有的第一方会话是独立候选，不采用 OAuth 密码授权。IETF 的第一方应用草案引入原生授权挑战端点，将具体身份验证步骤留给部署方，尚未成为 RFC。Kerberos V5 则是成熟的集中票据认证标准，客户端能用服务票据向目标服务证明身份。完整采用它需要管理 KDC、服务主体、密钥和时钟，产品仍须定义设备审批和业务权限。[RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.4) · [IETF 第一方应用草案](https://datatracker.ietf.org/doc/draft-ietf-oauth-first-party-apps/) · [Kerberos V5](https://www.rfc-editor.org/rfc/rfc4120.html)
 
@@ -88,7 +88,7 @@ OAuth 也适用于同一产品。浏览器授权码与 PKCE 可让密码只进�
 
 协调器在生成计划和实际派发前检查当前 URI 授权，账户模式沿用对端配置凭据和推送传输。工作节点接收协调器指定的账户范围，将执行权限限定在已声明的操作资源范围内。RSS 在显式刷新时运行，等定时任务能携带可信主体后再接入自动刷新。设备入网签证、证书绑定的用户委托、从节点允许结果缓存、用户组与权限组、持久化轮询协调仍待实现。[主节点与工作节点集成测试](../../tests/LazyTuiHub.Tests/AccessTests.cs)
 
-独立原型用 .NET 11、OpenIddict 7.9.0 和两个 HTTPS 监听地址验证了授权码与 PKCE、令牌撤销、同一令牌下的组权限移除、管理员审批 CSR、重复领取同一设备身份、设备 mTLS 和既有连接上的设备停用。证书绑定令牌只接受登记证书，撤销委托后设备仍可独立领任务。实验使用已登记回调和程序化用户同意。
+独立原型用 OpenIddict 7.9.0 和两个 HTTPS 监听地址验证了授权码与 PKCE、令牌撤销、同一令牌下的组权限移除、管理员审批 CSR、重复领取同一设备身份、设备 mTLS 和既有连接上的设备停用。证书绑定令牌只接受登记证书，撤销委托后设备仍可独立领任务。实验使用已登记回调和程序化用户同意。
 
 下一轮用产品入口验收以下行为。
 

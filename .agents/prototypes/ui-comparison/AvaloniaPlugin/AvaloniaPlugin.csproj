@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net11.0</TargetFramework><AssemblyName>UiComparison.AvaloniaPlugin</AssemblyName></PropertyGroup>
+  <PropertyGroup><AssemblyName>UiComparison.AvaloniaPlugin</AssemblyName></PropertyGroup>
   <ItemGroup><PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" /><ProjectReference Include="../Shared/Shared.csproj" /></ItemGroup>
 </Project>

@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../LazyTuiHub.Cli/LazyTuiHub.Cli.csproj" />
     <ProjectReference Include="../LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
     <ProjectReference Include="../LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />

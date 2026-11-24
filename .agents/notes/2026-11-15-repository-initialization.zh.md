@@ -1,6 +1,8 @@
 ---
-status: implemented
+status: superseded
 category: repository
+superseded_by:
+    - 2026-11-24-dotnet-lts.zh.md
 ---
 # 仓库初始化约定
 

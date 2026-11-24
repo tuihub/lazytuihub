@@ -24,7 +24,7 @@ category: architecture
 
 ## 已观察证据
 
-2026-11-17，Avalonia 12.1.6／Labs.Panels 12.1.0 和 Uno 7.0.65／Toolkit 11.0.1 的 Release 构建与自动检查均在 macOS ARM64、.NET 11.0 上通过。Uno 另运行了 Cupertino 9.0.1。检查覆盖初始阅读布局、搜索、按视口创建列表容器、共同的订阅源与已读状态、DLL 创建的视图、禁用插件后的启动、缺失 DLL 诊断、Flex 换行与伸缩、图和缩放状态。
+2026-11-24，Avalonia 12.1.6／Labs.Panels 12.1.0 和 Uno 7.0.65／Toolkit 11.0.1 的 Release 构建与自动检查均在 macOS ARM64、.NET 10.0 上通过。Uno 另运行了 Cupertino 9.0.1。检查覆盖初始阅读布局、搜索、按视口创建列表容器、共同的订阅源与已读状态、DLL 创建的视图、禁用插件后的启动、缺失 DLL 诊断、Flex 换行与伸缩、图和缩放状态。
 
 固定无窗口视口中，600 条数据对应 Avalonia 13 个、Uno Fluent 24 个已创建列表容器，说明该场景下两边都没有一次性创建全部容器。缓冲策略不同，不能据此做性能排名。Uno 需要 XAML 资源初始化和异步搜索事件处理；Avalonia 提供布局变换包装控件，Uno 原型则围绕渲染变换调整滚动范围。
 

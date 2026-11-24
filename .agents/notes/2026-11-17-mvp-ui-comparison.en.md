@@ -24,7 +24,7 @@ This experimental UI contract does not change the [product plugin contract](2026
 
 ## Observed evidence
 
-On 2026-11-17, Release builds and automated checks passed on macOS ARM64 with .NET 11.0 for Avalonia 12.1.6/Labs.Panels 12.1.0 and Uno 7.0.65/Toolkit 11.0.1. Uno also ran with Cupertino 9.0.1. Checks cover initial reader layout, search, viewport-based list realization, shared feed/read-state behavior, DLL-owned view creation, disabled-plugin startup, missing-DLL diagnostics, Flex wrapping/growth, and graph/zoom state.
+On 2026-11-24, Release builds and automated checks passed on macOS ARM64 with .NET 10.0 for Avalonia 12.1.6/Labs.Panels 12.1.0 and Uno 7.0.65/Toolkit 11.0.1. Uno also ran with Cupertino 9.0.1. Checks cover initial reader layout, search, viewport-based list realization, shared feed/read-state behavior, DLL-owned view creation, disabled-plugin startup, missing-DLL diagnostics, Flex wrapping/growth, and graph/zoom state.
 
 At the fixed headless viewport, Avalonia realized 13 list containers and Uno Fluent 24 out of 600 items. This establishes that neither eagerly created every container in the fixture; buffering differences prevent interpreting the counts as a performance ranking. Uno requires XAML resource initialization and asynchronous search-event handling. Avalonia provides a layout-transform wrapper; the Uno prototype adjusts the scroll extent around a render transform.
 

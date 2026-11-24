@@ -24,6 +24,7 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具
 | [文章插件](../../src/LazyTuiHub.Articles/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
 | [游戏库与资料来源](../../.agents/notes/2026-11-23-mvp-games.zh.md) | 管理个人游戏、分类和游玩时段，通过 Steam、Bangumi、VNDB 工作流检索和导入资料。 |
 | [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
+| [CLI](../../src/LazyTuiHub.Cli/) | 阅读文章和管理订阅。在本机运行 `mise run run:cli -- --command articles --action list`，传入 `--endpoint https://SERVER` 可访问远程账户。独立发布包只需安装在客户端。[Win7 CLI 实测](../../.agents/notes/2026-11-23-mvp-win7-cli.zh.md) |
 | [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
 
 PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。各业务插件通过 BusinessStorage 写自己的表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。

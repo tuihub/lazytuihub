@@ -59,7 +59,7 @@ Generated JSON is written under the prototype's ignored `artifacts/` directory. 
 
 ## Current evidence
 
-On 2026-11-17, both Release builds and the headless checks passed on macOS ARM64 with .NET 11.0. Both created real framework-native views from the separate DLL and supported the common reader/canvas mechanisms. Uno additionally required XAML resource initialization and asynchronous search-event handling; Avalonia provided a layout-transform wrapper for the zoomable surface. Neither prototype eliminates the need to implement node-editor interaction.
+On 2026-11-24, both Release builds and the headless checks passed on macOS ARM64 with .NET 10.0. Both created real framework-native views from the separate DLL and supported the common reader/canvas mechanisms. Uno additionally required XAML resource initialization and asynchronous search-event handling; Avalonia provided a layout-transform wrapper for the zoomable surface. Neither prototype eliminates the need to implement node-editor interaction.
 
 Native macOS inspection subsequently exercised both applications. The initial size is 1180 × 800 logical units: Uno's physical-pixel AppWindow API now converts using XamlRoot.RasterizationScale, following its [macOS resize implementation](https://github.com/unoplatform/uno/blob/30034eefe42ecf5f3e3fff7d49a05340aaa0152e/src/Uno.UI.Runtime.MacOS/UI/Xaml/Window/MacOSWindowWrapper.cs). This corrected a prototype mismatch on the 2× Retina display rather than a framework layout defect. Both normal windows produced 2360 × 1656 pixel captures including their title bars.
 

@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {mkdtemp, mkdir, readFile, realpath, rm, writeFile} from 'node:fs/promises';
+import {copyFile, mkdtemp, mkdir, readFile, realpath, rm, writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const project = await readFile(path.join(root, 'src/LazyTuiHub/LazyTuiHub.csproj'), 'utf8');
-const framework = project.match(/<TargetFramework>([^<]+)<\/TargetFramework>/)[1];
+const props = await readFile(path.join(root, 'Directory.Build.props'), 'utf8');
+const framework = props.match(/<TargetFramework>([^<]+)<\/TargetFramework>/)[1];
 const editorconfig = await readFile(path.join(root, '.editorconfig'), 'utf8');
 
 function run(command, args, cwd = root) {
@@ -24,6 +24,7 @@ function run(command, args, cwd = root) {
 async function directory(t) {
     const temporary = await realpath(await mkdtemp(path.join(os.tmpdir(), 'csharp lint ')));
     t.after(() => rm(temporary, {recursive: true, force: true}));
+    await copyFile(path.join(root, 'global.json'), path.join(temporary, 'global.json'));
     await writeFile(path.join(temporary, '.editorconfig'), editorconfig);
     await writeFile(path.join(temporary, 'NuGet.Config'), '<configuration><packageSources><clear /></packageSources></configuration>');
     return temporary;

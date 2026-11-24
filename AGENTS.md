@@ -18,7 +18,7 @@ When reviewing a limitation, distinguish incorrect use, a limitation of the inst
 
 Use mise to manage development tools and tasks on macOS, Windows, and Linux. Install mise using the [official installation guide](https://mise.jdx.dev/installing-mise.html).
 
-Use `global.json` as the version source for the .NET SDK and `package.json` for Node.js and pnpm. Let mise read and manage these versions; do not duplicate declarations.
+Follow the [repository .NET toolchain and delivery policy](.agents/notes/2026-11-24-dotnet-delivery.en.md). Use `global.json` as the version source for the .NET SDK and `package.json` for Node.js and pnpm. Let mise read and manage these versions; do not duplicate declarations.
 
 Run `mise doctor project` to inspect the current environment. It reports problems and suggested fixes without installing tools or repairing the environment. Use `mise install` to install project tools managed by mise.
 
@@ -32,7 +32,7 @@ mise run setup:aip
 mise run check
 ```
 
-Use `mise run <task>` to build and run the application, run checks, or format C# code. Task definitions live in `mise.toml`; use `mise tasks ls` to list the available commands.
+Use `mise run <task>` to build and run the application, run checks, or format C# code. Use `mise run release [rid]` to produce the self-contained JIT host and remote CLI. The [release guide](docs/development/release.en.md) describes the packages. Task definitions live in `mise.toml`; use `mise tasks ls` to list the available commands.
 
 ## API development
 

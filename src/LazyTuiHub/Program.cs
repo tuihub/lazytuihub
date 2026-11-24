@@ -1,4 +1,4 @@
-using LazyTuiHub.Client;
+using LazyTuiHub.Cli;
 using LazyTuiHub.Commands;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Examples;
@@ -10,7 +10,14 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        if (args.Contains("--desktop", StringComparer.Ordinal))
+        if (
+            args.Contains("--desktop", StringComparer.Ordinal)
+            || (
+                args.Length == 0
+                && OperatingSystem.IsMacOS()
+                && AppContext.BaseDirectory.EndsWith(".app/Contents/MacOS/", StringComparison.OrdinalIgnoreCase)
+            )
+        )
         {
             var options = args.Where(value => !string.Equals(value, "--desktop", StringComparison.Ordinal)).ToArray();
             using var host = ApplicationHost.CreateDesktop(options);
@@ -32,21 +39,20 @@ public static class Program
             await RssDemo.RunAsync();
             return;
         }
+        var cli = args.Contains("--cli", StringComparer.Ordinal);
+        if (cli)
+            args = args.Where(value => !string.Equals(value, "--cli", StringComparison.Ordinal)).ToArray();
         using var options = new ConfigurationManager();
         options.AddEnvironmentVariables().AddCommandLine(args);
-        if (
-            string.Equals(options["command"], "access", StringComparison.Ordinal) && options["endpoint"] is { } endpoint
-        )
+        if (options["endpoint"] is not null && (cli || options["command"] is not null))
         {
-            try
-            {
-                await AccessCommand.RunRemoteAsync(options, endpoint, CancellationToken.None);
-            }
-            catch (Exception error) when (error is SessionApiException or HttpRequestException or ArgumentException)
-            {
-                await Console.Error.WriteLineAsync(error.Message.AsMemory(), CancellationToken.None);
-                Environment.ExitCode = 1;
-            }
+            Environment.ExitCode = await RemoteConsole.RunAsync(options, CancellationToken.None);
+            return;
+        }
+        if (cli && options["command"] is null)
+        {
+            Console.WriteLine(RemoteConsole.Help);
+            Console.WriteLine("Local: --command plugins|workflow|dao|games|rss|articles|access --action help");
             return;
         }
         await using var app = ApplicationHost.Create(args);

@@ -22,19 +22,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript-typescript, actions]
+        include:
+          - language: javascript-typescript
+            mode: none
+            config: ./.github/codeql/config.yml
+          - language: actions
+            mode: none
+            config: ./.github/codeql/config.yml
+          - language: csharp
+            mode: manual
     steps:
       - name: Checkout snapshot
         uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Install the project SDK
+        if: matrix.language == 'csharp'
+        uses: jdx/mise-action@v5
+        with:
+          install_args: dotnet
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          build-mode: none
-          config-file: ./.github/codeql/config.yml
+          build-mode: ${{ matrix.mode }}
+          config-file: ${{ matrix.config }}
+      - name: Build the C# solution for extraction
+        if: matrix.language == 'csharp'
+        run: mise exec -- dotnet build LazyTuiHub.slnx --no-incremental --disable-build-servers
       - name: Analyze and upload results
         uses: github/codeql-action/analyze@v4
         with:
