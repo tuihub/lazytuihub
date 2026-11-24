@@ -7,7 +7,7 @@ namespace LazyTuiHub.Client;
 public partial class RssHttpClient : IRssApi
 {
     static partial void UpdateJsonSerializerSettings(JsonSerializerOptions settings) =>
-        settings.Converters.Add(new ProtobufJsonConverter());
+        settings.TypeInfoResolver = ProtobufJsonResolver.Instance;
 
     public Task<Feed> CreateFeedAsync(CreateFeedRequest request, CancellationToken cancellationToken = default) =>
         CreateFeedAsync(request.Feed, request.FeedId, request.RequestId, cancellationToken);

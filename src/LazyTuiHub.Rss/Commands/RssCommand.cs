@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Google.Protobuf;
 using LazyTuiHub.Api;
+using LazyTuiHub.Cli;
 using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Rss.Commands;
@@ -12,7 +12,7 @@ internal static class RssCommand
         if (command is "help")
         {
             Console.WriteLine(
-                "RSS: add --feed-url URI [--title TEXT], feeds, refresh --name feeds/ID, details [--include-expired true], keep-detail --key KEY"
+                "RSS: add --feed-url URI [--title TEXT], feeds, get/refresh --name feeds/ID, details [--include-expired true], keep-detail --key KEY"
             );
             return;
         }
@@ -21,32 +21,10 @@ internal static class RssCommand
         switch (command)
         {
             case "add":
-                Print(
-                    await api.CreateFeedAsync(
-                        new()
-                        {
-                            Feed = new()
-                            {
-                                Uri = Required(configuration, "feed-url"),
-                                DisplayName = configuration["title"] ?? string.Empty,
-                            },
-                            FeedId = configuration["feed-id"] ?? string.Empty,
-                            RequestId = configuration["request-id"] ?? Guid.NewGuid().ToString("D"),
-                        },
-                        cancellationToken
-                    )
-                );
-                break;
             case "feeds":
-                Print(
-                    await api.ListFeedsAsync(
-                        new() { PageToken = configuration["page-token"] ?? string.Empty },
-                        cancellationToken
-                    )
-                );
-                break;
+            case "get":
             case "refresh":
-                Print(await api.RefreshFeedAsync(new() { Name = Required(configuration, "name") }, cancellationToken));
+                await ReaderCommands.FeedsAsync(api, configuration, command, cancellationToken);
                 break;
             case "details":
                 Console.WriteLine(
@@ -77,6 +55,4 @@ internal static class RssCommand
         configuration[key] is { Length: > 0 } value
             ? value
             : throw new ArgumentException($"Provide --{key}.", nameof(configuration));
-
-    private static void Print(IMessage message) => Console.WriteLine(JsonFormatter.Default.Format(message));
 }

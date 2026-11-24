@@ -9,7 +9,7 @@ public partial class WorkerHttpClient : IWorkerApi
 {
     static partial void UpdateJsonSerializerSettings(JsonSerializerOptions settings)
     {
-        settings.Converters.Add(new ProtobufJsonConverter());
+        settings.TypeInfoResolver = ProtobufJsonResolver.Instance;
     }
 
     [SuppressMessage(

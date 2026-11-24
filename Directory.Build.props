@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <LangVersion>15.0</LangVersion>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 </Project>

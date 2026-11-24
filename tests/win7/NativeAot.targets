@@ -1,0 +1,32 @@
+<Project>
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <DebugType>none</DebugType>
+    <PublishReferencesSymbols>false</PublishReferencesSymbols>
+    <Win7ThunksVersion>1.2.3</Win7ThunksVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <DisableUnsupportedError>true</DisableUnsupportedError>
+    <IlcUseEnvironmentalTools>true</IlcUseEnvironmentalTools>
+    <Win7WindowsSdk Condition="'$(Win7WindowsSdk)' == ''">$(MSBuildThisFileDirectory)../../artifacts/win7/windows-sdk</Win7WindowsSdk>
+  </PropertyGroup>
+  <ItemGroup>
+    <NativeLibrary Include="$(NuGetPackageRoot)/yy-thunks/$(Win7ThunksVersion)/build/native/objs/x64/YY_Thunks_for_Win7.obj" />
+    <PackageDownload Include="YY-Thunks" Version="[$(Win7ThunksVersion)]" />
+  </ItemGroup>
+  <Target Name="LinkWin7Cli" AfterTargets="SetupOSSpecificProps" BeforeTargets="LinkNative">
+    <Error Condition="'$(RuntimeIdentifier)' != 'win-x64'" Text="The Windows 7 CLI profile targets win-x64." />
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+      <CppLinker>lld-link</CppLinker>
+    </PropertyGroup>
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+      <LinkerArg Include="/LIBPATH:&quot;$(Win7WindowsSdk)/crt/lib/x64&quot;" />
+      <LinkerArg Include="/LIBPATH:&quot;$(Win7WindowsSdk)/sdk/lib/um/x64&quot;" />
+      <LinkerArg Include="/LIBPATH:&quot;$(Win7WindowsSdk)/sdk/lib/ucrt/x64&quot;" />
+    </ItemGroup>
+    <ItemGroup>
+      <LinkerArg Remove="/NODEFAULTLIB:libucrt.lib;/DEFAULTLIB:ucrt.lib" />
+      <LinkerArg Include="/NODEFAULTLIB:ucrt.lib;/DEFAULTLIB:libucrt.lib" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -134,6 +134,22 @@ depends = ["check:code", "check:api", "check:markdown", "check:notes", "check:co
 description = "Run the application"
 run = "dotnet run --project src/LazyTuiHub/LazyTuiHub.csproj --"
 
+[tasks."run:cli"]
+description = "Run the user CLI with local services or an HTTPS endpoint"
+run = "dotnet run --project src/LazyTuiHub -- --cli"
+
+[tasks."test:win7"]
+description = "Install a Windows 7 x64 QEMU baseline or test a payload in a disposable overlay"
+run = "node tests/win7/lab.mjs"
+
+[tasks."test:win7:publish"]
+description = "Build the test primary and publish the Windows CLI and plugin host for QEMU"
+run = "node tests/win7/publish.mjs jit"
+
+[tasks."test:win7:publish:aot"]
+description = "Publish the standalone Native AOT CLI for Windows 7 SP1 x64"
+run = "node tests/win7/publish.mjs aot"
+
 [tasks."format:code"]
 description = "Format C# code"
 run = "dotnet csharpier format ."
@@ -184,10 +200,7 @@ run = "dotnet run --project tests/LazyTuiHub.Tests"
 
 [tasks."test:multinode"]
 description = "Publish the host and exercise cross-instance execution on isolated Docker networks"
-run = [
-  "dotnet publish src/LazyTuiHub -c Release -p:UseAppHost=false --no-self-contained -o artifacts/multinode/app",
-  "node tests/multinode/run.mjs",
-]
+run = "node tests/multinode/run.mjs"
 
 [tasks."demo:rss"]
 description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"

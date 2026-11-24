@@ -7,7 +7,7 @@ namespace LazyTuiHub.Client;
 public partial class ArticleHttpClient : IArticleApi
 {
     static partial void UpdateJsonSerializerSettings(JsonSerializerOptions settings) =>
-        settings.Converters.Add(new ProtobufJsonConverter());
+        settings.TypeInfoResolver = ProtobufJsonResolver.Instance;
 
     public Task<ListArticlesResponse> ListArticlesAsync(
         ListArticlesRequest request,

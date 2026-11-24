@@ -1,0 +1,18 @@
+using Google.Protobuf.Reflection;
+using Google.Rpc;
+using LazyTuiHub.Api;
+using LazyTuiHub.CorePlugin;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+var b=WebApplication.CreateBuilder(args);
+b.Services.AddGrpc().AddJsonTranscoding(o => o.TypeRegistry=TypeRegistry.FromMessages(ErrorInfo.Descriptor));
+b.Services.AddSingleton<IGreetingApi,GreetingApplication>();
+var app=b.Build();
+app.MapGrpcService<GreetingService>();
+app.Urls.Add("http://127.0.0.1:0");
+await app.StartAsync();
+var url=app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.Single();
+using var client = new HttpClient();
+using var result=await client.PostAsync(url+"/v1:generateGreeting",new StringContent("{\"recipient\":\"Ada\"}",System.Text.Encoding.UTF8,"application/json"));
+Console.WriteLine("PROBE "+result.StatusCode+" "+await result.Content.ReadAsStringAsync());
+await app.StopAsync();

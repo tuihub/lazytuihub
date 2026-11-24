@@ -1,15 +1,16 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Google.Protobuf;
 
 namespace LazyTuiHub.Client;
 
-internal sealed class ProtobufJsonConverter : JsonConverterFactory
+internal sealed partial class ProtobufJsonResolver : IJsonTypeInfoResolver
 {
-    public override bool CanConvert(Type typeToConvert) => typeof(IMessage).IsAssignableFrom(typeToConvert);
+    internal static ProtobufJsonResolver Instance { get; } = new();
 
-    public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
-        (JsonConverter)Activator.CreateInstance(typeof(MessageConverter<>).MakeGenericType(typeToConvert))!;
+    private static JsonTypeInfo<T> Contract<T>(JsonSerializerOptions options)
+        where T : IMessage<T>, new() => JsonMetadataServices.CreateValueInfo<T>(options, new MessageConverter<T>());
 
     private sealed class MessageConverter<T> : JsonConverter<T>
         where T : IMessage<T>, new()

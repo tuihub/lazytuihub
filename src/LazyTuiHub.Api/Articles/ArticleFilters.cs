@@ -8,7 +8,7 @@ public static class ArticleFilters
     {
         if (string.IsNullOrEmpty(source))
             return filter;
-        var predicate = $"source = {JsonSerializer.Serialize(source)}";
+        var predicate = $"source = \"{JsonEncodedText.Encode(source)}\"";
         return string.IsNullOrEmpty(filter) ? predicate : $"{predicate} AND {filter}";
     }
 }
