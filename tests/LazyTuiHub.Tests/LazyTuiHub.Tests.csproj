@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
     <ProjectReference Include="../../src/LazyTuiHub.Articles/LazyTuiHub.Articles.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Games/LazyTuiHub.Games.csproj" />
     <ProjectReference Include="../../src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
     <ProjectReference Include="../../src/LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" />
     <PackageReference Include="Avalonia.Headless" Version="12.1.6" />

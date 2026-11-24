@@ -22,6 +22,7 @@ The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real
 | [Core plugin](../../src/LazyTuiHub.CorePlugin/) | Required distribution plugin for greetings and built-in node registration. |
 | [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, scheduled fetching, fetch observations, and RSS/Atom parsing. |
 | [Articles](../../src/LazyTuiHub.Articles/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
+| [Game library and providers](../../.agents/notes/2026-11-23-mvp-games.en.md) | Personal games, categories and sessions, with Steam, Bangumi and VNDB lookup and import workflows. |
 | [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, desktop/web composition, shared DI infrastructure, and lifecycle. |
 | [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
 

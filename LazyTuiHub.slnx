@@ -11,6 +11,10 @@
   <Project Path="src/LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
   <Project Path="src/LazyTuiHub.CorePlugin/LazyTuiHub.CorePlugin.csproj" />
   <Project Path="src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
+  <Project Path="src/LazyTuiHub.Games/LazyTuiHub.Games.csproj" />
+  <Project Path="src/LazyTuiHub.Steam/LazyTuiHub.Steam.csproj" />
+  <Project Path="src/LazyTuiHub.Bangumi/LazyTuiHub.Bangumi.csproj" />
+  <Project Path="src/LazyTuiHub.Vndb/LazyTuiHub.Vndb.csproj" />
   <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
   <Project Path="src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
   <Project Path="src/LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" />

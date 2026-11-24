@@ -22,6 +22,7 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具
 | [核心插件](../../src/LazyTuiHub.CorePlugin/) | 发行清单要求的问候功能及内置节点注册。 |
 | [RSS 插件](../../src/LazyTuiHub.Rss/) | 订阅、定时抓取、抓取明细和 RSS／Atom 解析。 |
 | [文章插件](../../src/LazyTuiHub.Articles/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
+| [游戏库与资料来源](../../.agents/notes/2026-11-23-mvp-games.zh.md) | 管理个人游戏、分类和游玩时段，通过 Steam、Bangumi、VNDB 工作流检索和导入资料。 |
 | [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
 | [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
 

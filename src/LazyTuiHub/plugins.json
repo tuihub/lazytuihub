@@ -33,5 +33,38 @@
     "requires": [
       "articles"
     ]
+  },
+  {
+    "id": "games",
+    "name": "Game Library",
+    "assembly": "games/LazyTuiHub.Games.dll",
+    "entryType": "LazyTuiHub.Games.GamesPlugin"
+  },
+  {
+    "id": "steam",
+    "name": "Steam",
+    "assembly": "steam/LazyTuiHub.Steam.dll",
+    "entryType": "LazyTuiHub.Steam.SteamPlugin",
+    "requires": [
+      "games"
+    ]
+  },
+  {
+    "id": "bangumi",
+    "name": "Bangumi",
+    "assembly": "bangumi/LazyTuiHub.Bangumi.dll",
+    "entryType": "LazyTuiHub.Bangumi.BangumiPlugin",
+    "requires": [
+      "games"
+    ]
+  },
+  {
+    "id": "vndb",
+    "name": "VNDB",
+    "assembly": "vndb/LazyTuiHub.Vndb.dll",
+    "entryType": "LazyTuiHub.Vndb.VndbPlugin",
+    "requires": [
+      "games"
+    ]
   }
 ]
