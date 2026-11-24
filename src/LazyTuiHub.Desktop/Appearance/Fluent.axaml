@@ -8,24 +8,45 @@
                 <ResourceInclude Source="/Appearance/Icons/Fluent.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <FontFamily x:Key="DesignFont">Segoe UI, Inter, $Default</FontFamily>
-            <x:Double x:Key="PageTitleSize">24</x:Double>
+            <x:Double x:Key="PageTitleSize">20</x:Double>
             <x:Double x:Key="HeadlineSize">28</x:Double>
-            <x:Double x:Key="SectionSize">20</x:Double>
-            <x:Double x:Key="ItemTitleSize">16</x:Double>
+            <x:Double x:Key="SectionSize">18</x:Double>
+            <x:Double x:Key="ItemTitleSize">14</x:Double>
             <x:Double x:Key="CaptionSize">14</x:Double>
             <x:Double x:Key="MetadataSize">12</x:Double>
-            <x:Double x:Key="ReadingSize">16</x:Double>
+            <x:Double x:Key="ReadingSize">14</x:Double>
             <FontWeight x:Key="PageTitleWeight">SemiBold</FontWeight>
             <FontWeight x:Key="HeadlineWeight">SemiBold</FontWeight>
             <FontWeight x:Key="ItemTitleWeight">SemiBold</FontWeight>
+            <x:Double x:Key="LibraryGutter">32</x:Double>
+            <x:Double x:Key="LibraryCompactGutter">16</x:Double>
+            <x:Double x:Key="PosterMinWidth">148</x:Double>
+            <x:Double x:Key="PosterColumnGap">12</x:Double>
+            <x:Double x:Key="PosterRowGap">16</x:Double>
+            <x:Double x:Key="LibraryCardTitleSpace">40</x:Double>
+            <x:Double x:Key="TitleLineHeight">28</x:Double>
+            <x:Double x:Key="HeadlineLineHeight">36</x:Double>
+            <x:Double x:Key="SectionLineHeight">24</x:Double>
+            <x:Double x:Key="ItemTitleLineHeight">20</x:Double>
+            <x:Double x:Key="CaptionLineHeight">20</x:Double>
+            <x:Double x:Key="MetadataLineHeight">16</x:Double>
+            <x:Double x:Key="ItemTitleTracking">0</x:Double>
+            <x:Double x:Key="MetadataTracking">0</x:Double>
+            <x:Double x:Key="ReadingTracking">0</x:Double>
+            <x:Double x:Key="PanelRevealOffset">24</x:Double>
+            <x:Double x:Key="ShelfSearchHeight">32</x:Double>
+            <Thickness x:Key="CompactHeaderPadding">12,8</Thickness>
+            <x:TimeSpan x:Key="PanelRevealDuration">0:0:0.167</x:TimeSpan>
+            <SplineEasing x:Key="PanelRevealEasing" X1="0" Y1="0" X2="0" Y2="1" />
             <CornerRadius x:Key="NavigationRadius">6</CornerRadius>
+            <Thickness x:Key="TileFrameWidth">2</Thickness>
             <CornerRadius x:Key="RowRadius">4</CornerRadius>
             <Thickness x:Key="NavigationPadding">12,7</Thickness>
             <Thickness x:Key="RowPadding">14,12</Thickness>
             <Thickness x:Key="NavigationMargin">0,2</Thickness>
             <Thickness x:Key="RowMargin">8,1</Thickness>
             <x:Double x:Key="SelectionBarWidth">3</x:Double>
-            <x:Double x:Key="ReadingLineHeight">26</x:Double>
+            <x:Double x:Key="ReadingLineHeight">22</x:Double>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="PrimaryText">#242424</SolidColorBrush>
@@ -37,9 +58,14 @@
                     <SolidColorBrush x:Key="SurfaceBrush">#FFFFFF</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#F3F3F3</SolidColorBrush>
                     <SolidColorBrush x:Key="DividerBrush">#22000000</SolidColorBrush>
+                    <StaticResource x:Key="TileFocusBrush" ResourceKey="AccentBrush" />
                     <SolidColorBrush x:Key="HoverBrush">#09000000</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectionBrush">#0F000000</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectedText">#1A1A1A</SolidColorBrush>
+                    <SolidColorBrush x:Key="LibraryCanvas">#FAFAFA</SolidColorBrush><StaticResource
+                        x:Key="InspectorSurface"
+                        ResourceKey="PageBackground"
+                    />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="PrimaryText">#FFFFFF</SolidColorBrush>
@@ -51,9 +77,14 @@
                     <SolidColorBrush x:Key="SurfaceBrush">#202020</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#292929</SolidColorBrush>
                     <SolidColorBrush x:Key="DividerBrush">#24FFFFFF</SolidColorBrush>
+                    <StaticResource x:Key="TileFocusBrush" ResourceKey="AccentBrush" />
                     <SolidColorBrush x:Key="HoverBrush">#0FFFFFFF</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectionBrush">#15FFFFFF</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectedText">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="LibraryCanvas">#202020</SolidColorBrush><StaticResource
+                        x:Key="InspectorSurface"
+                        ResourceKey="PageBackground"
+                    />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
@@ -70,5 +101,20 @@
         <Setter Property="MinWidth" Value="32" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="Padding" Value="5" />
+    </Style>
+    <Style Selector="ListBox.scope">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.scope ListBoxItem">
+        <Setter Property="Padding" Value="12,5" /><Setter
+            Property="CornerRadius"
+            Value="4"
+        /><Setter Property="MinHeight" Value="32" />
+    </Style>
+    <Style Selector="ListBox.scope ListBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+    </Style>
+    <Style Selector="ListBox.scope ListBoxItem:selected /template/ Border#Underline">
+        <Setter Property="Height" Value="3" />
     </Style>
 </Styles>

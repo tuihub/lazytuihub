@@ -9,6 +9,7 @@
     "@material/web": "2.5.0",
     "esbuild": "0.28.2",
     "playwright": "1.65.1",
+    "pngjs": "7.0.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   }

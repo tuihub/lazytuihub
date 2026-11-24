@@ -5,6 +5,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Fixtures/review-cover.png" LogicalName="review-cover.png" />
     <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
     <ProjectReference Include="../../src/LazyTuiHub.Articles/LazyTuiHub.Articles.csproj" />
     <ProjectReference Include="../../src/LazyTuiHub.Games/LazyTuiHub.Games.csproj" />

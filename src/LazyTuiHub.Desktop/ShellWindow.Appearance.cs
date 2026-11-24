@@ -25,6 +25,7 @@ public sealed partial class ShellWindow
             Position = Position,
             WindowStartupLocation = WindowStartupLocation.Manual,
             WindowState = WindowState,
+            ShowActivated = ShowActivated,
         };
         if (app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.MainWindow = replacement;
@@ -39,17 +40,24 @@ public sealed partial class ShellWindow
         appearanceReady = false;
         DesignPicker.SelectedIndex = (int)appearance.Preferences.Design;
         ColorPicker.SelectedIndex = (int)appearance.Preferences.Color;
+        MotionPicker.IsChecked = appearance.Preferences.ReduceMotion;
         AppearanceStatus.Text = appearance.Status;
         appearanceReady = true;
     }
 
-    private void AppearanceChanged(object? sender, SelectionChangedEventArgs e)
+    private void AppearanceChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (!appearanceReady)
             return;
         try
         {
-            ChangeAppearance(new((DesignSystem)DesignPicker.SelectedIndex, (ColorMode)ColorPicker.SelectedIndex));
+            ChangeAppearance(
+                new(
+                    (DesignSystem)DesignPicker.SelectedIndex,
+                    (ColorMode)ColorPicker.SelectedIndex,
+                    MotionPicker.IsChecked == true
+                )
+            );
         }
         catch (Exception error)
         {

@@ -11,5 +11,6 @@ public sealed record GameMetadata(
     string? AlternativeTitle = null,
     string[]? Developers = null,
     string[]? Publishers = null,
-    string? SourceKind = null
+    string? SourceKind = null,
+    string[]? OtherTitles = null
 );

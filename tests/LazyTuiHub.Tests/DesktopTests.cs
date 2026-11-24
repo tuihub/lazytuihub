@@ -64,7 +64,10 @@ public sealed partial class DesktopTests
                         window.Show();
                         var page = window.GetVisualDescendants().OfType<ReaderPage>().Single();
                         await WaitIdleAsync(page.Model, token);
-                        Assert.Equal(3, window.Navigation.Count);
+                        Assert.Equal(
+                            new[] { "Reader", "Games", "Workflows", "Plugins" },
+                            window.Navigation.Select(item => item.Title)
+                        );
                         page.Model.FeedUri = fixture.Urls.Single() + "/feed";
                         page.Model.FeedTitle = "Desktop fixture";
                         await page.Model.SubscribeAsync();
@@ -97,7 +100,10 @@ public sealed partial class DesktopTests
                         Assert.Same(page, window.GetVisualDescendants().OfType<ReaderPage>().Single());
                         window = await SwitchDesignsAsync(host, window, token);
                         host.Services.GetRequiredService<PluginRuntime>().SetEnabled("articles.desktop", false);
-                        Assert.Equal(3, window.Navigation.Count);
+                        Assert.Equal(
+                            new[] { "Reader", "Games", "Workflows", "Plugins" },
+                            window.Navigation.Select(item => item.Title)
+                        );
                         await CloseAsync(window, token);
                     }
                     using (var disabled = CreateHost(workspace))
@@ -112,7 +118,10 @@ public sealed partial class DesktopTests
                         Assert.Equal("Reader", Assert.Single(record.Saved.Declaration.Pages).Title);
                         var window = new ShellWindow(disabled);
                         window.Show();
-                        Assert.Equal(new[] { "Workflows", "Plugins" }, window.Navigation.Select(page => page.Title));
+                        Assert.Equal(
+                            new[] { "Games", "Workflows", "Plugins" },
+                            window.Navigation.Select(page => page.Title)
+                        );
                         Assert.True(
                             (
                                 await disabled
@@ -134,7 +143,7 @@ public sealed partial class DesktopTests
                         Assert.Equal("missing", record.Availability);
                         Assert.True(record.Saved.Enabled);
                         Assert.Single(record.Saved.Declaration.Pages);
-                        Assert.Equal(2, new ShellWindow(missing).Navigation.Count);
+                        Assert.DoesNotContain(new ShellWindow(missing).Navigation, item => item.Title == "Reader");
                     }
                     File.Move(dll + ".absent", dll);
                     using (var restored = CreateHost(workspace))
@@ -156,7 +165,10 @@ public sealed partial class DesktopTests
                         );
                         var window = new ShellWindow(businessMissing);
                         window.Show();
-                        Assert.Equal(3, window.Navigation.Count);
+                        Assert.Equal(
+                            new[] { "Reader", "Games", "Workflows", "Plugins" },
+                            window.Navigation.Select(item => item.Title)
+                        );
                         var page = window.GetVisualDescendants().OfType<ReaderPage>().Single();
                         await WaitIdleAsync(page.Model, token);
                         Assert.False(page.Model.CanSubscribe);
@@ -251,11 +263,14 @@ public sealed partial class DesktopTests
         release.SetResult();
         await pending;
         var tabs = window.FindControl<ListBox>("Pages")!;
-        tabs.SelectedIndex = 1;
+        tabs.SelectedItem = window.Navigation.Single(item => item.Title == "Workflows");
         var workflow = window.GetVisualDescendants().OfType<WorkflowPage>().Single();
         workflow.FindControl<TabControl>("PlanTabs")!.SelectedIndex = 1;
         window = window.ChangeAppearance(new(DesignSystem.Fluent, ColorMode.Light));
-        Assert.Equal(1, window.FindControl<ListBox>("Pages")!.SelectedIndex);
+        Assert.Equal(
+            "Workflows",
+            Assert.IsType<LazyTuiHub.Desktop.NavigationPage>(window.FindControl<ListBox>("Pages")!.SelectedItem).Title
+        );
         Assert.Equal(
             1,
             window
@@ -265,12 +280,15 @@ public sealed partial class DesktopTests
                 .FindControl<TabControl>("PlanTabs")!
                 .SelectedIndex
         );
-        window.FindControl<ListBox>("Pages")!.SelectedIndex = 2;
+        window.FindControl<ListBox>("Pages")!.SelectedItem = window.Navigation.Single(item => item.Title == "Plugins");
         var plugins = window.GetVisualDescendants().OfType<PluginsPage>().Single();
         plugins.FindControl<ListBox>("Plugins")!.SelectedIndex = 1;
         var pluginId = host.Services.GetRequiredService<PluginsPageState>().Selected;
         window = window.ChangeAppearance(new(DesignSystem.Material, ColorMode.Dark));
-        Assert.Equal(2, window.FindControl<ListBox>("Pages")!.SelectedIndex);
+        Assert.Equal(
+            "Plugins",
+            Assert.IsType<LazyTuiHub.Desktop.NavigationPage>(window.FindControl<ListBox>("Pages")!.SelectedItem).Title
+        );
         Assert.Equal(
             pluginId,
             Assert

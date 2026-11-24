@@ -7,9 +7,11 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Articles.Desktop;
 using LazyTuiHub.Desktop;
+using LazyTuiHub.Games;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace LazyTuiHub.Tests;
@@ -64,6 +66,43 @@ public sealed partial class DesktopTests
                         await ExerciseResponsiveReaderAsync(driver, reader, design.ToString());
                         await ExerciseAppearanceAsync(driver, design.ToString());
                     }
+                    var library = host.Services.GetRequiredService<GameLibrary>();
+                    using (var fixture = new GamePlatformFixture())
+                    using (var http = new HttpClient(fixture))
+                    await using (var seeded = PluginTestHost.Create(workspace.Database, http))
+                    {
+                        var connections = seeded.Services.GetRequiredService<GameConnections>();
+                        var folder = Directory.CreateDirectory(
+                            Path.Combine(workspace.DirectoryPath, "Library", "CLANNAD")
+                        );
+                        await connections.ScanAsync("folder", folder.Parent!.FullName, token);
+                        var game = Assert.Single(library.Shelf());
+                        library.Import(
+                            new(
+                                "vndb",
+                                "v4",
+                                "CLANNAD",
+                                "https://vndb.org/v4",
+                                "[url=https://vndb.org]A story[/url]",
+                                AlternativeTitle: "クラナド",
+                                Developers: ["Key"]
+                            ),
+                            game.Id
+                        );
+                        library.Import(
+                            new("bangumi", "13", "CLANNAD", "https://bgm.tv/subject/13", ReleaseDate: "2004-04-28"),
+                            game.Id
+                        );
+                        var account = await connections.BindAsync(
+                            "bangumi",
+                            "bgm-test",
+                            _ => throw new NotSupportedException(),
+                            token
+                        );
+                        await connections.SyncAsync(account.Id, token);
+                    }
+                    library.Add("Untitled prototype");
+                    await ExerciseGameLibraryAsync(driver, library);
                     await ExerciseInspectorsAsync(driver);
                     await CloseAsync(driver.Window, token);
                     return true;
@@ -187,14 +226,22 @@ public sealed partial class DesktopTests
         await driver.ResizeAsync(390, 740);
         await driver.ClickAsync(driver.Window.FindControl<Button>("MenuButton")!);
         var pages = driver.Window.FindControl<ListBox>("Pages")!;
-        await driver.ClickAsync(pages.ContainerFromIndex(1)!);
+        await driver.ClickAsync(
+            pages.ContainerFromItem(
+                pages.Items.OfType<LazyTuiHub.Desktop.NavigationPage>().Single(page => page.Title == "Workflows")
+            )!
+        );
         var workflow = driver.Window.GetVisualDescendants().OfType<WorkflowPage>().Single();
         var definitions = workflow.FindControl<ListBox>("Definitions")!;
         await driver.ClickAsync(definitions.ContainerFromIndex(0)!);
         Assert.True(workflow.FindControl<AdaptivePane>("Pane")!.DetailOpen);
         await driver.CaptureAsync("workflow-narrow");
         await driver.ClickAsync(driver.Window.FindControl<Button>("MenuButton")!);
-        await driver.ClickAsync(pages.ContainerFromIndex(2)!);
+        await driver.ClickAsync(
+            pages.ContainerFromItem(
+                pages.Items.OfType<LazyTuiHub.Desktop.NavigationPage>().Single(page => page.Title == "Plugins")
+            )!
+        );
         var plugins = driver.Window.GetVisualDescendants().OfType<PluginsPage>().Single();
         await driver.ClickAsync(plugins.FindControl<ListBox>("Plugins")!.ContainerFromIndex(0)!);
         Assert.True(plugins.FindControl<AdaptivePane>("Pane")!.DetailOpen);

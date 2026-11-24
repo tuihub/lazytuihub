@@ -1,62 +1,84 @@
-using System.Text.Json;
+using System.Globalization;
 using LazyTuiHub.Games;
+using LazyTuiHub.Plugins;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Vndb;
 
-public sealed class VndbPlugin : GameProviderPlugin
+public sealed class VndbPlugin : SqliteGameProvider
 {
-    private static readonly Uri Endpoint = new("https://api.vndb.org/kana/vn");
-
-    protected override Task<GameMetadata[]> SearchAsync(HttpClient client, string query, CancellationToken token) =>
-        QueryAsync(client, "search", query, "searchrank", token);
-
-    protected override async Task<GameMetadata> LookupAsync(HttpClient client, string id, CancellationToken token)
+    public override void Configure(PluginRegistration registration)
     {
-        if (!id.StartsWith('v'))
-            throw new ArgumentException("Provide a VNDB ID such as v17.", nameof(id));
-        _ = NumericId(id[1..]);
-        var rows = await QueryAsync(client, "id", id, "id", token);
-        return rows.SingleOrDefault() ?? throw new KeyNotFoundException($"No VNDB entry for '{id}'.");
+        registration.Services.AddSingleton<GameAccountProvider, VndbAccount>();
+        base.Configure(registration);
     }
 
-    private static async Task<GameMetadata[]> QueryAsync(
-        HttpClient client,
-        string filter,
-        string value,
-        string sort,
-        CancellationToken token
-    )
-    {
-        var result = await RequestAsync(
-            client,
-            Endpoint,
-            new
-            {
-                filters = new[] { filter, "=", value },
-                fields = "title,alttitle,description,image.url,released,developers.name",
-                sort,
-            },
-            token
-        );
-        return result.GetProperty("results").EnumerateArray().Select(Map).ToArray();
-    }
+    protected override string Query(bool search) =>
+        """
+            SELECT v.id,t.title,t.latin,v.description,v.image,
+                (SELECT json_group_array(title) FROM (SELECT DISTINCT title FROM vn_titles WHERE id=v.id ORDER BY title)) AS titles,
+                (SELECT json_group_array(name) FROM (SELECT DISTINCT p.name FROM releases_vn rv JOIN releases r ON r.id=rv.id JOIN releases_producers rp ON rp.id=rv.id JOIN producers p ON p.id=rp.pid WHERE rv.vid=v.id AND r.official AND NOT r.patch AND rp.developer ORDER BY p.name)) AS developers,
+                (SELECT json_group_array(name) FROM (SELECT DISTINCT p.name FROM releases_vn rv JOIN releases r ON r.id=rv.id JOIN releases_producers rp ON rp.id=rv.id JOIN producers p ON p.id=rp.pid WHERE rv.vid=v.id AND r.official AND NOT r.patch AND rp.publisher ORDER BY p.name)) AS publishers,
+                (SELECT min(r.released) FROM releases_vn rv JOIN releases r ON r.id=rv.id
+                 WHERE rv.vid=v.id AND rv.rtype='complete' AND r.official AND NOT r.patch AND r.released<99999999) AS released
+            FROM vn v JOIN vn_titles t ON t.id=v.id AND t.lang=coalesce(
+                (SELECT a.lang FROM vn_titles a WHERE a.id=v.id AND a.lang=v.olang),
+                (SELECT min(b.lang) FROM vn_titles b WHERE b.id=v.id))
+            WHERE
+            """ + (search ? " v.id IN (" + MatchingTitles + ") ORDER BY t.title,v.id" : " v.id=$key");
 
-    private static GameMetadata Map(JsonElement row)
+    protected override GameMetadata Read(SqliteDataReader row)
     {
-        var id = row.GetProperty("id").GetString()!;
+        var id = row.GetString(0);
+        var cover = Optional(row, "image");
+
         return new(
             "vndb",
             id,
-            row.GetProperty("title").GetString()!,
+            (string)row["title"],
             "https://vndb.org/" + id,
-            Text(row, "description"),
-            Text(row.GetProperty("image"), "url"),
-            Text(row, "released"),
-            Text(row, "alttitle"),
-            row.GetProperty("developers")
-                .EnumerateArray()
-                .Select(item => item.GetProperty("name").GetString()!)
-                .ToArray()
+            Optional(row, "description"),
+            CoverUrl(cover),
+            ReleaseDate(row["released"]),
+            Optional(row, "latin"),
+            Names(row, "developers"),
+            Names(row, "publishers"),
+            OtherTitles: Names(row, "titles")
         );
+    }
+
+    private static string[]? Names(SqliteDataReader row, string field) =>
+        System.Text.Json.JsonSerializer.Deserialize<string[]>((string)row[field]);
+
+    private static string? CoverUrl(string? image)
+    {
+        const int shardCount = 100;
+        if (
+            image is null
+            || !image.StartsWith("cv", StringComparison.Ordinal)
+            || !int.TryParse(image.AsSpan("cv".Length), CultureInfo.InvariantCulture, out var number)
+        )
+            return null;
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"https://t.vndb.org/cv/{number % shardCount:D2}/{number}.jpg"
+        );
+    }
+
+    private static string? ReleaseDate(object raw)
+    {
+        if (raw is not long date)
+            return null;
+        const int datePart = 100;
+        const int unknown = 99;
+        var day = date % datePart;
+        var month = date / datePart % datePart;
+        var year = date / datePart / datePart;
+        if (month == unknown)
+            return year.ToString(CultureInfo.InvariantCulture);
+        return day == unknown
+            ? string.Create(CultureInfo.InvariantCulture, $"{year:D4}-{month:D2}")
+            : string.Create(CultureInfo.InvariantCulture, $"{year:D4}-{month:D2}-{day:D2}");
     }
 }

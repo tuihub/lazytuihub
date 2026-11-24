@@ -66,5 +66,12 @@
     "requires": [
       "games"
     ]
+  },
+  {
+    "id": "games.desktop",
+    "name": "Games",
+    "assembly": "games-desktop/LazyTuiHub.Games.Desktop.dll",
+    "entryType": "LazyTuiHub.Games.Desktop.GameDesktopPlugin",
+    "requires": ["games"]
   }
 ]

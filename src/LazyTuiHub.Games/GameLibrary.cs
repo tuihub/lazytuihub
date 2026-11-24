@@ -16,24 +16,29 @@ namespace LazyTuiHub.Games;
     "S2077:Formatting SQL queries is security-sensitive",
     Justification = "DaoNames encodes table names and the command binds record values."
 )]
-public sealed class GameLibrary
+public sealed partial class GameLibrary
 {
     private const string Collection = GamesPlugin.Id;
     private const string GameId = "$id";
     private readonly IConnectionSource database;
     private readonly BusinessStorage storage;
     private readonly ResourceAccess access;
+    private readonly GameIdIndex index;
     private readonly string games;
     private readonly string sources;
     private readonly string sessions;
 
-    public GameLibrary(DaoScope daos, BusinessStorage storage, ResourceAccess access)
+    public GameLibrary(DaoScope daos, BusinessStorage storage, ResourceAccess access, GameIdIndex index)
     {
         database = daos.Get<IConnectionSource>("database");
         this.storage = storage;
         this.access = access;
+        this.index = index;
         games = DaoNames.Table(daos.Table("library"));
         sources = DaoNames.Table(daos.Table("sources"));
+        origins = DaoNames.Table(daos.Table("connections"));
+        holdings = DaoNames.Table(daos.Table("inventory"));
+        overrides = DaoNames.Table(daos.Table("overrides"));
         sessions = DaoNames.Table(daos.Table("sessions"));
         using var connection = database.Open();
         using var command = connection.CreateCommand();
@@ -46,6 +51,24 @@ public sealed class GameLibrary
                 account TEXT NOT NULL, provider TEXT NOT NULL, external_id TEXT NOT NULL, game TEXT NOT NULL, metadata TEXT NOT NULL,
                 PRIMARY KEY(account, provider, external_id, game), FOREIGN KEY(account, game) REFERENCES {games}(account, id)
             );
+            CREATE TABLE IF NOT EXISTS {origins} (
+                account TEXT NOT NULL, id TEXT NOT NULL, provider TEXT NOT NULL, external TEXT NOT NULL, label TEXT NOT NULL,
+                local INTEGER NOT NULL, connected INTEGER NOT NULL, credential TEXT, synced TEXT, revision INTEGER NOT NULL,
+                PRIMARY KEY(account,id), UNIQUE(account,provider,external,local)
+            );
+            CREATE TABLE IF NOT EXISTS {holdings} (
+                account TEXT NOT NULL, origin TEXT NOT NULL, evidence TEXT NOT NULL, external TEXT NOT NULL, game TEXT NOT NULL, status TEXT NOT NULL, path TEXT, present INTEGER NOT NULL,
+                PRIMARY KEY(account,origin,evidence), FOREIGN KEY(account,game) REFERENCES {games}(account,id),
+                FOREIGN KEY(account,origin) REFERENCES {origins}(account,id)
+            );
+            CREATE INDEX IF NOT EXISTS {DaoNames.Index(
+                daos.Table("inventory"),
+                "external"
+            )} ON {holdings}(account,external);
+            CREATE TABLE IF NOT EXISTS {overrides} (
+                account TEXT NOT NULL, game TEXT NOT NULL, field TEXT NOT NULL, value TEXT NOT NULL,
+                PRIMARY KEY(account,game,field), FOREIGN KEY(account,game) REFERENCES {games}(account,id)
+            );
             CREATE TABLE IF NOT EXISTS {sessions} (
                 account TEXT NOT NULL, game TEXT NOT NULL, session TEXT NOT NULL,
                 FOREIGN KEY(account, game) REFERENCES {games}(account, id)
@@ -53,6 +76,18 @@ public sealed class GameLibrary
             """;
         command.ExecuteNonQuery();
     }
+
+    public bool CanAddGames =>
+        access.Allows(
+            ResourceUri.InAccount(Collection, access.Account, Collection),
+            AccessMode.Read | AccessMode.Write
+        );
+
+    public bool CanEditGame(string id) =>
+        access.Allows(
+            ResourceUri.InAccount(Collection, access.Account, Collection, id),
+            AccessMode.Read | AccessMode.Write
+        );
 
     public GameEntry Add(string title) => storage.Write(database, (connection, transaction) =>
         {
@@ -98,7 +133,12 @@ public sealed class GameLibrary
         using var command = Command(
             connection,
             transaction,
-            $"SELECT game FROM {sources} WHERE account=$account AND provider=$provider AND external_id=$external",
+            $"""
+            SELECT game FROM {sources} WHERE account=$account AND provider=$provider AND external_id=$external
+            UNION SELECT h.game FROM {holdings} h JOIN {origins} o ON o.id=h.origin AND o.account=h.account
+            WHERE $canRead AND h.account=$account AND o.provider=$provider AND h.external=$external
+            """,
+            ("$canRead", CanReadConnections),
             ("$provider", metadata.Provider),
             ("$external", metadata.ExternalId)
         );
@@ -149,7 +189,9 @@ public sealed class GameLibrary
                 transaction,
                 id,
                 $"SELECT session FROM {sessions} WHERE account=$account AND game=$id ORDER BY rowid"
-            )
+            ),
+            Availability(connection, transaction, id),
+            ReadOverrides(connection, transaction, id)
         );
     }
 
@@ -170,17 +212,22 @@ public sealed class GameLibrary
         };
         if (title is not null)
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        SaveEntry(connection, transaction, edited);
+        transaction.Commit();
+        return edited;
+    }
+
+    private void SaveEntry(DbConnection connection, DbTransaction transaction, GameEntry edited)
+    {
         using var command = Command(
             connection,
             transaction,
             $"UPDATE {games} SET title=$title,categories=$categories WHERE account=$account AND id=$id",
-            (GameId, id),
+            (GameId, edited.Id),
             ("$title", edited.Title),
             ("$categories", JsonSerializer.Serialize(edited.Categories))
         );
         command.ExecuteNonQuery();
-        transaction.Commit();
-        return edited;
     }
 
     public void LogSession(string id, GameSession session)

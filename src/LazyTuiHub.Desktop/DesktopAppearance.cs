@@ -78,13 +78,16 @@ public sealed partial class DesktopAppearance
         app.DesignStyles.Add(theme);
     }
 
-    private void ApplyColor(DesktopApp app) =>
+    private void ApplyColor(DesktopApp app)
+    {
+        app.ReduceMotion = Preferences.ReduceMotion;
         app.RequestedThemeVariant = Preferences.Color switch
         {
             ColorMode.Light => ThemeVariant.Light,
             ColorMode.Dark => ThemeVariant.Dark,
             _ => ThemeVariant.Default,
         };
+    }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Could not load desktop appearance settings.")]
     private static partial void LogSettingsFailure(ILogger logger, Exception exception);

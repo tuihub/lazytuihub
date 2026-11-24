@@ -1,8 +1,9 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Games;
 
-namespace LazyTuiHub.Games;
+namespace LazyTuiHub.Steam;
 
 internal static class GameSnapshot
 {

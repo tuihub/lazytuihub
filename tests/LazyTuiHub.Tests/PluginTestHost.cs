@@ -13,7 +13,9 @@ internal static class PluginTestHost
         string database,
         HttpClient http,
         string? directory = null,
-        Dictionary<string, string?>? configuration = null
+        Dictionary<string, string?>? configuration = null,
+        ResourceAccess? access = null,
+        Action<IServiceCollection>? configure = null
     )
     {
         var builder = WebApplication.CreateBuilder();
@@ -26,13 +28,15 @@ internal static class PluginTestHost
         var plugins = new PluginRuntime(
             new SqliteDatabase(database),
             builder.Configuration,
-            directory ?? Path.Combine(AppContext.BaseDirectory, "plugins")
+            directory ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
+            access
         );
         plugins.Configure(builder.Services);
         builder.Services.AddSingleton(_ => plugins);
         builder.Services.AddSingleton(plugins.Workflows);
         builder.Services.AddSingleton(plugins.Retention);
         builder.Services.AddSingleton<IWorkflowExecutor>(plugins.Workflows);
+        configure?.Invoke(builder.Services);
         var app = builder.Build();
         app.Services.GetRequiredService<PluginRuntime>().Activate(app.Services, app);
         return app;

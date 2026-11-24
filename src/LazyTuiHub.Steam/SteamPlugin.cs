@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using LazyTuiHub.Games;
 using LazyTuiHub.Plugins;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Steam;
 
@@ -10,10 +11,14 @@ public sealed class SteamPlugin : GameProviderPlugin
     private const string Store = "https://store.steampowered.com";
     private const string Provider = "steam";
 
+    private string? snapshot;
     private string locale = string.Empty;
 
     public override void Configure(PluginRegistration registration)
     {
+        registration.Services.AddSingleton<GameAccountProvider, SteamAccount>();
+        registration.Services.AddSingleton<IInstallationScanner, SteamInstallations>();
+        snapshot = registration.Configuration["Games:steam:Snapshot"];
         var language = registration.Configuration["Games:steam:Language"] ?? "english";
         var country = registration.Configuration["Games:steam:Country"] ?? "US";
         locale = $"l={Uri.EscapeDataString(language)}&cc={Uri.EscapeDataString(country)}";
@@ -22,6 +27,8 @@ public sealed class SteamPlugin : GameProviderPlugin
 
     protected override async Task<GameMetadata[]> SearchAsync(HttpClient client, string query, CancellationToken token)
     {
+        if (snapshot is not null)
+            return await GameSnapshot.SearchAsync(snapshot, Provider, query, token);
         var response = await RequestAsync(
             client,
             new Uri($"{Store}/api/storesearch/?term={Uri.EscapeDataString(query)}&{locale}"),
@@ -48,6 +55,8 @@ public sealed class SteamPlugin : GameProviderPlugin
 
     protected override async Task<GameMetadata> LookupAsync(HttpClient client, string id, CancellationToken token)
     {
+        if (snapshot is not null)
+            return await GameSnapshot.LookupAsync(snapshot, Provider, id, token);
         var response = await RequestAsync(
             client,
             new Uri($"{Store}/api/appdetails?appids={NumericId(id)}&{locale}"),

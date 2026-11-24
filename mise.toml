@@ -233,6 +233,10 @@ description = "Drive the desktop UI with headless input and save rendered screen
 env.LAZYTUIHUB_UI_ARTIFACTS = "{{config_root}}/.local/desktop"
 run = "dotnet run --project tests/LazyTuiHub.Tests -- -class LazyTuiHub.Tests.DesktopTests"
 
+[tasks."review:desktop"]
+description = "Measure game shelf interaction states and compare button ink with the official Fluent specimen"
+run = "node .agents/prototypes/design-baselines/baseline.mjs review"
+
 [tasks."setup:design-baselines"]
 description = "Install isolated official design reference tools and fonts"
 run = "node .agents/prototypes/design-baselines/baseline.mjs setup"

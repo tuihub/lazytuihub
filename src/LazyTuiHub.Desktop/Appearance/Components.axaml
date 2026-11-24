@@ -99,6 +99,99 @@
             <Setter Property="Margin" Value="{DynamicResource NavigationMargin}" />
             <Setter Property="CornerRadius" Value="{DynamicResource NavigationRadius}" />
         </ControlTheme>
+        <ControlTheme x:Key="ScopeOption" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
+            <Setter Property="FontSize" Value="{DynamicResource CaptionSize}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                        >
+                            <Panel>
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="4"
+                                    Opacity="0"
+                                    IsHitTestVisible="False"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                >
+                                    <Border x:Name="CheckSlot" Width="16" IsVisible="False" />
+                                    <ContentPresenter
+                                        Content="{TemplateBinding Content}"
+                                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                                        FontWeight="{DynamicResource ItemTitleWeight}"
+                                    />
+                                </StackPanel>
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="4"
+                                >
+                                    <PathIcon
+                                        x:Name="CheckedGlyph"
+                                        Width="16"
+                                        Height="16"
+                                        IsVisible="False"
+                                        IsHitTestVisible="False"
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        Foreground="{TemplateBinding Foreground}"
+                                    />
+                                    <ContentPresenter
+                                        Name="PART_ContentPresenter"
+                                        Content="{TemplateBinding Content}"
+                                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        Foreground="{TemplateBinding Foreground}"
+                                    />
+                                </StackPanel>
+                            </Panel>
+                        </Border>
+                        <Border
+                            Name="Underline"
+                            Height="0"
+                            Background="{DynamicResource AccentBrush}"
+                            Margin="10,0"
+                            VerticalAlignment="Bottom"
+                            CornerRadius="2"
+                        />
+                        <Border
+                            Name="FocusRing"
+                            IsVisible="False"
+                            BorderThickness="2"
+                            BorderBrush="{DynamicResource AccentBrush}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            IsHitTestVisible="False"
+                        />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover">
+                <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+            </Style>
+            <Style Selector="^:selected">
+                <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" /><Setter
+                    Property="Foreground"
+                    Value="{DynamicResource SelectedText}"
+                />
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#FocusRing">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+        </ControlTheme>
     </Styles.Resources>
     <Style Selector="PathIcon.action">
         <Setter Property="Theme" Value="{StaticResource ActionGlyph}" />
@@ -106,6 +199,9 @@
     <Style Selector="PathIcon.action.inline">
         <Setter Property="Width" Value="{DynamicResource InlineActionIconSize}" />
         <Setter Property="Height" Value="{DynamicResource InlineActionIconSize}" />
+    </Style>
+    <Style Selector="ListBox.scope">
+        <Setter Property="ItemContainerTheme" Value="{StaticResource ScopeOption}" />
     </Style>
     <Style Selector="ListBox.collection">
         <Setter Property="ItemContainerTheme" Value="{StaticResource CollectionRow}" />
@@ -117,43 +213,53 @@
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
     </Style>
     <Style Selector=":is(TextBlock).title">
+        <Setter Property="LineHeight" Value="{DynamicResource TitleLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource PageTitleSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource PageTitleWeight}" />
     </Style>
     <Style Selector=":is(TextBlock).headline">
+        <Setter Property="LineHeight" Value="{DynamicResource HeadlineLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource HeadlineSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource HeadlineWeight}" />
     </Style>
     <Style Selector=":is(TextBlock).section">
+        <Setter Property="LineHeight" Value="{DynamicResource SectionLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource SectionSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" />
     </Style>
     <Style Selector=":is(TextBlock).item-title">
+        <Setter Property="LetterSpacing" Value="{DynamicResource ItemTitleTracking}" />
+        <Setter Property="LineHeight" Value="{DynamicResource ItemTitleLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource ItemTitleSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" />
     </Style>
     <Style Selector=":is(TextBlock).label">
+        <Setter Property="LineHeight" Value="{DynamicResource MetadataLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource MetadataSize}" />
         <Setter Property="FontWeight" Value="{DynamicResource ItemTitleWeight}" />
     </Style>
     <Style Selector=":is(TextBlock).caption">
+        <Setter Property="LineHeight" Value="{DynamicResource CaptionLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource CaptionSize}" />
         <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector=":is(TextBlock).metadata">
+        <Setter Property="LetterSpacing" Value="{DynamicResource MetadataTracking}" />
+        <Setter Property="LineHeight" Value="{DynamicResource MetadataLineHeight}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource MetadataSize}" />
         <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector=":is(TextBlock).reading">
+        <Setter Property="LetterSpacing" Value="{DynamicResource ReadingTracking}" />
         <Setter Property="FontFamily" Value="{DynamicResource DesignFont}" />
         <Setter Property="FontSize" Value="{DynamicResource ReadingSize}" />
         <Setter Property="LineHeight" Value="{DynamicResource ReadingLineHeight}" />

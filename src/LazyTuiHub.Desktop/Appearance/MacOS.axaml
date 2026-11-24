@@ -8,25 +8,51 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="/Appearance/Icons/MacOS.axaml" />
             </ResourceDictionary.MergedDictionaries>
-            <FontFamily x:Key="DesignFont">SF Pro Text, Helvetica Neue, $Default</FontFamily>
+            <OnPlatform
+                x:Key="DesignFont"
+                x:TypeArguments="FontFamily"
+                macOS=".AppleSystemUIFont"
+                Default="SF Pro Text, Helvetica Neue, $Default"
+            />
             <x:Double x:Key="PageTitleSize">22</x:Double>
             <x:Double x:Key="HeadlineSize">26</x:Double>
             <x:Double x:Key="SectionSize">17</x:Double>
-            <x:Double x:Key="ItemTitleSize">14</x:Double>
-            <x:Double x:Key="CaptionSize">13</x:Double>
+            <x:Double x:Key="ItemTitleSize">13</x:Double>
+            <x:Double x:Key="CaptionSize">12</x:Double>
             <x:Double x:Key="MetadataSize">11</x:Double>
-            <x:Double x:Key="ReadingSize">15</x:Double>
-            <FontWeight x:Key="PageTitleWeight">Bold</FontWeight>
+            <x:Double x:Key="ReadingSize">13</x:Double>
+            <FontWeight x:Key="PageTitleWeight">Normal</FontWeight>
             <FontWeight x:Key="HeadlineWeight">Normal</FontWeight>
             <FontWeight x:Key="ItemTitleWeight">SemiBold</FontWeight>
+            <x:Double x:Key="LibraryGutter">28</x:Double>
+            <x:Double x:Key="LibraryCompactGutter">16</x:Double>
+            <x:Double x:Key="PosterMinWidth">148</x:Double>
+            <x:Double x:Key="PosterColumnGap">14</x:Double>
+            <x:Double x:Key="PosterRowGap">18</x:Double>
+            <x:Double x:Key="LibraryCardTitleSpace">32</x:Double>
+            <x:Double x:Key="TitleLineHeight">26</x:Double>
+            <x:Double x:Key="HeadlineLineHeight">32</x:Double>
+            <x:Double x:Key="SectionLineHeight">22</x:Double>
+            <x:Double x:Key="ItemTitleLineHeight">16</x:Double>
+            <x:Double x:Key="CaptionLineHeight">15</x:Double>
+            <x:Double x:Key="MetadataLineHeight">14</x:Double>
+            <x:Double x:Key="ItemTitleTracking">0</x:Double>
+            <x:Double x:Key="MetadataTracking">0</x:Double>
+            <x:Double x:Key="ReadingTracking">0</x:Double>
+            <x:Double x:Key="PanelRevealOffset">16</x:Double>
+            <x:Double x:Key="ShelfSearchHeight">26</x:Double>
+            <Thickness x:Key="CompactHeaderPadding">12,8</Thickness>
+            <x:TimeSpan x:Key="PanelRevealDuration">0:0:0.200</x:TimeSpan>
+            <SplineEasing x:Key="PanelRevealEasing" X1="0.25" Y1="0.1" X2="0.25" Y2="1" />
             <CornerRadius x:Key="NavigationRadius">7</CornerRadius>
+            <Thickness x:Key="TileFrameWidth">2</Thickness>
             <CornerRadius x:Key="RowRadius">7</CornerRadius>
             <Thickness x:Key="NavigationPadding">10,5</Thickness>
             <Thickness x:Key="RowPadding">12,9</Thickness>
             <Thickness x:Key="NavigationMargin">0,1</Thickness>
             <Thickness x:Key="RowMargin">6,1</Thickness>
             <x:Double x:Key="SelectionBarWidth">0</x:Double>
-            <x:Double x:Key="ReadingLineHeight">23</x:Double>
+            <x:Double x:Key="ReadingLineHeight">18</x:Double>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="PrimaryText">#1D1D1F</SolidColorBrush>
@@ -38,9 +64,14 @@
                     <SolidColorBrush x:Key="SurfaceBrush">#FFFFFF</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#F3F2F5</SolidColorBrush>
                     <SolidColorBrush x:Key="DividerBrush">#26000000</SolidColorBrush>
+                    <StaticResource x:Key="TileFocusBrush" ResourceKey="AccentBrush" />
                     <SolidColorBrush x:Key="HoverBrush">#09000000</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectionBrush">#DFDDE3</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectedText">#19191A</SolidColorBrush>
+                    <SolidColorBrush x:Key="LibraryCanvas">#FFFFFF</SolidColorBrush><StaticResource
+                        x:Key="InspectorSurface"
+                        ResourceKey="PageBackground"
+                    />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="PrimaryText">#F5F5F7</SolidColorBrush>
@@ -52,9 +83,14 @@
                     <SolidColorBrush x:Key="SurfaceBrush">#1D1D1F</SolidColorBrush>
                     <SolidColorBrush x:Key="PageBackground">#28282A</SolidColorBrush>
                     <SolidColorBrush x:Key="DividerBrush">#26FFFFFF</SolidColorBrush>
+                    <StaticResource x:Key="TileFocusBrush" ResourceKey="AccentBrush" />
                     <SolidColorBrush x:Key="HoverBrush">#0FFFFFFF</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectionBrush">#46464A</SolidColorBrush>
                     <SolidColorBrush x:Key="SelectedText">#F5F5F7</SolidColorBrush>
+                    <SolidColorBrush x:Key="LibraryCanvas">#1D1D1F</SolidColorBrush><StaticResource
+                        x:Key="InspectorSurface"
+                        ResourceKey="PageBackground"
+                    />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
@@ -77,5 +113,35 @@
         <Setter Property="MinWidth" Value="32" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="Padding" Value="6" />
+    </Style>
+    <Style Selector="ListBox.scope">
+        <Setter Property="Background" Value="{DynamicResource SelectionBrush}" /><Setter
+            Property="CornerRadius"
+            Value="7"
+        />
+    </Style>
+    <Style Selector="ListBox.scope ListBoxItem">
+        <Setter Property="Padding" Value="9,2" /><Setter Property="Margin" Value="2" /><Setter
+            Property="MinHeight"
+            Value="24"
+        /><Setter Property="CornerRadius" Value="5" />
+    </Style>
+    <Style Selector="ListBox.scope ListBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" /><Setter
+            Property="BorderBrush"
+            Value="{DynamicResource DividerBrush}"
+        />
+    </Style>
+    <Style Selector="Border.searchOutline">
+        <Setter Property="BorderBrush" Value="{DynamicResource SecondaryText}" /><Setter
+            Property="Opacity"
+            Value="0.55"
+        /><Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Grid#SearchBox:focus-within > Border.searchOutline">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter
+            Property="Opacity"
+            Value="1"
+        />
     </Style>
 </Styles>

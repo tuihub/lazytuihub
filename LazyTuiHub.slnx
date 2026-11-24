@@ -19,4 +19,5 @@
   <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
   <Project Path="src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
   <Project Path="src/LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" />
+  <Project Path="src/LazyTuiHub.Games.Desktop/LazyTuiHub.Games.Desktop.csproj" />
 </Solution>

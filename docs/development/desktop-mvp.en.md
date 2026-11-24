@@ -19,6 +19,12 @@ Workflows shows saved definitions, the current local execution plan, and reasons
 
 Plugins shows saved enablement separately from this startup's activation and file availability. Enable/disable changes apply after restarting. Required plugins cannot be disabled. The reader (`articles.desktop`) requires `articles`. Disabling `rss` removes subscription controls and stops fetching. Saved articles remain readable. Missing or disabled plugins retain page declarations and existing data. Ordinary retention policies continue under the storage agreement. Changing pages preserves the current page instance and its in-memory selection; selection and filters are not saved across restarts. Appearance preferences are saved separately on this device.
 
+## Game library
+
+Open **Games** to browse the poster shelf. Switch to **List view**, search by title or alias, or choose **Installed**, **Online** or **Needs match**. The **More filters** button opens category and source selectors over the shelf. Click a game or focus it with the arrow keys and press Enter. On narrow screens, Back or Escape returns to your place in the shelf. Enable **Appearance → Reduce motion** to open panels immediately.
+
+Open **Sources** to connect a platform account and choose **Sync** to import its collection. Under **Local folders**, choose a scanner and a directory to import installations. In game details, **Auto-fill** uses known source IDs, **Identify** lets you search and confirm individual matches, and **Edit info** lets you change fields or restore source values. Choose **Reassign** beside an installation or collection entry to correct its game. The game library Note lists the catalog and Steam key settings. [Game library Note](../../.agents/notes/2026-11-23-mvp-games.en.md)
+
 ## Appearance
 
 Open Appearance at the bottom of the navigation pane, then choose Automatic, Fluent, macOS, or Material under Design system. Automatic follows the platform: macOS uses its macOS theme, Windows/Linux use Fluent, and the future Android mapping uses Material. Color mode independently selects System, Light, or Dark. Choices are saved in `LazyTuiHub/desktop.json` under the local application-data directory, across workspace changes and restarts. For isolated runs, pass `--desktop-settings /path/to/desktop.json` as well as a separate database path.
@@ -61,6 +67,21 @@ mise run test:desktop
 ```
 
 [DesktopUiDriver](../../tests/LazyTuiHub.Tests/DesktopUiDriver.cs) sends Avalonia headless mouse and keyboard input to real controls, resizes windows, and captures Skia-rendered frames. [The layout scenario](../../tests/LazyTuiHub.Tests/DesktopTests.Layout.cs) creates a temporary SQLite workspace and local RSS server, enters a subscription through the form, fetches articles, opens details, marks read, returns with restored focus, and navigates inspectors. It checks all three designs at 1280, 820, and 390 logical units, plus the appearance flyout and dark mode. The task saves PNGs and matching JSON control snapshots (bounds, fonts, foreground colors, enabled/focused states) to ignored `.local/desktop/`; `LAZYTUIHUB_UI_ARTIFACTS` controls capture output when invoking the test runner directly. Tests also run under the normal product test gate without writing screenshots.
+
+Use the headless `mise run test:desktop` for automated interaction checks. On macOS, `open -g -j /path/to/LazyTuiHub.app` starts the packaged app hidden in the background while another application is in use.
+
+The [game library scenario](../../tests/LazyTuiHub.Tests/DesktopTests.Games.cs) checks poster geometry, title colors, stable scope widths and toolbar position, alias search, narrow-screen focus, personal edits, source reset, reassignment and account forms.
+
+For a component-level review, run the following from the repository root. Repeat setup after the reference tool lockfile changes.
+
+```sh
+mise run setup:design-baselines
+mise run review:desktop
+```
+
+Open `.local/desktop-review/index.html` for the latest completed run. Each report retains its own PNG crops and `measurements.json`. The headless scene uses a temporary two-game library, an embedded cover served by a fixture HTTP handler, and a second game with a long title and a monogram. Open a component row to compare pointer entry and exit, keyboard focus, and their combination. The cover also has a separate pass over its title. The report shows the changed pixel envelopes and the remaining difference on exit. It measures the visible center of the button label relative to the plus sign across four antialias cutoffs, with a same-label Microsoft Fluent UI React button for comparison. Negative offsets place the text above the icon.
+
+All three designs run in light and dark modes. The light-mode inspector uses the system motion preference. The dark-mode inspector also exercises the application’s Reduce motion setting. The JSON records elapsed time and opacity for the reveal. Cropped hint and monogram contrast, different hover envelopes and nonoverlapping ink offsets help reviewers choose what to inspect against the relevant design standard. Layout, asset readiness, input delivery and motion endpoints run in the normal product suite. Generating the pixel report is optional and requires no foreground window.
 
 The appearance flyout is checked through its open state, its visual root, and keyboard interaction with its color picker. Captures use the popup’s actual visual root, whether an overlay or a separate window; a missing popup in a computer-use image alone is not evidence that the application failed. Generated images support visual review rather than exact-pixel golden-file gates. The [design-system audit](../../.agents/notes/2026-11-18-mvp-design-systems.en.md) records the library comparison, component ownership and platform limits. Run `mise run setup:design-baselines` once, `mise run render:design-baselines:avalonia` to generate library samples, and `mise run run:design-baselines` to compare them with official interactive references. Headless rendering does not establish native popup placement, operating-system font parity, accessibility, or GPU performance.
 

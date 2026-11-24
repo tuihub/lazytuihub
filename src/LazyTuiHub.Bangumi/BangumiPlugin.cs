@@ -1,49 +1,32 @@
-using System.Text.Json;
 using LazyTuiHub.Games;
+using LazyTuiHub.Plugins;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Bangumi;
 
-public sealed class BangumiPlugin : GameProviderPlugin
+public sealed class BangumiPlugin : SqliteGameProvider
 {
-    private static readonly Uri Api = new("https://api.bgm.tv/v0/");
-    private const int GameType = 4;
-
-    protected override async Task<GameMetadata[]> SearchAsync(HttpClient client, string query, CancellationToken token)
+    public override void Configure(PluginRegistration registration)
     {
-        var result = await RequestAsync(
-            client,
-            new Uri(Api, "search/subjects"),
-            new
-            {
-                keyword = query,
-                sort = "match",
-                filter = new { type = new[] { GameType } },
-            },
-            token
-        );
-        return result.GetProperty("data").EnumerateArray().Select(Map).ToArray();
+        registration.Services.AddSingleton<GameAccountProvider, BangumiAccount>();
+        base.Configure(registration);
     }
 
-    protected override async Task<GameMetadata> LookupAsync(HttpClient client, string id, CancellationToken token)
-    {
-        var row = await RequestAsync(client, new Uri(Api, "subjects/" + NumericId(id)), null, token);
-        if (row.GetProperty("type").GetInt32() != GameType)
-            throw new InvalidOperationException("This Bangumi subject is not a game.");
-        return Map(row);
-    }
+    protected override string Query(bool search) =>
+        """
+            SELECT CAST(id AS TEXT) AS id, name, nullif(name_cn,'') AS alt, nullif(summary,'') AS summary, nullif(date,'') AS date FROM subject
+            WHERE type=4 AND
+            """ + (search ? " id IN (" + MatchingTitles + ") ORDER BY name,id" : " id=$key");
 
-    private static GameMetadata Map(JsonElement row)
-    {
-        var id = row.GetProperty("id").GetRawText();
-        return new(
+    protected override GameMetadata Read(SqliteDataReader row) =>
+        new(
             "bangumi",
-            id,
-            row.GetProperty("name").GetString()!,
-            "https://bgm.tv/subject/" + id,
-            Text(row, "summary"),
-            row.TryGetProperty("images", out var images) ? Text(images, "common") : null,
-            Text(row, "date"),
-            Text(row, "name_cn")
+            row.GetString(0),
+            row.GetString(1),
+            "https://bgm.tv/subject/" + row.GetString(0),
+            Optional(row, "summary"),
+            ReleaseDate: Optional(row, "date"),
+            AlternativeTitle: Optional(row, "alt")
         );
-    }
 }

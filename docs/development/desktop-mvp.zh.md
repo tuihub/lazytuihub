@@ -19,6 +19,12 @@ Workflows 展示已保存的定义、当前本地执行计划和不可执行原�
 
 Plugins 分别展示已保存的启用设置、本次启动的激活状态和文件可用性。启用／关闭在重启后生效，必要插件不能关闭。阅读器（`articles.desktop`）依赖文章插件（`articles`）。关闭 RSS 后，抓取停止，订阅控件隐藏，已保存的文章仍可阅读。插件缺失或关闭时保留页面声明和既有数据；常规保留策略继续遵循存储约定。切换页面会保留页面实例及内存中的选择，重启不会保留选择和筛选条件，外观偏好则单独保存在本机。
 
+## 游戏库
+
+打开 **Games** 浏览封面墙。可以切换到 **List view**，按标题或别名搜索，或选择 **Installed**、**Online**、**Needs match**。点击 **More filters**，在书架上方的浮层中筛选分类和资料来源。单击游戏或用方向键聚焦后按 Enter 打开详情。窄屏使用返回按钮或 Esc 回到原来的浏览位置。在 **Appearance → Reduce motion** 中勾选减少动态效果，面板会立即显示。
+
+打开 **Sources**，选择平台并连接账户，随后点击 **Sync** 导入收藏。本地安装可在 **Local folders** 中选择扫描器和目录。打开游戏详情后，**Auto-fill** 根据来源 ID 补全资料，**Identify** 可手动搜索和确认匹配，**Edit info** 可修改资料或恢复来源值。安装或收藏记录归错游戏时，在该记录旁点击 **Reassign**。[游戏库 Note](../../.agents/notes/2026-11-23-mvp-games.zh.md)
+
 ## 外观
 
 打开导航底部的 Appearance，在 Design system 中选择 Automatic、Fluent、macOS 或 Material。Automatic 按平台选择：macOS 使用 macOS 主题，Windows／Linux 使用 Fluent，未来 Android 的映射为 Material。Color mode 单独选择 System、Light 或 Dark。设置保存在本地应用数据目录下的 `LazyTuiHub/desktop.json`，切换工作区或重启后仍然保留。独立运行时，除了指定数据库路径，还可通过 `--desktop-settings /path/to/desktop.json` 指定独立的外观配置。
@@ -61,6 +67,21 @@ mise run test:desktop
 ```
 
 [DesktopUiDriver](../../tests/LazyTuiHub.Tests/DesktopUiDriver.cs) 向真实控件发送 Avalonia 无窗口鼠标和键盘输入，调整窗口尺寸，并捕获 Skia 绘制的画面。[布局场景](../../tests/LazyTuiHub.Tests/DesktopTests.Layout.cs) 创建临时 SQLite 工作区和本地 RSS 服务，通过表单输入订阅、抓取文章、进入详情、标记已读、返回并恢复焦点，再切换检查器页面。场景检查三套设计在 1280、820、390 个逻辑单位下的布局，以及外观弹层和深色模式。任务将 PNG 及同名 JSON 控件快照（边界、字体、前景色、启用／焦点状态）写入已忽略的 `.local/desktop/`；直接调用测试运行器时，可通过 `LAZYTUIHUB_UI_ARTIFACTS` 指定截图目录。常规产品测试也执行这些场景，但不写截图。
+
+自动检查桌面交互时，优先运行无窗口的 `mise run test:desktop`。在 macOS 上验证打包产物时，可用 `open -g -j /path/to/LazyTuiHub.app` 在后台隐藏启动，避免打断正在使用的应用。
+
+[游戏库交互场景](../../tests/LazyTuiHub.Tests/DesktopTests.Games.cs) 检查封面比例、标题颜色、筛选项宽度和工具栏位置，并通过实际控件验证别名搜索、窄屏返回焦点、资料编辑、字段恢复、归属纠错与账户表单。
+
+要检查控件的绘制细节，在仓库根目录运行以下命令。首次运行或样板工具锁文件变化后执行第一条。
+
+```sh
+mise run setup:design-baselines
+mise run review:desktop
+```
+
+打开 `.local/desktop-review/index.html` 查看最近一次成功生成的报告。每次报告各自保留局部 PNG 和 `measurements.json`。场景在临时游戏库中放入两款游戏，一款通过本地测试处理器返回内嵌封面，另一款使用长标题和首字母占位封面。展开控件行，可比较指针移入、移出、键盘焦点及焦点叠加悬停的效果。卡片另采集指针位于标题时的画面。报告标出变化像素的包围范围和移出后残留的变化，用四档抗锯齿阈值测量按钮文字相对加号的可见中心。负值代表文字偏高。Fluent 附微软官方组件同文案、同图标的实测值。
+
+三套设计均采集浅色和深色。浅色详情面板遵循系统动画偏好，深色场景额外打开应用的“减少动态效果”。JSON 保留面板透明度和对应的经过时间。搜索提示和占位字母的实测对比度、悬停色层的不同边界、互不重叠的字形偏移区间，供审阅者对照设计规范检查。常规产品测试检查布局、资源加载、输入送达和动画起止状态。像素报告按需生成，全程无需前台窗口。
 
 外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。[设计系统审查](../../.agents/notes/2026-11-18-mvp-design-systems.zh.md) 记录组件库对照、产品组件的维护归属和平台边界。首次执行 `mise run setup:design-baselines`，用 `mise run render:design-baselines:avalonia` 生成组件库样板，再用 `mise run run:design-baselines` 对照官方交互参考。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
 

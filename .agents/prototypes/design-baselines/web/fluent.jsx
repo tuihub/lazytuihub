@@ -51,6 +51,7 @@ function App() {
           <Subtitle1 as="h2">Controls and states</Subtitle1>
           <div className="row wrap">
             <Button appearance="primary" icon={<Add20Regular />} data-action="primary" data-measure="primary">Subscribe</Button>
+            <Button appearance="secondary" icon={<Add20Regular />} data-measure="add-game">Add game</Button>
             <Button data-measure="secondary">Mark as read</Button>
             <Button disabled data-measure="disabled">Unavailable</Button>
             <Popover positioning="below-end">

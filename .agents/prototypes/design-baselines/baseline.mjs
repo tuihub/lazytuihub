@@ -170,9 +170,15 @@ async function renderMacOS() {
 await mkdir(output, { recursive: true });
 const [command = 'render', target = 'all'] = process.argv.slice(2);
 if (command === 'setup') await setup();
+else if (command === 'review') {
+  await run(process.execPath, ['--test', 'review-pixels.test.mjs']);
+  const { desktopReview } = await import('./desktop-review.mjs');
+  const { dependencies } = JSON.parse(await readFile(resolve(directory, 'package.json'), 'utf8'));
+  await desktopReview({ repository, run, serve, dependencies });
+}
 else if (command === 'serve') console.log(`Official component specimens: ${(await serve()).url}`);
 else if (command === 'render' && ['all', 'web', 'macos', 'avalonia'].includes(target)) {
   if (target === 'all' || target === 'web') await renderWeb();
   if (target === 'all' || target === 'avalonia') await renderAvalonia();
   if (target === 'all' || target === 'macos') await renderMacOS();
-} else throw new Error('Usage: baseline.mjs setup | serve | render [all|web|macos|avalonia]');
+} else throw new Error('Usage: baseline.mjs setup | serve | review | render [all|web|macos|avalonia]');

@@ -20,19 +20,12 @@ public abstract class GameProviderPlugin : IApplicationPlugin
     public virtual void Configure(PluginRegistration registration)
     {
         var id = registration.Id;
-        var snapshot = registration.Configuration[$"Games:{id}:Snapshot"];
         registration.DataTypes.Add(id + ".game");
         registration.RegisterNodes = (nodes, services) =>
         {
             var http = services.GetRequiredService<HttpClient>();
-            Register<GameMetadata[]>(nodes, id, Search, (query, token) =>
-                snapshot is null
-                    ? SearchAsync(http, query, token)
-                    : GameSnapshot.SearchAsync(snapshot, id, query, token)
-            );
-            Register<GameMetadata>(nodes, id, Lookup, (key, token) =>
-                snapshot is null ? LookupAsync(http, key, token) : GameSnapshot.LookupAsync(snapshot, id, key, token)
-            );
+            Register<GameMetadata[]>(nodes, id, Search, (query, token) => SearchAsync(http, query, token));
+            Register<GameMetadata>(nodes, id, Lookup, (key, token) => LookupAsync(http, key, token));
         };
         foreach (var action in new[] { Search, Lookup, "import" })
             registration.Workflows.Add(Workflow(id, action));

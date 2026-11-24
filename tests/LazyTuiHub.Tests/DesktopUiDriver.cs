@@ -80,23 +80,9 @@ internal sealed class DesktopUiDriver(Window window, CancellationToken token)
         if (string.IsNullOrEmpty(directory))
             return;
         Directory.CreateDirectory(directory);
-        byte[] previous = [];
-        var started = Stopwatch.GetTimestamp();
-        while (true)
-        {
-            using var frame = (root ?? Window).CaptureRenderedFrame();
-            Assert.NotNull(frame);
-            using var image = new MemoryStream();
-            frame.Save(image, new PngBitmapEncoderOptions());
-            var current = image.ToArray();
-            var settled = current.AsSpan().SequenceEqual(previous);
-            previous = current;
-            if (settled || Stopwatch.GetElapsedTime(started) >= TimeSpan.FromSeconds(5))
-                break;
-            await Task.Delay(16, token);
-        }
-        await File.WriteAllBytesAsync(Path.Combine(directory, name + ".png"), previous, token);
         var visualRoot = root ?? Window;
+        var (image, _) = await CaptureFrameAsync(visualRoot);
+        await File.WriteAllBytesAsync(Path.Combine(directory, name + ".png"), image, token);
         var controls = visualRoot
             .GetVisualDescendants()
             .OfType<Control>()
@@ -119,6 +105,25 @@ internal sealed class DesktopUiDriver(Window window, CancellationToken token)
             JsonSerializer.Serialize(controls),
             token
         );
+    }
+
+    public async Task<(byte[] Png, bool Settled)> CaptureFrameAsync(TopLevel root)
+    {
+        byte[] previous = [];
+        var started = Stopwatch.GetTimestamp();
+        while (true)
+        {
+            using var frame = root.CaptureRenderedFrame();
+            Assert.NotNull(frame);
+            using var image = new MemoryStream();
+            frame.Save(image, new PngBitmapEncoderOptions());
+            var current = image.ToArray();
+            var settled = current.AsSpan().SequenceEqual(previous);
+            previous = current;
+            if (settled || Stopwatch.GetElapsedTime(started) >= TimeSpan.FromSeconds(5))
+                return (current, settled);
+            await Task.Delay(16, token);
+        }
     }
 
     private static object? DescribeTypography(Control control) =>

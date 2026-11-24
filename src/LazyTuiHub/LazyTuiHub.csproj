@@ -8,6 +8,7 @@
     <ProjectReference Include="../LazyTuiHub.Cli/LazyTuiHub.Cli.csproj" />
     <ProjectReference Include="../LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
     <ProjectReference Include="../LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <ProjectReference Include="../LazyTuiHub.Games.Desktop/LazyTuiHub.Games.Desktop.csproj" ReferenceOutputAssembly="false" Private="false" />
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
     <ProjectReference Include="../LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
     <ProjectReference Include="../LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
@@ -26,7 +27,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="../LazyTuiHub.Articles.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Articles.Desktop.dll" Link="plugins/articles-desktop/LazyTuiHub.Articles.Desktop.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LazyTuiHub.Games.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.Desktop.dll" Link="plugins/games-desktop/LazyTuiHub.Games.Desktop.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../LazyTuiHub.Articles.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Articles.Desktop.deps.json" Link="plugins/articles-desktop/LazyTuiHub.Articles.Desktop.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LazyTuiHub.Games.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.Desktop.deps.json" Link="plugins/games-desktop/LazyTuiHub.Games.Desktop.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../LazyTuiHub.Games/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.dll" Link="plugins/games/LazyTuiHub.Games.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../LazyTuiHub.Games/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.deps.json" Link="plugins/games/LazyTuiHub.Games.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../LazyTuiHub.Steam/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Steam.dll" Link="plugins/steam/LazyTuiHub.Steam.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

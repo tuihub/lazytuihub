@@ -16,8 +16,13 @@ public sealed class GamesPlugin : IApplicationPlugin
         registration.Services.AddSingleton(services => new GameLibrary(
             registration.Daos,
             registration.Storage,
-            services.GetRequiredService<ResourceAccess>()
+            services.GetRequiredService<ResourceAccess>(),
+            services.GetRequiredService<GameIdIndex>()
         ));
+        registration.Services.AddSingleton<GameIdIndex>();
+        registration.Services.AddSingleton<GameConnections>();
+        registration.Services.AddSingleton<GameCuration>();
+        registration.Services.AddSingleton<IInstallationScanner, FolderScanner>();
         registration.DataTypes.Add("games.game");
         registration.Commands.Add(new(Id, GameCommand.RunAsync));
         registration.RegisterNodes = (nodes, services) =>

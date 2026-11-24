@@ -22,6 +22,7 @@ public sealed class MaterialInk : Control
     private Point origin;
     private TimeSpan? release;
     private bool framePending;
+    private bool reduced;
 
     public bool Pressed
     {
@@ -59,6 +60,7 @@ public sealed class MaterialInk : Control
             return;
         if (Pressed)
         {
+            reduced = DesktopMotion.Reduced;
             origin = pointer ?? new Rect(Bounds.Size).Center;
             pointer = null;
             elapsed.Restart();
@@ -72,6 +74,13 @@ public sealed class MaterialInk : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
+        if (reduced)
+        {
+            if (Pressed && TextElement.GetForeground(this) is { } ink)
+                using (context.PushOpacity(PressedOpacity))
+                    context.FillRectangle(ink, new Rect(Bounds.Size));
+            return;
+        }
         if (!elapsed.IsRunning)
             return;
         var now = elapsed.Elapsed;

@@ -17,16 +17,22 @@ public sealed class DataCatalog(SqliteDatabase database)
         command.ExecuteNonQuery();
     }
 
-    private static void Relate(DbConnection connection, DbTransaction transaction, DataRelation relation)
+    private static void Relate(DbConnection connection, DbTransaction transaction, DataRelation relation, bool remove)
     {
         if (!string.Equals(relation.Source.Account, relation.Target.Account, StringComparison.Ordinal))
             throw new ArgumentException("Relations must stay within the same account.", nameof(relation));
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = """
-            INSERT INTO data_relations(account, source_type, source_key, target_type, target_key, kind)
-            VALUES ($account, $sourceType, $sourceKey, $targetType, $targetKey, $kind) ON CONFLICT DO NOTHING
-            """;
+        if (remove)
+            command.CommandText = """
+                DELETE FROM data_relations WHERE account=$account AND source_type=$sourceType AND source_key=$sourceKey
+                AND target_type=$targetType AND target_key=$targetKey AND kind=$kind
+                """;
+        else
+            command.CommandText = """
+                INSERT INTO data_relations(account, source_type, source_key, target_type, target_key, kind)
+                VALUES ($account, $sourceType, $sourceKey, $targetType, $targetKey, $kind) ON CONFLICT DO NOTHING
+                """;
         command.AddValue("$account", relation.Source.Account);
         command.AddValue("$sourceType", relation.Source.Type);
         command.AddValue("$sourceKey", relation.Source.Key);
@@ -40,8 +46,10 @@ public sealed class DataCatalog(SqliteDatabase database)
     {
         foreach (var reference in change.Objects)
             Register(connection, transaction, reference);
+        foreach (var relation in change.RemovedRelations ?? [])
+            Relate(connection, transaction, relation, true);
         foreach (var relation in change.Relations)
-            Relate(connection, transaction, relation);
+            Relate(connection, transaction, relation, false);
     }
 
     public IReadOnlyList<DataRelation> ReadRelations(DataReference source)
