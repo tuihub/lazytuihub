@@ -6,8 +6,8 @@
     x:DataType="local:GamePageModel"
     KeyDown="HandleKey"
 >
-    <UserControl.Styles>
-        <Style Selector="Button.coverCard">
+    <UserControl.Resources>
+        <ControlTheme x:Key="CoverCardTheme" TargetType="Button">
             <Setter Property="FocusAdorner" Value="{x:Null}" />
             <Setter Property="VerticalAlignment" Value="Top" /><Setter
                 Property="HorizontalAlignment"
@@ -36,7 +36,9 @@
                     </Border>
                 </ControlTemplate>
             </Setter>
-        </Style>
+        </ControlTheme>
+    </UserControl.Resources>
+    <UserControl.Styles>
         <Style Selector="Button.coverCard:pointerover /template/ Border#CardFrame">
             <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
         </Style>
@@ -91,7 +93,7 @@
                             <PathIcon
                                 Classes="action inline"
                                 Data="{DynamicResource ActionIconAdd}"
-                            /><TextBlock Text="Add game" />
+                            /><TextBlock Classes="inline-action-label" Text="Add game" />
                         </StackPanel>
                     </Button>
                 </WrapPanel>
@@ -301,6 +303,7 @@
                                 <ItemsRepeater.ItemTemplate>
                                     <DataTemplate x:DataType="local:GameCard">
                                         <Button
+                                            Theme="{StaticResource CoverCardTheme}"
                                             Classes="coverCard"
                                             Classes.chosen="{Binding IsSelected}"
                                             AutomationProperties.Name="{Binding Game.Title}"
@@ -371,6 +374,7 @@
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate x:DataType="local:GameCard">
                                     <Button
+                                        Theme="{StaticResource CoverCardTheme}"
                                         Classes="coverCard"
                                         Classes.chosen="{Binding IsSelected}"
                                         HorizontalAlignment="Stretch"

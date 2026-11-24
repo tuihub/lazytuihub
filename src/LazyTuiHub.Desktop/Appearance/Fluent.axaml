@@ -90,6 +90,11 @@
         </ResourceDictionary>
     </Styles.Resources>
     <FluentTheme />
+    <Style Selector="TextBlock.inline-action-label">
+        <Setter Property="LineHeight" Value="{DynamicResource CaptionLineHeight}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
     <Style Selector="Button.accent">
         <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>

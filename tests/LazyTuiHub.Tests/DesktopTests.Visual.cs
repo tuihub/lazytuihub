@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Net;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Games;
@@ -120,7 +122,18 @@ public sealed partial class DesktopTests
         var icon = add.GetVisualDescendants().OfType<PathIcon>().Single();
         var scene = new DesktopVisualScene(driver, "games", design, mode);
         var frame = card.GetVisualDescendants().OfType<Border>().Single(c => c.Name == "CardFrame");
-        scene.Interaction("card", "Cover card", card, poster, title);
+        var content = Assert.IsType<ContentPresenter>(frame.Child);
+        scene.Interaction("card", "Cover card", card, poster, title, checkHover: () =>
+        {
+            Assert.True(
+                frame.Background is ISolidColorBrush { Color.A: > 0, Opacity: > 0 },
+                "The card has no hover surface."
+            );
+            Assert.True(
+                content.Background is null or ISolidColorBrush { Color.A: 0 },
+                "The content paints a second hover surface."
+            );
+        });
         scene.Interaction("add", "Add game", add);
         scene.IconLabel("add", icon, label, fluentSpecimen: "add-game");
         scene.Interaction("chip", "Selected filter", chip);
@@ -151,6 +164,12 @@ public sealed partial class DesktopTests
         Assert.True(buttonBounds.Contains(DesktopVisualScene.Bounds(label, window)));
         Assert.True(buttonBounds.Contains(DesktopVisualScene.Bounds(icon, window)));
         Assert.True(label.TextLayout.Width <= label.Bounds.Width && label.TextLayout.Height <= label.Bounds.Height);
+        if (design == DesignSystem.Fluent)
+        {
+            var lineCenter = DesktopVisualScene.Bounds(label, window).Top + label.TextLayout.TextLines[0].Height / 2;
+            var iconCenter = DesktopVisualScene.Bounds(icon, window).Center.Y;
+            Assert.InRange(Math.Abs(lineCenter - iconCenter), 0, 0.5 / window.RenderScaling);
+        }
         await scene.CheckAsync(neutral, () => ObserveRevealAsync(driver, card, token));
     }
 
