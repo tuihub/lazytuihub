@@ -60,7 +60,7 @@ Fluent 使用 Avalonia 官方主题；macOS 使用 Devolutions 主题，尚未�
 mise run test:desktop
 ```
 
-[DesktopUiDriver](../../tests/LazyTuiHub.Tests/DesktopUiDriver.cs) 向真实控件发送 Avalonia 无窗口鼠标和键盘输入，调整窗口尺寸，并捕获 Skia 绘制的画面。[布局场景](../../tests/LazyTuiHub.Tests/DesktopTests.Layout.cs) 创建临时 SQLite 工作区和本地 RSS 服务，通过表单输入订阅、抓取文章、进入详情、标记已读、返回并恢复焦点，再切换检查器页面。场景检查三套设计在 1280、820、390 个逻辑单位下的布局，以及外观弹层和深色模式。任务将 PNG 及同名 JSON 控件快照（边界、字体、前景色、启用／焦点状态）写入已忽略的 `artifacts/desktop/`；直接调用测试运行器时，可通过 `LAZYTUIHUB_UI_ARTIFACTS` 指定截图目录。常规产品测试也执行这些场景，但不写截图。
+[DesktopUiDriver](../../tests/LazyTuiHub.Tests/DesktopUiDriver.cs) 向真实控件发送 Avalonia 无窗口鼠标和键盘输入，调整窗口尺寸，并捕获 Skia 绘制的画面。[布局场景](../../tests/LazyTuiHub.Tests/DesktopTests.Layout.cs) 创建临时 SQLite 工作区和本地 RSS 服务，通过表单输入订阅、抓取文章、进入详情、标记已读、返回并恢复焦点，再切换检查器页面。场景检查三套设计在 1280、820、390 个逻辑单位下的布局，以及外观弹层和深色模式。任务将 PNG 及同名 JSON 控件快照（边界、字体、前景色、启用／焦点状态）写入已忽略的 `.local/desktop/`；直接调用测试运行器时，可通过 `LAZYTUIHUB_UI_ARTIFACTS` 指定截图目录。常规产品测试也执行这些场景，但不写截图。
 
 外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。[设计系统审查](../../.agents/notes/2026-11-18-mvp-design-systems.zh.md) 记录组件库对照、产品组件的维护归属和平台边界。首次执行 `mise run setup:design-baselines`，用 `mise run render:design-baselines:avalonia` 生成组件库样板，再用 `mise run run:design-baselines` 对照官方交互参考。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
 

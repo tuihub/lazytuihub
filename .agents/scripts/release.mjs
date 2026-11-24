@@ -20,7 +20,7 @@ async function release() {
     const rid = requested ?? execFileSync('dotnet', ['msbuild', host, '-getProperty:NETCoreSdkPortableRuntimeIdentifier'], {encoding: 'utf8'}).trim();
     if (extra.length || !/^[a-z0-9][a-z0-9.-]*$/i.test(rid)) throw new Error('Usage: mise run release [runtime-identifier]');
 
-    const root = resolve('artifacts/release');
+    const root = resolve('.local/release');
     await mkdir(root, {recursive: true});
     await using stage = await mkdtempDisposable(join(root, '.publish-'));
     const output = join(stage.path, 'release');

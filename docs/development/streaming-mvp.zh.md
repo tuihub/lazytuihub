@@ -41,7 +41,7 @@ NodeRegistry.Register 接收具名、有类型的输入／输出声明和一个�
 
 ## 跨实例运行
 
-准备 Docker 引擎和 Compose，运行 `mise run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `artifacts/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。
+准备 Docker 引擎和 Compose，运行 `mise run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。
 
 | 配置 | 用途 |
 | --- | --- |
@@ -82,11 +82,11 @@ demo:rss 自建本地 RSS fixture、临时 SQLite 和 HTTP 服务，验证本地
 
 ```sh
 mise run run -- --command rss --action help
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action feeds
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
-mise run run -- --database ./artifacts/rss/workspace.db --command articles --action list --unread true
-mise run run -- --database ./artifacts/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
+mise run run -- --database .local/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
+mise run run -- --database .local/rss/workspace.db --command rss --action feeds
+mise run run -- --database .local/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
+mise run run -- --database .local/rss/workspace.db --command articles --action list --unread true
+mise run run -- --database .local/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
 ```
 
 将 feed URI 替换成实际地址。add 返回订阅名称，articles list 返回文章名称和后续分页 token，通过 --page-token 继续查询。read 标记已读并输出 Proto JSON，不执行 HTML。
@@ -94,7 +94,7 @@ mise run run -- --database ./artifacts/rss/workspace.db --command articles --act
 不传 --database 时，工作区位于系统 LocalApplicationData 下的 LazyTuiHub/workspace.db。启动 HTTP 服务同时启动可用且所需工作流能生成计划的插件任务，首次创建图时默认周期为 15 分钟，可用 --refresh-interval 00:05:00 修改；已有图定义保留。定时器积压采用 PeriodicTimer 合并，不重放每个错过的时刻。刷新失败记录日志，在下一周期重试。
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:5080
+mise run run -- --database .local/rss/workspace.db --urls http://127.0.0.1:5080
 ```
 
 ## 启用账户与资源授权
@@ -103,9 +103,9 @@ mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:
 
 ```sh
 mise run run -- --command access --action login --endpoint https://primary.example --username admin
-mise run run -- --database ./artifacts/account/workspace.db --command access --action create-user --username reader
-mise run run -- --database ./artifacts/account/workspace.db --command access --action set-device-owner --device fetcher --username admin
-mise run run -- --database ./artifacts/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
+mise run run -- --database .local/account/workspace.db --command access --action create-user --username reader
+mise run run -- --database .local/account/workspace.db --command access --action set-device-owner --device fetcher --username admin
+mise run run -- --database .local/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
 ```
 
 登录时终端隐藏密码。将结果中的会话令牌通过 `Access__Session` 传给主节点上运行的管理命令、本地 CLI 或桌面。远程请求在 `Authorization` 头中携带 Bearer 令牌，默认访问自己的账户。需要访问获分享的资源时，用 `X-LazyTuiHub-Account` 选择目标账户。分享订阅可将 `--uri` 设为 `lazytuihub://rss/accounts/ACCOUNT_ID/feeds/FEED_ID` 并授予 `read`。撤权将同一命令的 `--action` 改为 `revoke`，省略 `--mode`。远程会话用同一 HTTPS 地址执行 `--action logout` 撤销。
@@ -117,11 +117,11 @@ mise run run -- --database ./artifacts/account/workspace.db --command access --a
 宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将 core、rss、articles、articles.desktop、storage.sqlite 入口 DLL 及依赖描述放入对应目录。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action inspect --plugin rss
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action disable --plugin rss
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action enable --plugin rss
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
+mise run run -- --database .local/rss/workspace.db --command plugins --action list
+mise run run -- --database .local/rss/workspace.db --command plugins --action inspect --plugin rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action disable --plugin rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action enable --plugin rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
 ```
 
 修改在重启后生效。list 分别展示保存的启用意图、文件可用性、激活结果和任务资格；inspect 包含保留的节点／端口／数据类型及 DAO 声明和不透明配置。RSS 配置可写为 {"refreshInterval":"00:05:00","detailRetention":"7.00:00:00"}，未知字段保留。detailRetention 可省略，默认 null（长期保留）；正时长为新抓取观察记录设置到期时间，修改配置不改写已有记录。周期用于初始化新默认图及控制失败重试等待；已有定时器周期需修改图内节点参数，存储的图优先于新默认值。
@@ -143,13 +143,13 @@ mise run run -- --database ./artifacts/rss/workspace.db --command plugins --acti
 RSS 在解析入口记录成功 HTTP 抓取的 URL、字节数和完成时间，不保存响应正文、输入检查点或重放状态。文章单独长期保存。搜索暂时使用 FTS5 查询语法返回文章 ID；全文搜索通过 articles search 命令提供。
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command articles --action search --query example
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action details --include-expired true
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action list
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action clean
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command articles --action search --query example
+mise run run -- --database .local/rss/workspace.db --command rss --action details --include-expired true
+mise run run -- --database .local/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
+mise run run -- --database .local/rss/workspace.db --command dao --action list
+mise run run -- --database .local/rss/workspace.db --command dao --action clean
+mise run run -- --database .local/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
 ```
 
 统一清理只处理 PluginRegistration.Retentions 显式持久委托的目标；使用模板本身不授权清理。RSS 委托 fetch_details 表。存储插件在 HTTP 服务启动时清理一次，随后默认每分钟执行；其 cleanupInterval 配置影响调度，不决定数据到期时间。CLI 模式不启动后台任务。每个目标通过单条 DELETE 删除到期记录，暂不承诺工作量预算或分批处理；逐目标独立保留最近尝试、删除数量及错误。
@@ -159,9 +159,9 @@ mise run run -- --database ./artifacts/rss/workspace.db --command dao --action r
 ## 查看和编辑图
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action nodes
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action definition --pipeline-name rss.ingest
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-name rss.ingest
+mise run run -- --database .local/rss/workspace.db --command workflow --action nodes
+mise run run -- --database .local/rss/workspace.db --command workflow --action definition --pipeline-name rss.ingest
+mise run run -- --database .local/rss/workspace.db --command workflow --action plan --pipeline-name rss.ingest
 ```
 
 nodes 描述已激活的具名端口、载荷类型和交付方式；definition 输出可编辑的图 JSON；plan 展示放置和端口连线。连接的格式如下：
@@ -173,11 +173,11 @@ nodes 描述已激活的具名端口、载荷类型和交付方式；definition 
 将 definition 输出保存为 JSON 文件并编辑，再运行或保存。plan 和 run/watch 接受 --pipeline-file 或 --pipeline-name。save 按名称替换存储定义并报告可执行性，保留缺失节点和 pluginId 来源；plan 报告缺失实现和归属，执行要求有效计划；当前运行保留自己的计划，后续运行读取新定义。--progress true 将节点和同步进度写入 stderr；Ctrl+C 取消 run/watch。
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action run --pipeline-file ./pipeline.json --progress true
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action watch --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action save --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action relations --data-type rss.feed --data-key FEED_ID
+mise run run -- --database .local/rss/workspace.db --command workflow --action plan --pipeline-file ./pipeline.json
+mise run run -- --database .local/rss/workspace.db --command workflow --action run --pipeline-file ./pipeline.json --progress true
+mise run run -- --database .local/rss/workspace.db --command workflow --action watch --pipeline-file ./pipeline.json
+mise run run -- --database .local/rss/workspace.db --command workflow --action save --pipeline-file ./pipeline.json
+mise run run -- --database .local/rss/workspace.db --command workflow --action relations --data-type rss.feed --data-key FEED_ID
 ```
 
 ## 添加节点与当前边界

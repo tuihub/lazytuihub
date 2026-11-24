@@ -8,7 +8,7 @@
 mise run release
 ```
 
-指定 .NET 运行时标识可面向其他系统或架构构建，例如 `mise run release win-x64`、`mise run release linux-arm64` 或 `mise run release osx-arm64`。从 `artifacts/release/<rid>/` 复制所需的完整包。每个包自带 JIT 运行时，用户无需安装 mise、.NET SDK 或共享运行时。
+指定 .NET 运行时标识可面向其他系统或架构构建，例如 `mise run release win-x64`、`mise run release linux-arm64` 或 `mise run release osx-arm64`。从 `.local/release/<rid>/` 复制所需的完整包。每个包自带 JIT 运行时，用户无需安装 mise、.NET SDK 或共享运行时。
 
 | 产品包 | 启动入口 |
 | --- | --- |

@@ -20,12 +20,12 @@ mise run render:design-baselines:avalonia
 mise run run:design-baselines
 ```
 
-`setup` installs the local packages, downloads Playwright's Chromium headless shell into `artifacts/design-baselines/browsers/`, and caches Google's Roboto font in `artifacts/design-baselines/web/fonts/`. It records font URLs in `sources.json`. Rendering then uses local assets. `serve` prints a loopback URL for interactive Fluent and Material references and an Avalonia image gallery; stop it with Ctrl+C. The gallery switches between light/dark and five states, with links to measurements. `render` without a target runs Web, macOS, and Avalonia captures. The native target needs macOS, an available desktop session, and Xcode command-line tools. It briefly displays its own window, then closes it.
+`setup` installs the local packages, downloads Playwright's Chromium headless shell into `.local/design-baselines/browsers/`, and caches Google's Roboto font in `.local/design-baselines/web/fonts/`. It records font URLs in `sources.json`. Rendering then uses local assets. `serve` prints a loopback URL for interactive Fluent and Material references and an Avalonia image gallery; stop it with Ctrl+C. The gallery switches between light/dark and five states, with links to measurements. `render` without a target runs Web, macOS, and Avalonia captures. The native target needs macOS, an available desktop session, and Xcode command-line tools. It briefly displays its own window, then closes it.
 
 After building the native target, its interactive form is:
 
 ```sh
-artifacts/design-baselines/appkit-baseline artifacts/design-baselines --interactive
+.local/design-baselines/appkit-baseline .local/design-baselines --interactive
 ```
 
 The native interactive window retains real control behavior, including editable text, selectors, switches, a popover, and button actions. Terminate its process after inspection. No computer-use tool is required by these entry points.
@@ -48,7 +48,7 @@ Every completed Web PNG has a JSON companion with component and shadow-DOM geome
 
 The native runner currently writes four main-view PNG/JSON pairs and two popover PNGs. On the tested macOS 26.6.2 session, `keyWindow` was false. These files preserve debugging evidence; do not use the defective images as golden files. Readable text with a normal font weight can still look heavier under a different font or renderer, so perceived weight alone is not a diagnosis.
 
-The Avalonia program loads Avalonia Fluent, Devolutions macOS, Material.Avalonia, FluentAvalonia and CCSWE Material 3. Each library runs in a separate process, exercises button/text/selector/flyout input in light and dark modes, and captures default, hover, focus, pressed and popup states. Output lives in `artifacts/design-baselines/web/avalonia/`. JSON records control bounds, focus and requested/resolved primary typeface; it does not enumerate per-character fallback glyphs. Specimen title/body sizes arrange the page and do not certify the library's complete type scale.
+The Avalonia program loads Avalonia Fluent, Devolutions macOS, Material.Avalonia, FluentAvalonia and CCSWE Material 3. Each library runs in a separate process, exercises button/text/selector/flyout input in light and dark modes, and captures default, hover, focus, pressed and popup states. Output lives in `.local/design-baselines/web/avalonia/`. JSON records control bounds, focus and requested/resolved primary typeface; it does not enumerate per-character fallback glyphs. Specimen title/body sizes arrange the page and do not certify the library's complete type scale.
 
 Each process also attaches/removes four new theme instances, performs available disposal/vendor cleanup, collects garbage and records weak-reference reachability in `*-retention.json`. This identifies retained theme objects in the live headless application; it does not measure heap growth or certify leak freedom. The probe does not fail a library merely because its retention count differs.
 

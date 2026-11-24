@@ -20,12 +20,12 @@ mise run render:design-baselines:avalonia
 mise run run:design-baselines
 ```
 
-`setup` 安装局部依赖，将 Playwright 的 Chromium headless shell 下载到 `artifacts/design-baselines/browsers/`，将 Google 提供的 Roboto 字体缓存到 `artifacts/design-baselines/web/fonts/`，并在 `sources.json` 中记录字体来源。之后渲染使用本地资源。`serve` 输出回环地址，可交互查看 Fluent、Material 官方参考和 Avalonia 图片对照，按 Ctrl+C 结束。对照页支持切换浅色／深色及五种状态，并提供指标链接。不带目标的 `render` 运行 Web、macOS 和 Avalonia 截图。原生目标需要 macOS、可用的桌面会话和 Xcode 命令行工具；运行时会短暂显示自己的窗口，然后关闭。
+`setup` 安装局部依赖，将 Playwright 的 Chromium headless shell 下载到 `.local/design-baselines/browsers/`，将 Google 提供的 Roboto 字体缓存到 `.local/design-baselines/web/fonts/`，并在 `sources.json` 中记录字体来源。之后渲染使用本地资源。`serve` 输出回环地址，可交互查看 Fluent、Material 官方参考和 Avalonia 图片对照，按 Ctrl+C 结束。对照页支持切换浅色／深色及五种状态，并提供指标链接。不带目标的 `render` 运行 Web、macOS 和 Avalonia 截图。原生目标需要 macOS、可用的桌面会话和 Xcode 命令行工具；运行时会短暂显示自己的窗口，然后关闭。
 
 构建原生目标后，也可以交互运行：
 
 ```sh
-artifacts/design-baselines/appkit-baseline artifacts/design-baselines --interactive
+.local/design-baselines/appkit-baseline .local/design-baselines --interactive
 ```
 
 原生交互窗口保留文本编辑、选择器、开关、弹层及按钮行为。检查完毕后结束进程。这些入口均不依赖 computer use 工具。
@@ -48,7 +48,7 @@ Web 入口捕获两种主题下的 1120 CSS 像素布局和 430 像素布局，�
 
 原生入口目前生成四组主视图 PNG/JSON 和两张弹层 PNG。在已测试的 macOS 26.6.2 会话中，`keyWindow` 为 false。这些文件保留调试证据，不能将存在缺陷的图片当成 golden files。即使字重为 normal，不同字体和渲染器仍可能造成偏粗观感，不能仅凭观感诊断字重设置。
 
-Avalonia 程序加载 Avalonia Fluent、Devolutions macOS、Material.Avalonia、FluentAvalonia 和 CCSWE Material 3。每套库在独立进程中运行，分别在浅色和深色下操作按钮、文本、选择器和弹层，捕获默认、悬停、焦点、按下和弹层状态。输出位于 `artifacts/design-baselines/web/avalonia/`。JSON 记录控件边界、焦点、请求和解析后的主字体，不逐字记录回退字形。样板的标题／正文字号用于页面编排，不证明组件库的完整排版尺度符合设计规范。
+Avalonia 程序加载 Avalonia Fluent、Devolutions macOS、Material.Avalonia、FluentAvalonia 和 CCSWE Material 3。每套库在独立进程中运行，分别在浅色和深色下操作按钮、文本、选择器和弹层，捕获默认、悬停、焦点、按下和弹层状态。输出位于 `.local/design-baselines/web/avalonia/`。JSON 记录控件边界、焦点、请求和解析后的主字体，不逐字记录回退字形。样板的标题／正文字号用于页面编排，不证明组件库的完整排版尺度符合设计规范。
 
 每个进程还挂载、移除四个新主题实例，调用可用的释放和库清理入口，执行垃圾回收，并将弱引用可达性写入 `*-retention.json`。它用于发现运行中的无窗口应用仍持有的主题对象，不测量堆增长，也不证明完全没有泄漏；工具不会仅因保留数量不同就判定组件库测试失败。
 

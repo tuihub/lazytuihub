@@ -41,7 +41,7 @@ The planner combines each node descriptor's required resource with any extra res
 
 ## Running across instances
 
-Use `mise run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `artifacts/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration.
+Use `mise run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration.
 
 | Setting | Purpose |
 | --- | --- |
@@ -82,11 +82,11 @@ demo:rss creates a local RSS fixture, temporary SQLite database, and HTTP servic
 
 ```sh
 mise run run -- --command rss --action help
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action feeds
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
-mise run run -- --database ./artifacts/rss/workspace.db --command articles --action list --unread true
-mise run run -- --database ./artifacts/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
+mise run run -- --database .local/rss/workspace.db --command rss --action add --feed-url https://example.com/feed.xml --title Example
+mise run run -- --database .local/rss/workspace.db --command rss --action feeds
+mise run run -- --database .local/rss/workspace.db --command rss --action refresh --name feeds/FEED_ID
+mise run run -- --database .local/rss/workspace.db --command articles --action list --unread true
+mise run run -- --database .local/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
 ```
 
 Replace the feed URI with a real address. add returns the subscription name; articles list returns article names and a continuation token, accepted by --page-token. read marks the article read and prints Proto JSON without executing HTML.
@@ -94,7 +94,7 @@ Replace the feed URI with a real address. add returns the subscription name; art
 Without --database, the workspace is LazyTuiHub/workspace.db under system LocalApplicationData. Hosting HTTP starts available plugin tasks whose required workflows can plan. The initial graph uses a 15-minute interval, configurable with --refresh-interval 00:05:00 when first created; existing graph definitions are preserved. Timer backlog uses PeriodicTimer coalescing without replaying every missed tick. Refresh failures are logged and retried on the next interval.
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --urls http://127.0.0.1:5080
+mise run run -- --database .local/rss/workspace.db --urls http://127.0.0.1:5080
 ```
 
 ## Enabling accounts and resource authorization
@@ -103,9 +103,9 @@ Use a fresh SQLite workspace. Set `Access__Enabled=true` on the primary and supp
 
 ```sh
 mise run run -- --command access --action login --endpoint https://primary.example --username admin
-mise run run -- --database ./artifacts/account/workspace.db --command access --action create-user --username reader
-mise run run -- --database ./artifacts/account/workspace.db --command access --action set-device-owner --device fetcher --username admin
-mise run run -- --database ./artifacts/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
+mise run run -- --database .local/account/workspace.db --command access --action create-user --username reader
+mise run run -- --database .local/account/workspace.db --command access --action set-device-owner --device fetcher --username admin
+mise run run -- --database .local/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
 ```
 
 The terminal hides the password prompt input. Supply the session token from the response through `Access__Session` for administration on the primary, local CLI, or the desktop app. Remote requests use the Bearer token in the `Authorization` header and select the user's own account by default. To access a shared resource, select its account with `X-LazyTuiHub-Account`. To share a subscription, set `--uri` to `lazytuihub://rss/accounts/ACCOUNT_ID/feeds/FEED_ID` and grant `read`. Revoke a grant using `--action revoke` with the same URI and username. Revoke a remote session with `--action logout` and the same HTTPS endpoint.
@@ -117,11 +117,11 @@ In account mode, the coordinator selects a fetcher using both its advertised res
 The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core, rss, articles, articles.desktop, and storage.sqlite entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action list
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action inspect --plugin rss
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action disable --plugin rss
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action enable --plugin rss
-mise run run -- --database ./artifacts/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
+mise run run -- --database .local/rss/workspace.db --command plugins --action list
+mise run run -- --database .local/rss/workspace.db --command plugins --action inspect --plugin rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action disable --plugin rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action enable --plugin rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
 ```
 
 Changes apply on restart. list separates saved enablement, file availability, activation, and task eligibility; inspect includes retained node/port/data-type and DAO declarations plus opaque settings. RSS settings may contain {"refreshInterval":"00:05:00","detailRetention":"7.00:00:00"}; unknown fields survive. detailRetention is optional and defaults to null (permanent). A positive duration sets expiry on new fetch observations; changing it leaves existing rows unchanged. The interval initializes new default graphs and controls retry delay; edit an existing timer node's settings to change its cadence. Stored graphs take precedence over new defaults.
@@ -143,13 +143,13 @@ The common record tool creates a key/JSON/nullable-expiry table. Put replaces bo
 RSS records successful HTTP fetch URL, byte count, and completion time at parse ingress. It does not retain the response body, input checkpoints, or replay state. Article storage remains separate and permanent. Search currently returns article IDs using FTS5 query syntax; the articles search command exposes full-text search.
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command articles --action search --query example
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action details --include-expired true
-mise run run -- --database ./artifacts/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action list
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action clean
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
-mise run run -- --database ./artifacts/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command articles --action search --query example
+mise run run -- --database .local/rss/workspace.db --command rss --action details --include-expired true
+mise run run -- --database .local/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
+mise run run -- --database .local/rss/workspace.db --command dao --action list
+mise run run -- --database .local/rss/workspace.db --command dao --action clean
+mise run run -- --database .local/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
 ```
 
 Common cleanup only visits explicitly persisted PluginRegistration.Retentions delegations; using a template alone does not authorize cleanup. RSS delegates its fetch_details table. The storage plugin cleans once at HTTP server startup and then every minute by default; its cleanupInterval setting changes scheduling, not expiry. CLI mode starts no background tasks. Each delegated table uses a single DELETE of expired records without a work budget or batching promise. Target errors are retained independently with the last attempt and deletion count.
@@ -159,9 +159,9 @@ Delegation survives owner disablement/absence, so cleanup continues when the pro
 ## Inspecting and editing graphs
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action nodes
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action definition --pipeline-name rss.ingest
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-name rss.ingest
+mise run run -- --database .local/rss/workspace.db --command workflow --action nodes
+mise run run -- --database .local/rss/workspace.db --command workflow --action definition --pipeline-name rss.ingest
+mise run run -- --database .local/rss/workspace.db --command workflow --action plan --pipeline-name rss.ingest
 ```
 
 nodes describes active named ports, payload types, and delivery modes; definition prints editable graph JSON; plan prints placement and port connections. A connection has this shape:
@@ -173,11 +173,11 @@ nodes describes active named ports, payload types, and delivery modes; definitio
 Save definition output to a JSON file and edit it, then run or save it. plan and run/watch accept --pipeline-file or --pipeline-name. save replaces the stored definition by name and reports feasibility, preserving missing nodes and pluginId provenance. plan reports missing implementations and owners; execution requires a valid plan. Active runs keep their plan; later runs use the new definition. --progress true writes node and synchronization progress to stderr. Ctrl+C cancels run/watch.
 
 ```sh
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action plan --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action run --pipeline-file ./pipeline.json --progress true
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action watch --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action save --pipeline-file ./pipeline.json
-mise run run -- --database ./artifacts/rss/workspace.db --command workflow --action relations --data-type rss.feed --data-key FEED_ID
+mise run run -- --database .local/rss/workspace.db --command workflow --action plan --pipeline-file ./pipeline.json
+mise run run -- --database .local/rss/workspace.db --command workflow --action run --pipeline-file ./pipeline.json --progress true
+mise run run -- --database .local/rss/workspace.db --command workflow --action watch --pipeline-file ./pipeline.json
+mise run run -- --database .local/rss/workspace.db --command workflow --action save --pipeline-file ./pipeline.json
+mise run run -- --database .local/rss/workspace.db --command workflow --action relations --data-type rss.feed --data-key FEED_ID
 ```
 
 ## Adding nodes and current boundaries

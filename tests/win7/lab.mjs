@@ -9,7 +9,7 @@ const [action, input, snapshot] = process.argv.slice(2);
 if (!input || !['install', 'run'].includes(action)) {
     throw new Error('Use install WINDOWS_ISO or run PAYLOAD_DIRECTORY [BASE_DISK].');
 }
-const root = resolve('artifacts/win7');
+const root = resolve('.local/win7');
 const base = action === 'run' && snapshot ? resolve(snapshot) : join(root, 'base.qcow2');
 const source = fileURLToPath(new URL('.', import.meta.url));
 await mkdir(root, {recursive: true});
@@ -72,7 +72,7 @@ async function run() {
     await access(join(payload, 'test.cmd'));
     const iso = join(work, 'payload.iso');
     const disk = join(work, 'overlay.qcow2');
-    const release = resolve('artifacts/release/win-x64');
+    const release = resolve('.local/release/win-x64');
     await image(payload, iso, '-graft-points', 'host=' + join(release, 'host'), 'cli=' + join(release, 'cli'));
     await exec('qemu-img', ['create', '-f', 'qcow2', '-F', 'qcow2', '-b', base, disk]);
     await boot(disk, cd(iso, 2));

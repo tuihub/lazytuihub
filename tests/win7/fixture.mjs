@@ -9,7 +9,7 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 // Supply an isolated account, one article, and a private TLS trust chain for a real server.
-const payload = resolve(process.argv[2] ?? 'artifacts/win7/fixture');
+const payload = resolve(process.argv[2] ?? '.local/win7/fixture');
 const app = execFileSync('dotnet', [
     'msbuild', 'src/LazyTuiHub/LazyTuiHub.csproj', '-p:Configuration=Release', '-getProperty:TargetPath'
 ], {encoding: 'utf8', env: {...process.env, DOTNET_CLI_USE_MSBUILD_SERVER: '0'}}).trim();

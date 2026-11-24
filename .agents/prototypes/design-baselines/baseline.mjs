@@ -7,7 +7,7 @@ import os from 'node:os';
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const repository = resolve(directory, '../../..');
-const output = resolve(repository, 'artifacts/design-baselines');
+const output = resolve(repository, '.local/design-baselines');
 const site = resolve(output, 'web');
 process.env.PLAYWRIGHT_BROWSERS_PATH = resolve(output, 'browsers');
 

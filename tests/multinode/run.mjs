@@ -8,7 +8,7 @@ import {publishHost} from '../../.agents/scripts/release.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const project = 'lazytuihub-test-' + randomUUID().slice(0, 8);
-const artifacts = path.join(root, 'artifacts/multinode');
+const artifacts = path.join(root, '.local/multinode');
 await mkdir(artifacts, {recursive: true});
 await using publish = await mkdtempDisposable(path.join(artifacts, 'publish-'));
 const platform = process.env.DOCKER_DEFAULT_PLATFORM
