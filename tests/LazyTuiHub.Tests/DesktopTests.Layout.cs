@@ -19,6 +19,7 @@ namespace LazyTuiHub.Tests;
 public sealed partial class DesktopTests
 {
     [Fact]
+    [Trait(DesktopVisualScene.Trait, "true")]
     public async Task ReaderCanBeDrivenWithPointerAndKeyboard()
     {
         var token = TestContext.Current.CancellationToken;
@@ -62,9 +63,11 @@ public sealed partial class DesktopTests
                         driver.Window = window;
                         await driver.SettleAsync();
                         reader = window.GetVisualDescendants().OfType<ReaderPage>().Single();
+                        await ReviewReaderToolbarAsync(driver, reader, design, ColorMode.Light);
                         await ExerciseActionsAsync(driver, reader, design);
                         await ExerciseResponsiveReaderAsync(driver, reader, design.ToString());
                         await ExerciseAppearanceAsync(driver, design.ToString());
+                        await ReviewReaderToolbarAsync(driver, reader, design, ColorMode.Dark);
                     }
                     var library = host.Services.GetRequiredService<GameLibrary>();
                     using (var fixture = new GamePlatformFixture())
@@ -114,6 +117,19 @@ public sealed partial class DesktopTests
         {
             await feed.StopAsync(CancellationToken.None);
         }
+    }
+
+    private static Task ReviewReaderToolbarAsync(
+        DesktopUiDriver driver,
+        ReaderPage reader,
+        DesignSystem design,
+        ColorMode mode
+    )
+    {
+        var scene = new DesktopVisualScene(driver, "reader", design, mode);
+        scene.Interaction("subscribe", "Add subscription", reader.FindControl<Button>("AddFeedButton")!);
+        scene.Track("feed-picker", reader.FindControl<ComboBox>("FeedPicker")!);
+        return scene.CheckAsync(reader.FindControl<ComboBox>("ReadFilter")!);
     }
 
     private static async Task ExerciseResponsiveReaderAsync(DesktopUiDriver driver, ReaderPage reader, string design)
