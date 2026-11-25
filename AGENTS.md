@@ -82,7 +82,7 @@ Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.
 - `docs/`: Current documentation for users and developers. Keep the latest content on the main branch; do not create a versioned documentation tree.
 - `.agents/`: Development tools, their tests, and dated decision history.
 
-Tracked files and non-ignored new files must not exceed 1 MiB (1,048,576 bytes). Run `mise run check:files` to check this limit. Oversized files fail validation instead of being skipped by other checkers.
+Run `mise run check:files` to check tracked files and non-ignored new files. Each file must fit within 1 MiB (1,048,576 bytes). Each directory may contain up to 16 directly contained handwritten C# files, including tests, code-behind and partial classes. When a directory exceeds the limit, review its responsibilities and group related files together. See the [C# directory layout Note](.agents/notes/2026-11-25-csharp-directory-layout.en.md) for counting conventions.
 
 ## Notes
 

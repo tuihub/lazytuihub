@@ -91,7 +91,7 @@ depends = ["check:files"]
 run = "pnpm exec jscpd"
 
 [tasks."check:files"]
-description = "Reject repository files larger than 1 MiB"
+description = "Check the 1 MiB file limit and the 16-file C# directory limit"
 run = "node .agents/scripts/check-file-sizes.mjs"
 
 [tasks."test:lint"]

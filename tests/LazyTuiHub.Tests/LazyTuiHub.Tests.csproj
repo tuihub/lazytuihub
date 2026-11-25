@@ -5,7 +5,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../plugins/*/tests/*.cs" />
+    <Compile Include="../../plugins/*/tests/**/*.cs" />
     <EmbeddedResource Include="Fixtures/review-cover.png" LogicalName="review-cover.png" />
     <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
     <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />

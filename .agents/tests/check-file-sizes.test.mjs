@@ -39,3 +39,27 @@ test('tracked and new files over 1 MiB fail, while the boundary and ignored outp
     await rm(path.join(cwd, 'tracked.bin'));
     assert.equal(run(process.execPath, [script], cwd).status, 0);
 });
+
+test('the 17th handwritten C# file in one directory suggests reviewing its architecture', async (t) => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), 'directory counts '));
+    t.after(() => rm(cwd, {recursive: true, force: true}));
+    assert.equal(run('git', ['init', '--quiet'], cwd).status, 0);
+    const folder = path.join(cwd, 'tests');
+    await mkdir(path.join(folder, 'Nested'), {recursive: true});
+    await mkdir(path.join(folder, 'Generated'));
+    const files = [
+        ...Array.from({length: 14}, (_, n) => `Type${n}.cs`),
+        'Editor.axaml.cs', 'Type0.Metadata.cs', 'Editor.axaml', 'Nested/Child.cs',
+        'Auto.g.cs', 'Auto.g.i.cs', 'Auto.Generated.cs', 'Auto.Designer.cs', 'Generated/Client.cs',
+    ];
+    await Promise.all(files.map(file => writeFile(path.join(folder, file), '')));
+    assert.equal(run('git', ['add', 'tests'], cwd).status, 0);
+    assert.equal(run(process.execPath, [script], cwd).status, 0);
+
+    await writeFile(path.join(folder, 'Extra.cs'), '');
+    const result = run(process.execPath, [script], cwd);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /tests: 17 handwritten C# files \(limit 16\).*architecture/);
+    await rm(path.join(folder, 'Type1.cs'));
+    assert.equal(run(process.execPath, [script], cwd).status, 0);
+});

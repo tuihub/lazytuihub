@@ -2,7 +2,7 @@
 
 English | [中文](desktop-ui-review.zh.md)
 
-When adding a page or changing a shared control, exercise the interaction whose appearance or layout changed. Run it against the actual plugin page and its active themes. The [reader toolbar](../../tests/LazyTuiHub.Tests/DesktopTests.Layout.cs) shows the smallest integration. The [game shelf](../../tests/LazyTuiHub.Tests/DesktopTests.Visual.cs) also measures typography, artwork, text contrast and motion.
+When adding a page or changing a shared control, exercise the interaction whose appearance or layout changed. Run it against the actual plugin page and its active themes. The [reader toolbar](../../tests/LazyTuiHub.Tests/Desktop/DesktopTests.Layout.cs) shows the smallest integration. The [game shelf](../../tests/LazyTuiHub.Tests/Desktop/DesktopTests.Visual.cs) also measures typography, artwork, text contrast and motion.
 
 ## Declare a scene
 
@@ -17,7 +17,7 @@ scene.Track("feed-picker", feedPicker);
 await scene.CheckAsync(readFilter);
 ```
 
-`Interaction` drives pointer entry, exit, keyboard focus, hover with focus and exit with focus retained. Supply `hover` and `alternate` to exercise different parts of the same control. An optional `checkHover` applies a component-specific assertion while the pointer is over it. `IconLabel` measures the visible glyphs of a compound action. Its optional `fluentSpecimen` names a Microsoft Fluent UI React icon-and-text sample with the same content in the [official reference harness](../../.agents/prototypes/design-baselines/web/fluent.jsx). `Contrast` measures a text crop against its rendered background. The shared driver and report discover declared regions and tests automatically. [Scene API](../../tests/LazyTuiHub.Tests/DesktopVisualScene.cs)
+`Interaction` drives pointer entry, exit, keyboard focus, hover with focus and exit with focus retained. Supply `hover` and `alternate` to exercise different parts of the same control. An optional `checkHover` applies a component-specific assertion while the pointer is over it. `IconLabel` measures the visible glyphs of a compound action. Its optional `fluentSpecimen` names a Microsoft Fluent UI React icon-and-text sample with the same content in the [official reference harness](../../.agents/prototypes/design-baselines/web/fluent.jsx). `Contrast` measures a text crop against its rendered background. The shared driver and report discover declared regions and tests automatically. [Scene API](../../tests/LazyTuiHub.Tests/Desktop/DesktopVisualScene.cs)
 
 ## Run and interpret
 
