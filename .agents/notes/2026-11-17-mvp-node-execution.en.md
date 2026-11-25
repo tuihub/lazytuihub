@@ -8,28 +8,28 @@ English | [中文](2026-11-17-mvp-node-execution.zh.md)
 
 ## Scope and status
 
-This Note maintains the node execution contract within the [framework design](2026-11-17-mvp-framework.en.md). Under the [MVP maintenance agreement](../../AGENTS.md), it remains proposed and directly editable until the merge into main. The first implementation replaces the previous single-stream runner. This Note distinguishes target contracts from current simple choices; [WorkflowDemo](../../src/LazyTuiHub/Examples/WorkflowDemo.cs) is executable.
+The runner exposes the [framework’s](2026-11-17-mvp-framework.en.md) port and synchronization contracts. [WorkflowDemo](../../src/LazyTuiHub/Examples/WorkflowDemo.cs) exercises both delivery modes in a single node.
 
 ## Node and port declarations
 
 Modules declare node names, any number of named inputs/outputs, port types, and execution functions. Each port category may have zero members, with no fixed port-count limit. Source, transformation, and consumption behavior follows port combinations rather than requiring three separate node execution mechanisms.
 
-Ports have streaming or synchronized delivery, for both inputs and outputs. Previously discussed control signals are one business use of synchronized data rather than a third core port category. Synchronized data may equally carry configuration, calculation results, or object references; the core does not interpret business meaning.
+Both inputs and outputs support streaming or synchronized delivery. A plugin may use synchronized data for control signals, configuration, computed values or object references. The plugin interprets each value.
 
-Connections follow declared endpoints and matching data types, replacing the prototype's CLR assignability checks. Delivery mode is also part of port declarations and informs transport and dependency planning. The core does not infer conversion, combination, deduplication, or retry behavior from names, boolean values, or business categories.
+A connection requires matching data types and delivery modes. The planner uses these declarations to arrange transport and dependencies. Plugins define conversions, combinations, deduplication and retry semantics.
 
 | Contract | Streaming port | Synchronized port |
 | - | - | - |
-| Delivery | Deliver available data promptly, subject to backpressure and resource conditions. | Satisfy dependencies and align required inputs by messagekey for grouped delivery. |
+| Delivery | Deliver available data promptly, subject to backpressure and resource conditions. | Satisfy dependencies and align required inputs by message key for grouped delivery. |
 | Ordering | No business processing order or ordering across different streams is promised. | Honor declared dependencies within one associated computation. |
 | Reading | Nodes decide how to consume their inputs. | Nodes obtain the complete synchronized input group in one read. |
 | Main cost | Transport, queues, and buffering. | Additional alignment waits and retention of incomplete inputs. |
 
-A local FIFO queue does not establish an end-to-end ordering contract for every stream. Prompt streaming delivery does not remove backpressure or promise real-time latency.
+FIFO applies within the local queue. Delivery time depends on available resources and backpressure.
 
 ## Synchronized delivery
 
-A messagekey identifies a computation whose inputs need association. Declarations and the execution plan determine participating synchronized input ports. The framework collects inputs by key; nodes cannot consume a partial group before required inputs are ready, and obtain the complete group through one read when ready.
+A message key identifies one computation. The node declares which inputs participate. The framework waits for all of them to supply a value with the same key and delivers those values in one read.
 
 ```text
 A(k) arrives -> framework waits
@@ -38,7 +38,7 @@ B(k) arrives -> node obtains { A(k), B(k) } in one read
 
 Simultaneous arrival means logically grouped delivery as observed by the node, not packets reaching threads or devices at the same physical instant. Writing into several independent queues does not establish this contract; port wrappers must provide grouped reading.
 
-Synchronized outputs satisfy declared successor dependencies, and successors obtain their own synchronized inputs when ready. Unrelated nodes and different keys do not thereby acquire a global serial order. A messagekey provides association rather than automatic business idempotency. Cross-producer duplicates, rounds, and one-to-many associations need refinement. This iteration pairs received positions only within each port of the same key, without claiming correct business-round association.
+Each successor waits for its own declared dependencies. Independent nodes and different keys can advance separately. A plugin that needs idempotency supplies its own business key. For repeated keys, the runtime pairs values in receipt order at each port. The plugin owns any association between business rounds or across producers.
 
 Synchronized dependencies do not implicitly extend to streaming ports. Sending configuration first does not establish which stream message uses it, and a completion signal does not prove that another stream has been consumed. Nodes express required relationships by binding configuration references or publishing synchronized outputs after the relevant work finishes. The core does not infer stream/synchronized timing from names.
 
@@ -77,7 +77,7 @@ Actual input-consumption order determines these local state changes; sending tim
 
 ## Transport, fan-out, and backpressure
 
-The framework wraps streams and ports for asynchronous use. Nodes depend on stable reading/writing abstractions rather than concrete Channels so later remote transports can bind behind them. [.NET Channels](https://learn.microsoft.com/en-us/dotnet/core/extensions/channels) and asynchronous enumeration can implement the local backend. Multiple consumers of an ordinary Channel compete for items; core fan-out must deliver separately to each branch.
+The local runner implements asynchronous ports with [.NET Channels](https://learn.microsoft.com/en-us/dotnet/core/extensions/channels). Each node reads from its own inbox. The runner delivers an output to each connected branch so consumers of different branches do not compete for a single message.
 
 Local branches may share the same payload reference under a read-only agreement. Full buffers wait asynchronously and propagate backpressure rather than silently dropping data to appear prompt. Incomplete synchronized inputs also consume resources. Choose later budgets from actual costs rather than fixing counts, sizes, or retention periods here. Slow-branch isolation remains subject to concrete needs.
 
@@ -85,7 +85,7 @@ Multiple-input waiting should wrap readiness checks or manage pending reads corr
 
 Shared references reduce local transport cost without establishing cross-device shared memory. Remote transport must preserve synchronized-group identity and completeness and cannot derive synchronization from network arrival time. Its protocol will be designed separately.
 
-## First implementation choices and verification
+## Runtime behavior and verification
 
 All synchronized inputs declared on a node participate in one group, and every input must have a producer. Synchronized outputs explicitly supply a messageKey, matched as the original string. The core does not generate keys or derive them from persistent object identity; nodes explicitly forward them when association must continue. Each key maintains a FIFO for each port and takes one value from each for a group. Repeated keys may produce successive groups without automatic deduplication. Multiple producers on one port pair by actual receipt order; different keys advance by readiness without global ordering.
 
@@ -95,12 +95,12 @@ Each bounded node ingress uses the graph's bufferCapacity, retaining the default
 
 The runner reports running, waiting-synchronization, synchronized, completed, and canceled events; waits include the key and missing ports. These are local progress callbacks without a durable replay log. demo:workflow uses explicit acknowledgments to coordinate example inputs, showing initial parameters while synchronization is incomplete, then grouped updates producing 2, 7, 13 before canceling all tasks. Example coordination establishes no new framework ordering guarantee between stream and synchronized input.
 
-Product tests cover interleaved keys, repeated-key rounds, closed ports preventing completion, cancellation of incomplete groups, mismatched types/modes/port names, and early consumer exit unblocking upstream. Existing broadcast, backpressure, merged inputs, failure cancellation, RSS, and HTTP scenarios have been migrated.
+Product tests exercise interleaved and repeated keys, incomplete groups on port closure or cancellation, port name/type/mode mismatches and early consumer exit. They also cover fan-out, backpressure, fan-in, failure cancellation, RSS and HTTP.
 
-The complete check exposed concurrent .NET writes to shared build outputs. Test and demo tasks now use mise [wait_for](https://mise.jdx.dev/tasks/task-configuration.html#wait-for) to run after earlier build-producing tasks when those tasks are in the same run, without adding extra prerequisites to standalone invocations. All existing checks remain enabled.
+When build and test tasks run together, mise uses [wait_for](https://mise.jdx.dev/tasks/task-configuration.html#wait-for) to order writes to shared .NET outputs. Running a test or demo on its own adds no build-task prerequisite.
 
 ## Remaining boundaries
 
-This iteration supports streaming and synchronized delivery by key. Whole-batch sealing, stage materialization, whole-batch completion barriers, batch execution modes, windows, and watermarks are outside the current requirement.
+The MVP supports streams and synchronized delivery by key. Batch execution, stage materialization, batch completion barriers, windows and watermarks remain outside its scope.
 
 Further group declarations, automatic key propagation, business association of rounds/one-to-many outputs, absence-of-result representation, and dependency cycles/feedback need refinement. Current simple choices are not permanent contracts. The state example establishes no concurrency, priority, or fairness guarantees. Resources and remote recovery continue under the framework Note's boundaries.

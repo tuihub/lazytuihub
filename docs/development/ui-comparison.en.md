@@ -2,7 +2,7 @@
 
 English | [中文](ui-comparison.zh.md)
 
-Avalonia was selected as the product UI framework on 2026-11-18. The [selection Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.en.md) records the decision and product integration. The [desktop MVP guide](desktop-mvp.en.md) describes the real RSS/SQLite application. This guide retains both prototypes so the comparison can be reproduced; subsequent product UI development uses Avalonia. Platform design systems and the Android/legacy Windows support scope remain separate decisions.
+These opt-in Avalonia and Uno applications reproduce the comparison that informed the choice of Avalonia. Both use the same reader fixture. See the [selection Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.en.md) for the decision and the [desktop guide](desktop-mvp.en.md) to run the product.
 
 ## Run
 

@@ -4,9 +4,9 @@
 
 ## 目标与边界
 
-MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具名流式／同步端口，可以在本地执行，也可以把符合条件的包操作交给工作节点。[框架 Note](../../.agents/notes/2026-11-17-mvp-framework.zh.md) 与[节点执行 Note](../../.agents/notes/2026-11-17-mvp-node-execution.zh.md) 区分当前选择和后续设计。MVP 合入主分支前，Note 保持可自由编辑的提案状态；每轮将代码和对应 Note 一起提交。
+RSS 阅读器使用 SQLite，演示具名流式与同步端口、本机执行和向其他设备派发操作。本文介绍可运行的原型。[框架设计](../../.agents/notes/2026-11-17-mvp-framework.zh.md) · [节点执行](../../.agents/notes/2026-11-17-mvp-node-execution.zh.md)
 
-当前通过 Avalonia 桌面阅读器、CLI、进程内 API 和生成的 HTTP 客户端交互，通过 JSON 编辑图。图定义和数据库 Schema 没有原型兼容承诺；不兼容的变更使用新的工作区。本轮文章表和默认抓取图均已变更，请使用新工作区。
+用户通过 Avalonia 桌面阅读器、CLI、进程内 API 或生成的 HTTP 客户端执行订阅刷新等业务操作。插件定义所需工作流，开发和调试插件时可以用 JSON 查看或编辑图。若旧原型的表结构或图定义不兼容，请使用新工作区。文章插件拆分前的工作区属于这种情况。
 
 [桌面 MVP 指南](desktop-mvp.zh.md) 介绍可运行的 Avalonia 界面、真实 RSS／SQLite 操作、工作流查看和插件可用性。[UI 比较指南](ui-comparison.zh.md) 保留此前的独立实验。
 
@@ -26,12 +26,12 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具
 | [文章插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Backend/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
 | [游戏库与资料来源](../../.agents/notes/2026-11-23-mvp-games.zh.md) | 管理个人游戏、分类和游玩时段，通过 Steam、Bangumi、VNDB 工作流检索和导入资料。 |
 | [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
-| [CLI](../../src/LazyTuiHub.Cli/) | 阅读文章和管理订阅。在本机运行 `mise run run:cli -- --command articles --action list`，传入 `--endpoint https://SERVER` 可访问远程账户。独立发布包只需安装在客户端。[Win7 CLI 实测](../../.agents/notes/2026-11-23-mvp-win7-cli.zh.md) |
+| [CLI](../../src/LazyTuiHub.Cli/) | `mise run run:cli` 列出本地插件操作。传入 `--endpoint https://SERVER` 可远程登录、管理订阅和阅读文章。独立 CLI 连接远程服务。[CLI 与 Windows 7](../../.agents/notes/2026-11-23-mvp-win7-cli.zh.md) |
 | [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
 
-PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。各业务插件通过 BusinessStorage 写自己的表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
+`PipelineDefinition` 描述处理流程，`DataReference` 标识业务对象，`DataRelation` 关联对象。业务插件需要登记数据关联时，将工作区连接源传给 `BusinessStorage`，在同一事务内提交业务写入、索引更新和框架关联。插件维护业务表，框架写入目录。进程内受信任的代码共同遵守这项约定。同步输入的关联键另有用途。
 
-rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.parse、articles.store 和 articles.output。其他模块可以在解析后分支，不必修改运行器。阅读及其他直接 RSS 操作目前也经过工作流，让工作流成为可选能力仍待后续实现。本地和 HTTP 调用共享 IRssApi 订阅契约和 IArticleApi 文章契约；字段、路由、分页、去重及错误见[生成的 API 参考](../api/index.md)。
+`rss.ingest` 依次连接 `builtin.timer`、`rss.feed-requests`、`builtin.http-fetch`、`rss.parse`、`articles.store` 和 `articles.output`。其他插件可以接收解析输出。RSS 在解析前记录抓取明细，Articles 逐篇提交文章。刷新随后中断，已提交的数据仍然可读。两者也用工作流实现阅读操作。本地和 HTTP 调用分别通过相同的 `IRssApi`、`IArticleApi` 接口访问对应服务。[API 参考](../api/index.md)
 
 接入新的文章来源时，让节点输出 [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/ArticleDraft.cs)，并连接 articles.store。来源资源名与来源内的条目 ID 共同标识文章。例如 notebooks/a 和 notebooks/b 可以各自使用条目 ID 1。同一来源再次提交该条目时会更新内容、保留文章名称和已读状态。若数据包附有已登记的来源引用，入库会同时登记来源与文章的关联。
 
@@ -43,7 +43,7 @@ rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.p
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="../Articles/Articles.csproj" PluginRelation="Requires" />
+  <ProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj" PluginRelation="Requires" />
   <PluginReference Include="lazytuihub.plugin.tuihub.games"
                    PluginRelation="CompatibleWith" PluginVersionRange="[1.0.0,2.0.0)" />
 </ItemGroup>
@@ -57,9 +57,9 @@ NodeRegistration.Register 接收具名、有类型的输入／输出声明和一
 
 计划器合并插件节点必需的资源和工作流节点在 `requires` 数组里追加的需求，再与各实例独立登记的资源匹配。例如，`articles.store` 要求 `workspace.primary`，摘要工作流可以要求 `compute.batch`。图中只需填写逻辑节点、设置、需求和连线。计划列出每一步的需求、候选实例和无法读取清单的对端。运行已保存的定义时重新生成计划。保存时会保留缺少能力的定义并返回诊断。
 
-## 跨实例运行
+## 多节点原型
 
-准备 Docker 引擎和 Compose，运行 `mise -E development run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。 ARM64 引擎若缓存了 AMD64 的 .NET 镜像，可设置 `TEST_APP_PLATFORM=linux/amd64`。这个选项同时选择应用节点的发布目标和容器架构。
+准备 Docker 引擎和 Compose，运行 `mise -E development run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。ARM64 引擎若缓存了 AMD64 的 .NET 镜像，可设置 `TEST_APP_PLATFORM=linux/amd64`。这个选项同时选择应用节点的发布目标和容器架构。原型按配置的对端地址推送任务。从节点轮询和跨设备插件清单校验是目标设计。[协调 Note](../../.agents/notes/2026-11-19-mvp-coordination.zh.md)
 
 | 配置 | 用途 |
 | --- | --- |
@@ -76,7 +76,7 @@ NodeRegistration.Register 接收具名、有类型的输入／输出声明和一
 
 StreamInput 包含端口和 DataPacket。流数据在反压条件下尽快可读，框架不承诺消息或不同流之间的业务处理顺序。本地扇出将同一只读载荷引用分别交给各分支，转换时产生新结果；GC 回收已释放对象。这不构成跨进程共享内存。
 
-SynchronizedInput 包含 messageKey 和完整同步输入组的只读字典。节点全部同步输入组成一组，发送方显式给出 key；核心按相同 key 对齐，节点不能看到半组输入。每个 key 为每个端口维护接收 FIFO，每组各取一个值；重复 key 形成多组，不自动去重。不同 key 按齐备情况推进，不推断跨生产者的业务轮次关联。
+节点通过 `SynchronizedInput.MessageKey` 取得消息键，通过只读的 `Values` 字典取得完整输入。发送方显式传入消息键。框架按键和端口分别排队，每个端口各取一个值，凑齐一组才交给节点。同一键可形成多组，不会自动去重。不同键按齐备顺序推进。多个生产者的业务轮次由插件自行关联。
 
 同步保证成组可见与声明依赖，不保证物理同时收包或相对于流数据的时序。节点负责配置生效、状态和副作用。异步事件循环可以在读到完整配置组后替换局部配置，为随后处理的流数据取得快照，参见[混合输入示例](../../src/LazyTuiHub/Examples/WorkflowDemo.cs)。
 
@@ -107,9 +107,9 @@ mise run run -- --database .local/rss/workspace.db --command articles --action l
 mise run run -- --database .local/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
 ```
 
-将 feed URI 替换成实际地址。add 返回订阅名称，articles list 返回文章名称和后续分页 token，通过 --page-token 继续查询。read 标记已读并输出 Proto JSON，不执行 HTML。
+将示例订阅地址替换为实际地址。`rss add` 返回订阅名称。`articles list` 返回文章名称和下一页的令牌，将令牌传给 `--page-token` 即可继续查询。`articles read` 将文章标为已读，并以 Protobuf JSON 输出内容，不执行其中的 HTML。
 
-不传 --database 时，工作区位于系统 LocalApplicationData 下的 LazyTuiHub/workspace.db。启动 HTTP 服务同时启动可用且所需工作流能生成计划的插件任务，首次创建图时默认周期为 15 分钟，可用 --refresh-interval 00:05:00 修改；已有图定义保留。定时器积压采用 PeriodicTimer 合并，不重放每个错过的时刻。刷新失败记录日志，在下一周期重试。
+省略 `--database` 时，宿主使用本地应用数据目录下的 `LazyTuiHub/workspace.db`。单账户模式下，HTTP 或本地桌面宿主启动满足条件的插件任务。默认 RSS 定时器每 15 分钟触发一次。新建工作区时可设置 `--refresh-interval 00:05:00`，已有工作区则修改图中的定时器。`PeriodicTimer` 合并错过的触发。运行失败后记录错误，等一个刷新间隔再试。
 
 ```sh
 mise run run -- --database .local/rss/workspace.db --urls http://127.0.0.1:5080
@@ -148,7 +148,7 @@ mise run run -- --database .local/rss/workspace.db --command plugins --action co
 
 --command plugins --action cleanup 或 uninstall --plugin ID 显式调用可选 hook。禁用插件可在冷启动作为维护目标提供 hook，不激活业务能力。代码或 hook 缺失时报告错误；RSS 目前均未提供。框架接受 hook 完成，不证明业务清理完整。uninstall 不删除 DLL 或目录记录，禁用及缺失不自动调用任何清理 hook。
 
-插件实现 IApplicationPlugin.Configure(PluginRegistration)，贡献服务／节点／数据类型／默认工作流／命令／路由／任务，以及所需的 DAO 需求／提供声明或保留委托，并在发行清单登记身份及入口 DLL／类型。requires 只列必要服务依赖；DAO 需求在使用者激活前匹配活跃提供者能力，不依赖清单顺序。跨业务工作流连线保持独立。框架服务管理元数据，业务服务获得 IWorkflowExecutor。默认图仅在不存在时插入；任务声明所需工作流，自行决定重试并遵守宿主取消。实现缺失时仍保留声明，但活动队列、未齐同步输入及节点状态仍只在内存中。
+插件在 Server 入口注册服务、节点、数据类型、路由和任务。SDK 从项目声明生成清单。宿主按必需依赖排序、匹配 DAO 能力，再检查各任务所需的工作流。`IWorkflowExecutor` 执行已保存的定义，只有缺少定义时才写入默认图。插件处理重试并响应取消。目录在重启后保留声明，消息队列、同步输入和节点状态驻留内存。
 
 ## DAO 工具与保留
 
@@ -170,11 +170,11 @@ mise run run -- --database .local/rss/workspace.db --command dao --action pause 
 mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner lazytuihub.plugin.tuihub.rss --table fetch_details
 ```
 
-统一清理只处理 PluginRegistration.Retentions 显式持久委托的目标；使用模板本身不授权清理。RSS 委托 fetch_details 表。存储插件在 HTTP 服务启动时清理一次，随后默认每分钟执行；其 cleanupInterval 配置影响调度，不决定数据到期时间。CLI 模式不启动后台任务。每个目标通过单条 DELETE 删除到期记录，暂不承诺工作量预算或分批处理；逐目标独立保留最近尝试、删除数量及错误。
+RSS 通过 `PluginRegistration.Retentions` 委托清理 `fetch_details`。宿主启用插件任务时，存储插件在启动时清理受托表，之后默认每分钟清理一次。`cleanupInterval` 可调整调度间隔。每轮对每张表执行一次 `DELETE`，分别记录结果、删除数量或错误。CLI 命令及账户模式的宿主不启动后台清理任务。
 
 委托在拥有者关闭／缺失时保留，只要提供者仍激活就继续清理，依据的是已有显式授权。提供者缺失时保留数据、到期时间、委托及诊断。dao pause/resume 跨重启保留，对后续轮次生效，已经开始的删除可能完成。暂停物理清理不会改变到期可见性。运行队列及同步输入仍只在内存中，不受这些保留策略处理。跨存储提交、持久输入占用及恢复继续在[存储与 DAO Note](../../.agents/notes/2026-11-17-mvp-storage-dao.zh.md)讨论。
 
-## 查看和编辑图
+## 插件开发时查看和编辑图
 
 ```sh
 mise run run -- --database .local/rss/workspace.db --command workflow --action nodes
@@ -206,4 +206,4 @@ mise run run -- --database .local/rss/workspace.db --command workflow --action r
 
 运行进度不持久保存。保存的图不保存活动队列，也不提供崩溃恢复、检查点、持久重放或恰好执行一次。容量调度、未齐输入预算、复杂 key 关联、反馈图及跨设备同步执行留待后续实现。
 
-业务 API 面向可信操作者，尚未接入终端用户认证。订阅 URI 会触发出站请求。HTTP 错误保留既有 ASP.NET Core google.rpc.Status JSON/ErrorInfo 与 AIP-193 外层 error 和 HTTP code 的差异。分页密钥位于数据库旁的 keys 目录，保留密钥才能让已有 token 在重启后继续使用。本轮不引入数据库 Schema 标准或历史升级层。
+单账户模式信任操作者。账户模式要求业务请求通过 HTTPS 携带用户会话。两种模式下，订阅地址都可能触发出站 HTTP 请求。ASP.NET Core 返回含 `ErrorInfo` 的 `google.rpc.Status`，与 AIP-193 的 HTTP 错误外层结构和状态码字段仍有差异。保留数据库旁的 `keys/` 目录可让分页令牌跨重启有效。MVP 未提供废弃原型 Schema 的迁移路径。

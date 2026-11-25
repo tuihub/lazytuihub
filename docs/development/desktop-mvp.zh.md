@@ -9,9 +9,10 @@
 ```sh
 mise run run:desktop
 mise run run:desktop -- --database /path/to/workspace.db
+mise run run:desktop -- --endpoint https://SERVER
 ```
 
-默认工作区位于 .NET 本地应用数据目录下的 `LazyTuiHub/workspace.db`，与 CLI／服务端模式共用。独立实验请显式指定数据库路径。相邻的 `keys/` 目录保存既有 API 分页密钥。应用加载发行目录中的 `plugins/plugins.json`；`--plugin-directory` 可指定另一套插件部署目录。
+CLI、服务端和本地桌面共用 .NET 本地应用数据目录下的 `LazyTuiHub/workspace.db`。单独指定数据库路径即可隔离实验。相邻 `keys/` 目录保存用于保护分页令牌和游戏数据提供方凭据的密钥。宿主从发行目录读取 `plugins/plugins.json`，可用 `--plugin-directory` 指定其他插件部署目录。
 
 在 Reader 中点击 Library 旁的 +，输入 HTTP／HTTPS 订阅地址和可选名称，点击 Subscribe。选择订阅后使用刷新按钮，通过 RSS 管线抓取文章。选择文章可阅读已存储的正文，点击 Mark read 标记已读，也可按已读／未读筛选。Load more 请求下一页，界面不限制文章总数。选择 All sources 时，刷新按钮重新读取已保存的文章。刷新按钮的右键菜单也提供 Reload saved articles，用来读取包括后台刷新结果在内的工作区内容。正文以可选择的文本显示，源内容中的标记也会显示；尚未实现 HTML 渲染和打开外部链接。
 
@@ -54,14 +55,14 @@ Fluent 在宽窗口显示带标签的侧栏，宽度为 641 至 1007 个逻辑�
 | [应用宿主](../../src/LazyTuiHub/) | 共用服务／插件装配；桌面模式使用通用宿主，HTTP／CLI 模式使用 Web 宿主。 |
 | [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/) | 注册页面、刷新工作区、使用自适应面板与动效，并将界面操作交给宿主跟踪。 |
 | [桌面层](../../src/LazyTuiHub.Desktop/) | Avalonia 应用／窗口、页面装配、工作流／插件检查器、界面操作跟踪及退出。 |
-| [文章阅读插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | 阅读控件与状态，读取文章调用 IArticleApi，RSS 启用时通过 IRssApi 管理订阅。 |
+| [文章阅读插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | 维护阅读器及其状态，通过类型化操作读取文章。RSS 提供可选的订阅源适配器。 |
 | [插件框架](../../src/LazyTuiHub.Plugins/) | 普通页面声明、所属插件、元数据保留、依赖激活和冷启动开关。 |
 
-桌面宿主启动相同的可用后台任务，不启动 HTTP 监听。业务和 DAO 代码不引用 Avalonia。宿主从业务插件 DLL 加载 ClientGui 入口，页面实现在插件内部维护。`AddDesktopPage` 同时提交普通页面声明和带键的 Avalonia 控件工厂；导航只接入已激活插件的页面，首次打开页面时才在 UI 线程创建控件。默认共享程序集上下文保持契约和 Avalonia 类型身份一致。
+单账户模式下，本地桌面启动已启用的插件后台任务。本地和远程桌面模式都无需启动 HTTP 监听。业务和 DAO 代码不引用 Avalonia。宿主从业务插件 DLL 加载 ClientGui 入口，页面实现在插件内部维护。`AddDesktopPage` 同时提交普通页面声明和带键的 Avalonia 控件工厂；导航只接入已激活插件的页面，首次打开页面时才在 UI 线程创建控件。默认共享程序集上下文保持契约和 Avalonia 类型身份一致。
 
 阅读操作将服务工作移出 UI 线程，同一页面内串行执行。错误保留在界面上，不转换为空的成功结果。关闭主窗口时取消并等待受跟踪的界面操作，再停止后台任务，最后释放服务。取消不回滚已经提交的数据库变更，也不提供工作流的持久化暂停。
 
-产品使用 Avalonia 12.1.6、三套设计系统、编译式 XAML 绑定、自适应列表／详情和列表虚拟化。进一步的布局细化、远程服务端选择、可视化工作流编辑器、HTML 渲染以及 Android／旧 Windows 支持仍待后续推进。选型记录在 proposed 状态的 [UI Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.zh.md) 中；[比较原型](ui-comparison.zh.md) 继续作为独立开发产物保留。
+桌面端使用编译式 XAML 绑定、自适应分栏和列表虚拟化。HTTPS 客户端支持会话、订阅和文章，工作区管理及游戏库在本地运行。HTML 渲染、应用内服务端选择器及 Android 或旧版 Windows 图形界面仍待实现或验证。[渲染框架选型](../../.agents/notes/2026-11-17-mvp-ui-comparison.zh.md) · [比较原型](ui-comparison.zh.md)
 
 ## 验证
 
@@ -82,6 +83,6 @@ mise -E development run test:desktop
 外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。[设计系统审查](../../.agents/notes/2026-11-18-mvp-design-systems.zh.md) 记录组件库对照、产品组件的维护归属和平台边界。首次执行 `mise -E development run setup:design-baselines`，用 `mise -E development run render:design-baselines:avalonia` 生成组件库样板，再用 `mise -E development run run:design-baselines` 对照官方交互参考。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
 
 
-`mise run check` 包含产品构建／分析器、格式、API 一致性、文档／Note 规则和产品测试。`mise run test` 通过 Avalonia 官方无窗口主机，连接实际动态装配的 RSS 服务和独立 SQLite 工作区，覆盖分页、已读状态持久化、输入错误、导航、界面插件关闭／缺失／恢复、业务依赖不可用、桌面不启动 HTTP 服务以及协作退出。视图通过构造函数注入依赖并使用编译式初始化；两个 UI 项目仅豁免 AVLN3001，它提示缺少无参构造函数导致未使用的 URI 构造方式不可用。
+`mise run test` 验证分页、已读状态、输入错误、插件移除与恢复、本地桌面无 HTTP 监听和协作关闭。`mise run check` 包含这些测试。桌面、文章和游戏项目针对构造函数注入的编译式 XAML 视图抑制 AVLN3001。
 
 2026-11-18 的 macOS ARM64 原生检查还实际操作了添加订阅、通过 HTTP 抓取订阅、中文显示、标记已读／未读筛选、工作流查看、重启后的插件关闭／恢复、已读状态保留、明暗切换和窗口退出。辅助功能名称使用文章标题和插件名称，不显示序列化对象。这些观察不代表完整辅助技术覆盖、输入法组合输入、GPU 性能或其他平台的原生表现已经验证。

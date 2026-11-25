@@ -85,6 +85,6 @@ Use the generated [operation reference](../api/operations/GreetingService_Genera
 
 ## Integration boundaries
 
-The current integration verifies string messages. When introducing field presence, enums, 64-bit integers, timestamps, Any, or other Protobuf types, verify agreement between derived OpenAPI and client/server wire encodings.
+The greeting exercises strings. The reader also uses pagination, booleans, timestamps and numeric counts. When a contract introduces a new field shape, verify its generated OpenAPI type and the actual JSON exchanged by the client and server, including presence and default values.
 
-When introducing business errors, verify and adapt agreement between framework errors and AIP-193's HTTP representation. Public-network authentication, HTTPS deployment, mutating commands, persistent operations, and WebSocket integration follow the [protocol Note](../../.agents/notes/2026-11-15-protobuf-api-contract.en.md); the sample does not establish those capabilities.
+The account service implements first-party HTTPS sessions. RSS and Articles expose mutating commands. Check each operation’s authorization, idempotency and error mapping, including the known difference from AIP-193’s HTTP envelope. Long-running operations and WebSocket transport retain the boundaries in the [protocol Note](../../.agents/notes/2026-11-15-protobuf-api-contract.en.md).

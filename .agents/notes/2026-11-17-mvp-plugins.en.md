@@ -8,11 +8,9 @@ English | [中文](2026-11-17-mvp-plugins.zh.md)
 
 ## Scope and status
 
-This Note records business-plugin boundaries and conclusions from official documentation/source research on 2026-11-17. It guides a pluggable prototype without defining a complete plugin system. Follow the [framework Note](2026-11-17-mvp-framework.en.md) and [node execution Note](2026-11-17-mvp-node-execution.en.md): business services support direct calls, and nodes adapt them to optional workflows.
+Plugins expose business services directly and can adapt them to workflow nodes. [Framework](2026-11-17-mvp-framework.en.md) · [Node execution](2026-11-17-mvp-node-execution.en.md)
 
-The [storage and DAO Note](2026-11-17-mvp-storage-dao.en.md) records subsequent discussions of three DAO access modes, namespaces, managed templates, and retention, distinguishing established direction from open semantics.
-
-A runnable cold-start prototype now implements the boundaries described below. Under the [MVP maintenance agreement](../../AGENTS.md), this Note remains proposed and freely editable until merge into main. Implementation commits update it alongside code, distinguishing implemented behavior, simple provisional choices, and open boundaries without adding compatibility layers for exploratory interfaces, graphs, or schemas.
+The [storage Note](2026-11-17-mvp-storage-dao.en.md) defines DAO access modes, namespaces, managed templates and retention.
 
 ## Fixed boundaries and responsibilities
 
@@ -22,7 +20,7 @@ A runnable cold-start prototype now implements the boundaries described below. U
 | Loading | Dynamically load .NET managed DLLs; one logical plugin may include an entry assembly, dependencies, and resources. |
 | Lifecycle | Load only at cold startup. Enablement changes and assembly replacements take effect on the next startup, without runtime load/unload guarantees. |
 | Trust | Plugins are fully trusted and share process permissions and resources; this iteration establishes no sandbox or permission-isolation system. |
-| Core plugins | The distribution manifest marks core plugins as required. Currently core supplies greetings and built-in timer/HTTP nodes and cannot be manually disabled. |
+| Core plugins | The host marks Core (greeting, timer and HTTP nodes) and Storage.Sqlite (workspace DAO tools) as required. Users can disable other bundled plugins. |
 | Minimal framework | Loading, framework metadata storage, and necessary diagnostics remain independent of plugin implementations and can start when plugins are missing. |
 
 The host owns startup configuration, discovery/composition, the shared service container, and application lifecycle. Business plugins own business services, storage/initialization, node adapters, HTTP adapters and typed operations shared by the CLI and GUI, and background tasks. Using DLLs does not make every framework library or shared contract an optional plugin. Existing Proto/HTTP agreements remain effective; this iteration defines no separate plugin-management API.
@@ -41,7 +39,7 @@ The root project declares PluginId, the display Title, an optional PluginVersion
 
 Server registers business services, nodes and tasks. Client registers operations shared across interfaces and binds local services or HTTP adapters. ClientGui and ClientCli contribute their own interactions. A headless host can use the same DLL when the server and shared client types and their initialization resolve there. One DLL is the complete plugin for an OS when the host supplies the dependencies. Private dependencies and external resources ship alongside it.
 
-Plugin projects reference [LazyTuiHub.Sdk](../../src/LazyTuiHub.Sdk/) for entry contracts, build-time declarations and workflow execution. The package ID, assembly and root namespace share that name. Workflow, DAO and interaction types keep their own namespaces and flow through package dependencies. Plugins register nodes through NodeRegistration and request plan execution through IWorkflowExecutor. The host owns the node registry, plan execution and plugin catalog. Plugins that expose Proto endpoints can also reference the shared API transport helpers.
+Plugin projects reference [LazyTuiHub.Sdk](../../src/LazyTuiHub.Sdk/) for entry contracts, build-time declarations and workflow execution. The package ID, assembly and root namespace share that name. Workflow, DAO and interaction types keep their own namespaces and flow through package dependencies. Plugins register nodes through NodeRegistration, contribute workflow definitions through `PluginRegistration.Workflows` and request execution through IWorkflowExecutor. The host owns the node registry, plan execution and plugin catalog. Plugins that expose Proto endpoints can also reference the shared API transport helpers.
 
 Authors can build a default-port sequence with `StreamWorkflow.Chain` in the base SDK. It emits ordinary nodes and edges, including each node’s declared owner, settings and resource requirements. Explicit graphs use the same planner and executor. Plugin-owned Proto adapters are generated by the API build tools. Typed provider operations and their expected results belong to the business plugin.
 
@@ -72,7 +70,9 @@ Set PluginRelation and an optional PluginVersionRange on a ProjectReference or P
 
 Before invoking entry points, the host checks versions against the manifests selected for this startup. A and B may declare compatibleWith in both directions. Each range constrains its declarer. Only requires determines configuration order and dependency cycles. Local activation also waits for required plugins and DAO capabilities. If a matching B fails to configure or activate, A can still run its independent features. Plugins register services or factories in their entry points and resolve optional capabilities when the feature is used. Activation state observed during startup can still change. Workflow edges are resolved by the workflow planner.
 
-Factorio also blocks the declarer when a present optional dependency has an incompatible version and separately supports mutual exclusion. This increment adopts required and compatible relationships. The three game providers coexist, and command registration already diagnoses duplicate names. Revisit explicit exclusion and its resolution policy when two implementations need exclusive ownership of a process resource or a known bad release needs a targeted exclusion. [Factorio mod dependencies](https://lua-api.factorio.com/latest/auxiliary/mod-structure.html#dependencies)
+Factorio also blocks the declarer when a present optional dependency has an incompatible version and separately supports mutual exclusion. The MVP uses required and compatible relationships. The three game providers coexist, and command registration already diagnoses duplicate names. Revisit explicit exclusion and its resolution policy when two implementations need exclusive ownership of a process resource or a known bad release needs a targeted exclusion. [Factorio mod dependencies](https://lua-api.factorio.com/latest/auxiliary/mod-structure.html#dependencies)
+
+Version ranges on plugin relationships govern local composition. For multi-node execution, the MVP requires each worker to have exactly the plugins and versions installed on the primary. Devices can provide different resources. [Multi-node coordination Note](2026-11-19-mvp-coordination.en.md)
 
 ## Framework metadata ownership
 
@@ -117,7 +117,7 @@ Hooks rely on contracts only. The framework handles invocation, progress, return
 
 Distinguish runtime resource release from persistent-data cleanup. Task cancellation and connection disposal may follow Host/DI mechanisms without equating stopping with cleaning data or checking whether plugin disposal faithfully fulfills its contract.
 
-Do not silently narrow losslessness to saving graph definitions. Active stream queues, incomplete synchronized inputs, and node-local state are currently in memory; preservation of unfinished data and execution progress across shutdown still needs decisions. Existing cancellation is not lossless suspension, and rerunning does not prove absence of loss. Recovery, missed timer firings, and side-effect semantics remain open rather than assuming catch-up or instruction-level continuation.
+Cold starts preserve committed data and saved declarations. Active queues, incomplete synchronized groups and node state live in memory. Resuming a run or handling missed timer ticks requires an operation-specific contract. [Workflow results and replay](2026-11-17-mvp-framework.en.md)
 
 ## Research conclusions and adoption
 
@@ -131,8 +131,6 @@ The following observations come from official sources at research time. Adoption
 | Jellyfin | Its [.NET manager](https://github.com/jellyfin/jellyfin/blob/master/Emby.Server.Implementations/Plugins/PluginManager.cs) loads assemblies, registers DI services, and records failures; [documentation](https://jellyfin.org/docs/general/server/plugins/) separates retained configuration from plugin-file reinstallation. | Use existing .NET composition/lifecycle mechanisms and manage code, declarations, and business data separately. |
 
 Factorio explicitly documents that [removing prototypes invalidates stored references](https://lua-api.factorio.com/latest/auxiliary/migrations.html); do not copy that behavior for lossless toggling. Its declaration stage also permits mods to alter other prototypes, unlike our exclusive framework-metadata ownership. DeepSeek Harness has broader replaceability, configuration layering, and hot reload; adopt composition/state separation without reproducing the complete system.
-
-Retain readable declarations despite missing implementations, preserve user intent after load failures, rebind without resetting durable state, and separate runtime teardown from explicit business cleanup. Non-disableable core plugins, exclusive framework metadata writes, and contractual-only hooks remain explicit project choices.
 
 ## Current prototype and validation
 

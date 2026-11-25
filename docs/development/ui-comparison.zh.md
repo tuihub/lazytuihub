@@ -2,7 +2,7 @@
 
 [English](ui-comparison.en.md) | 中文
 
-2026-11-18，确定使用 Avalonia 作为产品 UI 框架。[选型 Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.zh.md) 记录决策与产品接入。[桌面 MVP 指南](desktop-mvp.zh.md) 介绍使用真实 RSS／SQLite 服务的应用。本指南保留两个原型，供复现比较；后续产品 UI 按 Avalonia 推进。各平台的设计体系、Android 与旧 Windows 的支持范围仍单独决定。
+这两个可选原型共用阅读器测试数据，可复现选用 Avalonia 时的对照实验。选型依据见[比较 Note](../../.agents/notes/2026-11-17-mvp-ui-comparison.zh.md)，运行产品桌面请见[桌面指南](desktop-mvp.zh.md)。
 
 ## 运行
 

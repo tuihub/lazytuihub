@@ -85,6 +85,6 @@ mise run run -- --urls http://127.0.0.1:5080
 
 ## 集成边界
 
-当前集成已验证字符串消息。引入字段 presence、枚举、64 位整数、时间、Any 等 Protobuf 类型时，验证派生 OpenAPI 与客户端、服务端线上的编码一致性。
+问候示例验证字符串。阅读器还使用分页、布尔值、时间戳和计数。契约引入新的字段形态时，核对生成的 OpenAPI 类型和客户端与服务端实际交换的 JSON，包括字段存在性与默认值。
 
-引入业务错误时，验证并适配框架错误与 AIP-193 HTTP 表示的一致性。公网身份认证、HTTPS 部署、带副作用命令、长任务持久化及 WebSocket 接入按[协议 Note](../../.agents/notes/2026-11-15-protobuf-api-contract.zh.md)处理，示例本身不建立这些能力。
+账户服务支持第一方 HTTPS 会话，RSS 和文章服务已提供写操作。逐个核对操作的授权、幂等和错误映射，包括与 AIP-193 HTTP 错误结构的已知差异。长时间运行操作及 WebSocket 传输遵循[协议 Note](../../.agents/notes/2026-11-15-protobuf-api-contract.zh.md)。

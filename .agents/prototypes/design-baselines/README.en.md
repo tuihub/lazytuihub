@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-This isolated experiment assembles official design references and separate Avalonia implementation specimens for the reader. It does not change the product or declare the current Avalonia themes correct. The arrangement is a local specimen; only the libraries' controls, typography presets, state behavior, and tokens provide the reference.
+Use these specimens to compare control geometry, typography, tokens and interaction states. The official controls and the five Avalonia implementations run independently of the product. The layout of the specimen page is local to this experiment.
 
 ## Verification status
 

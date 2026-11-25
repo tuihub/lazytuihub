@@ -4,9 +4,9 @@ English | [中文](streaming-mvp.zh.md)
 
 ## Purpose and scope
 
-The MVP uses an RSS reader and SQLite to explore reusable nodes across business modules. The runtime supports named streaming/synchronized ports, local execution, and dispatch of eligible packet operations to workers. The proposed [framework Note](../../.agents/notes/2026-11-17-mvp-framework.en.md) and [node execution Note](../../.agents/notes/2026-11-17-mvp-node-execution.en.md) distinguish current choices from further design. MVP Notes remain editable proposals until merge into main; each increment commits code and corresponding Notes together.
+The RSS reader uses SQLite and exercises typed streaming and synchronized ports, local execution and remote dispatch of eligible operations. This guide describes the runnable prototype. [Framework design](../../.agents/notes/2026-11-17-mvp-framework.en.md) · [Node execution](../../.agents/notes/2026-11-17-mvp-node-execution.en.md)
 
-Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. Graphs are edited as JSON. Graph definitions and database schemas have no prototype compatibility commitment; use a fresh workspace for incompatible changes. Use a fresh database for the split article schema and default ingestion graph.
+Interaction uses an Avalonia desktop reader, CLI, in-process APIs, and generated HTTP clients. Plugins define workflows for operations such as feed refresh. During plugin development you can inspect or edit a graph as JSON. Use a fresh workspace when switching between incompatible prototype schemas or graph definitions, including those predating the separate Articles plugin.
 
 The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real RSS/SQLite operations, workflow inspection, and plugin availability. The [UI comparison guide](ui-comparison.en.md) retains the earlier independent experiments.
 
@@ -26,12 +26,12 @@ The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real
 | [Articles](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Backend/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
 | [Game library and providers](../../.agents/notes/2026-11-23-mvp-games.en.md) | Personal games, categories and sessions, with Steam, Bangumi and VNDB lookup and import workflows. |
 | [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, desktop/web composition, shared DI infrastructure, and lifecycle. |
-| [CLI](../../src/LazyTuiHub.Cli/) | User-facing reader and subscription commands. Run `mise run run:cli -- --command articles --action list` locally or pass `--endpoint https://SERVER` for a remote account. The standalone publish runs without the server, database or GUI. [Win7 CLI evaluation](../../.agents/notes/2026-11-23-mvp-win7-cli.en.md) |
+| [CLI](../../src/LazyTuiHub.Cli/) | The host CLI lists local plugin operations with `mise run run:cli`. Pass `--endpoint https://SERVER` for remote sessions, feeds and articles. The standalone CLI connects to a remote server. [CLI and Windows 7](../../.agents/notes/2026-11-23-mvp-win7-cli.en.md) |
 | [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
 
-PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. Each business plugin writes its own tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
+`PipelineDefinition` describes processing. `DataReference` identifies a business object, and `DataRelation` links objects. A business plugin that needs catalog registration uses `BusinessStorage` with the workspace connection source. Its changes, index updates and framework relationships commit in one transaction. Plugins own their business tables. The framework owns catalog writes. The boundary relies on trusted code in the shared process. Synchronized-input keys have a separate role.
 
-The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, articles.store, and articles.output. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP callers use IRssApi for subscriptions and IArticleApi for articles; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
+`rss.ingest` connects `builtin.timer`, `rss.feed-requests`, `builtin.http-fetch`, `rss.parse`, `articles.store` and `articles.output`. Plugins can subscribe to parser output. RSS records a fetch observation before parsing and Articles commits each article separately. A later interruption preserves these writes. RSS and Articles also use graphs for their reader operations. Both local and HTTP callers use `IRssApi` and `IArticleApi`. [API reference](../api/index.md)
 
 To connect another source, emit [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/ArticleDraft.cs) and connect the output to articles.store. The source resource name and its entry ID identify the article together. For example, notebooks/a and notebooks/b can both use entry ID 1. Repeating an entry updates its content and preserves its article name and read state. A packet carrying a registered origin reference also records the relationship in the same transaction.
 
@@ -43,7 +43,7 @@ A report can reference article operations and offer game statistics when Games i
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="../Articles/Articles.csproj" PluginRelation="Requires" />
+  <ProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj" PluginRelation="Requires" />
   <PluginReference Include="lazytuihub.plugin.tuihub.games"
                    PluginRelation="CompatibleWith" PluginVersionRange="[1.0.0,2.0.0)" />
 </ItemGroup>
@@ -57,9 +57,9 @@ NodeRegistration.Register accepts typed, named input/output declarations and one
 
 The planner combines each node descriptor's required resource with any extra resource names in the workflow node’s `requires` array. Each instance registers its resources independently. For example, `articles.store` requires `workspace.primary`, while a digest workflow can request `compute.batch`. Workflow JSON contains only logical nodes, settings, requirements, and edges. A plan shows the resolved requirements and candidate instances, plus any unreachable inventory endpoints. Running a saved definition builds a fresh plan. Saving retains definitions with missing capabilities and reports diagnostics.
 
-## Running across instances
+## Multi-node prototype
 
-Use `mise -E development run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration. Set `TEST_APP_PLATFORM=linux/amd64` when the cached .NET image is AMD64 on an ARM64 engine. This selects the RID and platform for the application nodes only.
+Use `mise -E development run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration. Set `TEST_APP_PLATFORM=linux/amd64` when the cached .NET image is AMD64 on an ARM64 engine. This selects the RID and platform for the application nodes only. The fixture configures peer URLs and pushes work. Worker polling and plugin-inventory parity are design targets. [Coordination Note](../../.agents/notes/2026-11-19-mvp-coordination.en.md)
 
 | Setting | Purpose |
 | --- | --- |
@@ -76,7 +76,7 @@ For an owner-bound operation such as `articles.store`, the planner requires exac
 
 StreamInput contains the port and DataPacket. Streaming data becomes readable promptly subject to backpressure; the framework promises no business processing order across stream messages or ports. Local fan-out separately delivers the same read-only payload reference to each branch. Transformations create new results, and GC reclaims released objects. This is not cross-process shared memory.
 
-SynchronizedInput contains a messageKey and a read-only dictionary of the complete input group. All synchronized inputs on a node form one group. Writers explicitly supply a key; the core aligns matching keys and never exposes a partial group. Each key maintains received values per port in FIFO order, taking one per port for each group. Repeated keys form more groups rather than triggering deduplication. Different keys advance when ready; cross-producer business-round association is not inferred.
+A node reads the key from `SynchronizedInput.MessageKey` and the complete group from the read-only `Values` dictionary. Writers supply the key. The framework queues values by key and port and delivers a group when it can take one value from each port. A key can form successive groups without deduplication. Different keys advance as their groups become ready. Plugins define how rounds from different producers relate.
 
 Synchronization establishes grouped visibility and declared dependencies, not physically simultaneous arrival or timing relative to stream data. Nodes own configuration application, state, and side effects. An async event loop can replace local configuration after reading a complete group and use a snapshot for subsequent stream processing. See the executable [mixed-input example](../../src/LazyTuiHub/Examples/WorkflowDemo.cs).
 
@@ -107,9 +107,9 @@ mise run run -- --database .local/rss/workspace.db --command articles --action l
 mise run run -- --database .local/rss/workspace.db --command articles --action read --name articles/ARTICLE_ID
 ```
 
-Replace the feed URI with a real address. add returns the subscription name; articles list returns article names and a continuation token, accepted by --page-token. read marks the article read and prints Proto JSON without executing HTML.
+Replace the example feed URL with a real one. `rss add` returns the subscription name. `articles list` returns article names and a token for the next page. Pass it with `--page-token`. `articles read` marks the article as read and prints its Protobuf JSON without executing any embedded HTML.
 
-Without --database, the workspace is LazyTuiHub/workspace.db under system LocalApplicationData. Hosting HTTP starts available plugin tasks whose required workflows can plan. The initial graph uses a 15-minute interval, configurable with --refresh-interval 00:05:00 when first created; existing graph definitions are preserved. Timer backlog uses PeriodicTimer coalescing without replaying every missed tick. Refresh failures are logged and retried on the next interval.
+Without `--database` the host uses `LazyTuiHub/workspace.db` under the local application-data directory. In single-account mode, the HTTP or local desktop host starts eligible plugin tasks. The default RSS timer ticks every 15 minutes. Set `--refresh-interval 00:05:00` when creating a workspace, or edit the timer in an existing graph. `PeriodicTimer` coalesces missed ticks. A failed run logs its error and waits one refresh interval before retrying.
 
 ```sh
 mise run run -- --database .local/rss/workspace.db --urls http://127.0.0.1:5080
@@ -148,7 +148,7 @@ Disabled/missing plugins expose no business commands/routes/nodes and start no t
 
 --command plugins --action cleanup or uninstall --plugin ID explicitly invokes the optional plugin hook. Disabled maintenance targets can provide hooks at cold startup without activating their capabilities. Missing code or absent hooks report an error; RSS currently provides neither. The framework accepts hook completion without proving business cleanup. uninstall does not remove DLLs or catalog records. No hook runs automatically on disablement or absence.
 
-To contribute a plugin, implement IApplicationPlugin.Configure(PluginRegistration), declare services/nodes/data types/default workflows/commands/routes/tasks and any DAO requirements/offers or retention delegations, and add its identity and entry DLL/type to the distribution manifest. requires lists hard service dependencies; DAO requirements match active provider capabilities before consumer activation, independently of manifest order. Cross-business workflow edges remain separate. Framework services manage metadata; business services receive IWorkflowExecutor. Saved default graphs are inserted only when absent. Task declarations list required workflows; tasks own their retry behavior and honor host cancellation. Declaration snapshots survive missing implementations, but active queues, synchronized inputs, and node state are still volatile.
+Register services, nodes, data types, routes and tasks in the Server entry. The SDK generates the manifest from project declarations. The host orders required dependencies, resolves DAO capabilities and then checks the workflows each task requires. `IWorkflowExecutor` runs saved definitions. Defaults are inserted only when absent. Plugins own retry and cancellation behavior. The catalog retains declarations across restarts. Queued messages, synchronized inputs and node state live in memory.
 
 ## DAO tools and retention
 
@@ -170,11 +170,11 @@ mise run run -- --database .local/rss/workspace.db --command dao --action pause 
 mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner lazytuihub.plugin.tuihub.rss --table fetch_details
 ```
 
-Common cleanup only visits explicitly persisted PluginRegistration.Retentions delegations; using a template alone does not authorize cleanup. RSS delegates its fetch_details table. The storage plugin cleans once at HTTP server startup and then every minute by default; its cleanupInterval setting changes scheduling, not expiry. CLI mode starts no background tasks. Each delegated table uses a single DELETE of expired records without a work budget or batching promise. Target errors are retained independently with the last attempt and deletion count.
+RSS delegates `fetch_details` through `PluginRegistration.Retentions`. When plugin tasks run, the storage plugin cleans delegated tables at startup and then every minute by default. `cleanupInterval` sets the schedule. Each pass issues one `DELETE` per table and records its result, error or deletion count independently. CLI commands and account-mode hosts do not start the background cleaner.
 
 Delegation survives owner disablement/absence, so cleanup continues when the provider remains active; that behavior follows the prior explicit authorization. Missing providers retain data, expiry, delegation, and diagnostics. dao pause/resume persists across restart and controls subsequent passes; an already started deletion may finish. Pausing physical cleanup does not change expiry visibility. Runtime queues and synchronized inputs remain volatile and are not subject to these retention policies. Cross-store commits, durable-input holds, and recovery remain open in the [storage and DAO Note](../../.agents/notes/2026-11-17-mvp-storage-dao.en.md).
 
-## Inspecting and editing graphs
+## Inspecting and editing graphs during plugin development
 
 ```sh
 mise run run -- --database .local/rss/workspace.db --command workflow --action nodes
@@ -206,4 +206,4 @@ The runtime uses .NET Channels behind its port API. Node functions need not mana
 
 Run progress is transient. Saved graphs do not save active queues or create crash recovery, checkpoints, durable replay, or exactly-once effects. Capacity scheduling, pending-input budgets, complex key association, feedback graphs, and remote synchronized execution remain further work.
 
-The business APIs serve trusted operators and have no end-user authentication; subscription URIs trigger outbound requests. HTTP errors retain the existing ASP.NET Core google.rpc.Status JSON/ErrorInfo difference from AIP-193's outer error envelope and HTTP-valued code. Pagination keys live beside the database in keys; retain them for existing tokens to survive restart. No database schema standard or historical upgrade layer is introduced.
+Single-account mode assumes a trusted operator. Account mode requires HTTPS and a user session for business requests. In either mode, a subscription URL can trigger outbound HTTP access. ASP.NET Core returns `google.rpc.Status` with `ErrorInfo`, which differs from AIP-193’s outer HTTP error envelope and HTTP status code field. Keep the `keys/` directory beside the database to preserve pagination tokens across restarts. The MVP provides no migration path for discarded prototype schemas.

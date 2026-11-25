@@ -8,9 +8,9 @@ category: architecture
 
 ## 范围与决策
 
-2026-11-18，用户在源码／生态调查和原生原型比较后，确定使用 Avalonia 作为产品 UI 框架。后续产品 UI 按 Avalonia 推进，Uno 仅保留在比较原型中。该 Note 根据 [MVP 约定](../../AGENTS.md) 保持 proposed，以便所有 MVP Note 在合入主分支前自由编辑；Avalonia 是当前实现选择，仍可按该约定替换；此前选型和现有代码都不约束最终 MVP。
+项目于 2026-11-18 比较 macOS 原生窗口后选用 Avalonia。产品桌面使用 Avalonia，比较原型中保留 Uno。选型遵循 [MVP 约定](../../AGENTS.md)。
 
-比较已验证下一轮需要的阅读器、流式工作流画布交互和 DLL 视图机制。Avalonia 在 macOS 上观察到的输入、可访问性树保留和原生菜单表现支持本次选择。Uno 的未决现象仍限定于当前原型与工具；采用 Avalonia 无需先证明这些现象属于框架缺陷。
+两套原型都实现了阅读器、可拖动的图和 DLL 提供的页面。macOS 下的输入、辅助功能树和原生菜单表现支持选用 Avalonia。下文的 Uno 结果限于受测原型及工具。
 
 [比较指南](../../docs/development/ui-comparison.zh.md) 提供命令、源码边界、检查范围和相同的交互操作。代码位于 `.agents/prototypes/ui-comparison/`，不加入产品解决方案或默认 CI。可选的 `check:ui` 将分析器警告视为错误构建，并运行官方无窗口主机。已有产品门槛保持不变；原型仅针对布局尺寸字面量豁免魔法数字规则。
 
@@ -28,7 +28,7 @@ category: architecture
 
 固定无窗口视口中，600 条数据对应 Avalonia 13 个、Uno Fluent 24 个已创建列表容器，说明该场景下两边都没有一次性创建全部容器。缓冲策略不同，不能据此做性能排名。Uno 需要 XAML 资源初始化和异步搜索事件处理；Avalonia 提供布局变换包装控件，Uno 原型则围绕渲染变换调整滚动范围。
 
-Avalonia 还编写了原生 Reader／Workflow 菜单代码，Uno 目前只实现窗内导航。这是本次实现的差异，不证明 Uno 缺少原生菜单接入能力。编译错误、API 使用错误和下载失败不计作框架缺陷。
+Avalonia 原型实现原生 Reader／Workflow 菜单，Uno 原型使用窗内导航。原生菜单只在 Avalonia 上验证过。
 
 ## 原生比较与剩余边界
 
@@ -42,7 +42,7 @@ Cupertino 版本现显式导出隐式样式；先前只加载资源，未实际�
 
 ## 产品桌面接入
 
-首轮产品实现已将 Avalonia 12.1.6 纳入主解决方案。[桌面指南](../../docs/development/desktop-mvp.zh.md) 提供命令与范围。`mise run run:desktop` 在单进程内启动 .NET 通用宿主和 Avalonia 窗口，既有 CLI／Web 入口继续可用。共用装配提供相同的插件运行时、服务、SQLite 工作区、数据保护密钥和后台任务。桌面激活不映射 HTTP 端点，也不启动监听；服务工作移出 UI 线程，阅读器通过 IArticleApi 阅读，通过 IRssApi 管理订阅。
+产品使用 Avalonia 12.1.6。`mise run run:desktop` 在同一进程启动窗口与 .NET 通用宿主。本地桌面与 CLI 共用插件装配、SQLite 工作区和数据保护密钥，可运行后台任务，无需开启 HTTP 监听。传入 `--endpoint` 时，阅读器连接指定的 HTTPS 服务。[桌面指南](../../docs/development/desktop-mvp.zh.md)
 
 LazyTuiHub.Desktop 负责外壳、主题切换、工作流与插件检查器。文章插件通过同一 DLL 的 ClientGui 入口提供阅读器。阅读器使用文章契约，RSS 插件可注册订阅来源。宿主按页面声明创建视图。后端、DAO 和工作流可在无界面宿主中独立运行。
 
@@ -50,7 +50,7 @@ PluginRegistration 现接受普通 DeclaredPage 身份／标题记录。框架�
 
 阅读器支持创建订阅、抓取所选订阅、通过 API 分页列出文章、按阅读状态筛选和标记已读。它使用真实 RSS 工作流与 SQLite，不将示例数据复制到产品。Load more 按下一页令牌推进，不限制界面的文章总数；订阅列表读取 API 的全部页。正文按可选择的文本展示，包含源标记；界面尚未实现 HTML 渲染、外部链接导航、全文搜索和改回未读。业务 API 行为保持不变。
 
-Workflows 展示已保存的定义、当前执行计划和节点不可用的原因，不编辑图或提交任意执行。Plugins 分别展示已保存意图与当前激活状态，可以更改下次启动的启用设置。只关闭 UI 不影响 RSS 服务／任务；关闭或缺失 RSS 会阻塞依赖它的 UI。UI 代码缺失时保留页面声明和数据，框架诊断仍可使用。既有托管保留策略继续按自身约定执行。
+Workflows 检查已保存的图、执行计划和缺失节点，开发者可在操作面板中保存或执行图。Plugins 分别显示启用设置和本次激活结果。阅读器属于 Articles DLL。停用 RSS 后仍能阅读已有文章，订阅操作随 RSS 停用。插件代码缺失时，目录声明、工作区数据和既有保留策略继续有效。
 
 同一阅读页面内串行执行操作，展示忙碌状态和错误。关闭窗口时先取消并等待受跟踪的界面操作，再停止后台任务，最后释放宿主。取消保留已经提交的写入；这实现协作退出，不代表持久化重放或无损暂停。选择和筛选条件仍只保留在当前进程，外观偏好保存在本机。
 
@@ -70,7 +70,7 @@ Workflows 展示已保存的定义、当前执行计划和节点不可用的原�
 
 ## 响应式布局与 UI 自动化
 
-本轮参考 waiter 对应用导航、页面内容和次要表单的分离。依据是它的[应用外壳与模块布局](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/frame_page.dart)、[断点](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/layout/bootstrap_breakpoints.dart)、[最近文章页](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/yesod/yesod_recent_page.dart)和[文章预览](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/yesod/yesod_preview_card.dart)。借鉴范围是信息层次和窄屏导航，不引入 Flutter，也不复制完整控件包装层。
+桌面布局参考 waiter，分别组织应用导航、页面内容和次要表单。依据是它的[应用外壳与模块布局](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/frame_page.dart)、[断点](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/layout/bootstrap_breakpoints.dart)、[最近文章页](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/yesod/yesod_recent_page.dart)和[文章预览](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/yesod/yesod_preview_card.dart)。桌面沿用了其中的信息层次和窄屏导航方式。
 
 应用导航随设计系统变化。macOS 在 992 个逻辑单位处切换侧栏与菜单，Fluent 使用展开、紧凑和最小三档，Material 根据窗口大小与入口数选择侧轨或底栏。[设计系统审查](2026-11-18-mvp-design-systems.zh.md)记录了平台依据和各档取值。共用的 AdaptivePane 根据页面实际分配宽度判断：超过 768 时并排显示 360 宽的列表和详情，否则一次只显示一栏。鼠标选中条目或按 Enter 进入详情，Back 在布局完成后将键盘焦点还给选中的条目。Reader、Workflows 和 Plugins 共用这个行为。这些数字决定呈现方式，不构成最小窗口尺寸或平台支持承诺。缩放复用控件和模型；设计系统切换通过已有页面状态保留当前列表／详情位置。
 
@@ -80,14 +80,10 @@ Workflows 展示已保存的定义、当前执行计划和节点不可用的原�
 
 场景覆盖订阅输入、抓取、阅读、已读状态、窄屏返回／焦点、检查器导航、三种设计的宽／中／窄尺寸以及深色模式。弹层通过打开状态和自己的视觉根节点观察，再通过键盘操作、单独截图。computer use 捕获遗漏属于工具观察，不能单凭它判定界面失败或替换交互。无窗口图像不替代对原生字体、窗口外观、无障碍、弹层位置和图形性能的验证。Android 和旧 Windows 不在本轮范围内。
 
-## 设计系统审查
-
-[设计系统 Note](2026-11-18-mvp-design-systems.zh.md) 记录五套库的比较、产品实现和验证结果。
-
 ## 产品验证与剩余工作
 
-产品检查和 CI 现包含桌面项目与连接真实服务的无窗口测试。测试覆盖多页订阅、已读状态持久化、输入错误、导航、UI 代码关闭／缺失／恢复、RSS 依赖不可用、桌面不启动 HTTP 服务、后台任务退出及正在进行的界面操作取消。2026-11-18 的 macOS ARM64 原生检查还实际操作了订阅／抓取／阅读／筛选、计划查看、重启后的插件关闭／恢复、数据保留、主题切换和应用退出。原生检查促使文章和插件的辅助功能名称改为可读名称，不再暴露对象内容。
+产品检查和 CI 现包含桌面项目与连接真实服务的无窗口测试。测试覆盖多页订阅、已读状态持久化、输入错误、导航、UI 代码关闭／缺失／恢复、关闭 RSS 后仍可阅读已存文章、桌面不启动 HTTP 服务、后台任务退出及正在进行的界面操作取消。2026-11-18 的 macOS ARM64 原生检查还实际操作了订阅／抓取／阅读／筛选、计划查看、重启后的插件关闭／恢复、数据保留、主题切换和应用退出。原生检查促使文章和插件的辅助功能名称改为可读名称，不再暴露对象内容。
 
 UI 项目保留产品分析器规则，仅针对通过构造函数注入依赖并使用编译式 XAML 初始化的视图豁免 AVLN3001：未使用的资源 URI 构造路径无法调用这些构造函数。[官方编译器实现](https://github.com/AvaloniaUI/Avalonia/blob/12.1.6/src/Avalonia.Build.Tasks/XamlCompilerTaskExecutor.cs) 说明了该诊断；不为通过检查添加占位服务或无参构造函数。无窗口测试使用官方会话的异步释放方式。
 
-三套设计体系已接入应用适配层，控件覆盖不代表完整的原生平台交互。远程服务端选择、可视化工作流编辑器、HTML 渲染、安装包以及 Android／Windows 7／XP 支持仍待推进。框架选定不代表已经验证平台支持范围；输入法组合输入、完整辅助技术表现和 GPU 性能仍需验证。Uno 继续保留在可选比较产物中，不引入第二套产品渲染器或跨渲染器抽象。
+`--endpoint` 已支持远程会话、订阅和文章。应用内服务端选择器、HTML 渲染、安装程序及 Android 宿主仍待开发。Windows 7 已验证 CLI 和本地宿主的指定操作。Windows 7／XP 桌面、完整辅助功能、输入法组合输入和 GPU 性能仍需在目标平台验证。[兼容性记录](2026-11-23-mvp-win7-cli.zh.md)
