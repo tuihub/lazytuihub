@@ -6,6 +6,10 @@ Use the [defensive-review skill](.agents/skills/defensive-review/SKILL.md) when 
 
 Maintain that policy through complete replacement Notes: implement a full successor, archive the previous Note without rewriting its body, and update the skill and entry-point links together. A proposed successor does not replace the current effective policy.
 
+## Third-party Internet access
+
+Repository code may retrieve third-party data or call a third-party service over the Internet only through a channel that the third party officially provides. This applies to plugins, tools, prototypes and fallback paths. Official database dumps, feeds, login APIs and APIs served to a site's own frontend can all qualify. For frontend APIs, follow the site's robots.txt, honor rate limits and use a widely compatible User-Agent that truthfully identifies LazyTuiHub. Local file access is unrestricted by this rule. See the [third-party access Note](.agents/notes/2026-11-26-third-party-access.en.md).
+
 ## MVP choices remain provisional
 
 **No MVP technology or architecture choice is immutable.** Until the MVP is merged into main, frameworks, dependencies, design-system libraries, protocols, storage implementations, schemas, and component boundaries may all be reconsidered or replaced. Existing code, earlier selections, passing tests, and previous commits are evidence of the current implementation, not reasons to preserve it. Optimize for the final MVP deliverable. Replacement cost, sunk implementation effort, minimizing rework, and preserving the current stack are not decision criteria during the MVP. Replace earlier work whenever the final result calls for it; do not silently narrow work to installed dependencies, retain an inferior option to save work, or add compatibility for discarded prototypes.

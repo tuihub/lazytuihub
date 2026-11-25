@@ -32,7 +32,6 @@ public abstract class GameAccountProvider
     )
     {
         using var request = new HttpRequestMessage(query is null ? HttpMethod.Get : HttpMethod.Post, uri);
-        request.Headers.UserAgent.ParseAdd("TuiHub/LazyTuiHub (+https://github.com/tuihub/lazytuihub)");
         if (header.Equals("x-webapi-key", StringComparison.Ordinal))
             request.Headers.Add(header, secret);
         else

@@ -18,5 +18,14 @@ internal sealed class ProviderOperations(string provider, IWorkflowExecutor work
         Execute<GameEntry>("import", new(sourceId, game), token);
 
     private async Task<T> Execute<T>(string action, GameRequest input, CancellationToken token)
-        where T : class => (await workflows.CollectAsync<T>(provider + "." + action, input, token)).Single();
+        where T : class
+    {
+        var workflow = provider + "." + action;
+        var results = await workflows.CollectAsync<T>(workflow, input, token);
+        return results.Count == 1
+            ? results[0]
+            : throw new InvalidOperationException(
+                $"Workflow '{workflow}' must return one {typeof(T).Name} result, received {results.Count}."
+            );
+    }
 }

@@ -9,6 +9,7 @@
     <PluginEntryPoint Include="Server" Type="$(RootNamespace).SteamPlugin" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Meziantou.Framework.RobotsTxt" Version="2.0.5" />
     <ProjectReference Include="../../src/LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
     <ProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Games/LazyTuiHub.Plugin.TuiHub.Games.csproj"
                       PluginRelation="Requires" PluginVersionRange="[1.0.0,2.0.0)" />

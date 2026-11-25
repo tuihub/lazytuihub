@@ -20,16 +20,16 @@ internal sealed class FetchOperation(HttpClient client, IReadOnlySet<string>? al
         try
         {
             using var response = await client.GetAsync(request.Uri, HttpCompletionOption.ResponseContentRead, token);
+            if (!response.IsSuccessStatusCode && response.Headers.RetryAfter is { } retry)
+                throw new PacketRejectedException(
+                    $"The upstream source returned HTTP {(int)response.StatusCode}. Retry-After: {retry}.",
+                    new HttpRequestException(response.ReasonPhrase, null, response.StatusCode)
+                );
             response.EnsureSuccessStatusCode();
             return new(request.Uri, await response.Content.ReadAsByteArrayAsync(token), request.Source);
         }
         catch (HttpRequestException error)
-            when (error.StatusCode
-                    is null
-                        or HttpStatusCode.RequestTimeout
-                        or HttpStatusCode.TooManyRequests
-                        or >= HttpStatusCode.InternalServerError
-            )
+            when (error.StatusCode is null or HttpStatusCode.RequestTimeout or >= HttpStatusCode.InternalServerError)
         {
             throw new InstanceUnavailableException(error.Message, error);
         }

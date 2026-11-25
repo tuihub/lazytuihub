@@ -26,7 +26,8 @@ internal static class HostComposition
         services.AddDataProtection().PersistKeysToFileSystem(keys).SetApplicationName("LazyTuiHub");
         ClusterConfiguration.Register(services, configuration);
         services.AddSingleton(_ =>
-            configuration.GetValue<bool>("worker")
+        {
+            var client = configuration.GetValue<bool>("worker")
                 ? new HttpClient(
                     new HttpClientHandler
                     {
@@ -35,8 +36,10 @@ internal static class HostComposition
                         UseProxy = false,
                     }
                 )
-                : new HttpClient()
-        );
+                : new HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(PluginHttpIdentity.UserAgent);
+            return client;
+        });
         var database = new SqliteDatabase(path);
         var enabled = configuration.GetValue<bool>("Access:Enabled");
         var authority =

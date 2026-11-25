@@ -25,7 +25,8 @@ async function setup() {
   const fontDirectory = resolve(site, 'fonts');
   await mkdir(fontDirectory, { recursive: true });
   const source = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap';
-  const response = await fetch(source, { headers: { 'User-Agent': 'Mozilla/5.0 Chrome/130.0.0.0 Safari/537.36' } });
+  const headers = { 'User-Agent': 'Mozilla/5.0 (compatible; LazyTuiHub; +https://github.com/tuihub/lazytuihub)' };
+  const response = await fetch(source, { headers });
   if (!response.ok) throw new Error(`Roboto CSS: ${response.status}`);
   const css = await response.text();
   const blocks = [...css.matchAll(/@font-face\s*\{[^}]+\}/g)].map(match => match[0]);
@@ -33,7 +34,7 @@ async function setup() {
   const urls = [...new Set(blocks.join('\n').match(/https:\/\/fonts\.gstatic\.com\/[^)\s]+/g))];
   let local = blocks.join('\n');
   for (const [index, url] of urls.entries()) {
-    const font = await fetch(url);
+    const font = await fetch(url, { headers });
     if (!font.ok) throw new Error(`Roboto font: ${font.status}`);
     const name = `roboto-${index}${new URL(url).pathname.endsWith('.woff2') ? '.woff2' : '.ttf'}`;
     await writeFile(resolve(fontDirectory, name), Buffer.from(await font.arrayBuffer()));

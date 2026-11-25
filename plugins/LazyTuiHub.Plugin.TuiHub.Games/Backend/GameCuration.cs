@@ -11,14 +11,16 @@ internal sealed class GameCuration(
     IEnumerable<SqliteGameProvider> offline
 )
 {
-    public async Task<GameMetadata[]> SearchAsync(string provider, string query, CancellationToken token) =>
-        (await workflows.CollectAsync<GameMetadata[]>(provider + ".search", new GameRequest(query), token)).Single();
+    private ProviderOperations Provider(string name) => new(name, workflows);
 
-    public async Task<GameMetadata> LookupAsync(CatalogKey key, CancellationToken token) =>
-        (await workflows.CollectAsync<GameMetadata>(key.Provider + ".lookup", new GameRequest(key.Id), token)).Single();
+    public Task<GameMetadata[]> SearchAsync(string provider, string query, CancellationToken token) =>
+        Provider(provider).Search(query, token);
+
+    public Task<GameMetadata> LookupAsync(CatalogKey key, CancellationToken token) =>
+        Provider(key.Provider).Lookup(key.Id, token);
 
     public Task LinkAsync(string game, CatalogKey source, CancellationToken token) =>
-        workflows.CollectAsync<GameEntry>(source.Provider + ".import", new GameRequest(source.Id, game), token);
+        Provider(source.Provider).Import(source.Id, token, game);
 
     public async Task<CatalogKey[]> CandidatesAsync(string game, CancellationToken token)
     {

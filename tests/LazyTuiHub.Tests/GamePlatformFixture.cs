@@ -9,6 +9,7 @@ internal sealed class GamePlatformFixture : HttpMessageHandler
 {
     internal bool Empty { get; set; }
     internal bool Interrupt { get; set; }
+    internal List<string> StorePaths { get; } = [];
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -16,6 +17,22 @@ internal sealed class GamePlatformFixture : HttpMessageHandler
     )
     {
         var uri = request.RequestUri!;
+        if (uri.Host == "store.steampowered.com")
+        {
+            Assert.Contains("(compatible; LazyTuiHub;", request.Headers.UserAgent.ToString());
+            StorePaths.Add(uri.AbsolutePath);
+            if (uri.AbsolutePath == "/robots.txt")
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "User-agent: *\nDisallow: /\n\nUser-agent: LazyTuiHub\nDisallow: /api/\nAllow: /api/storesearch/"
+                    ),
+                };
+            Assert.Equal("/api/storesearch/", uri.AbsolutePath);
+            if (Interrupt)
+                return new(HttpStatusCode.TooManyRequests) { Headers = { RetryAfter = new(TimeSpan.FromMinutes(1)) } };
+            return Json("""{"items":[{"type":"app","id":324160,"name":"CLANNAD"}]}""");
+        }
         if (uri.Host == "steamcommunity.com")
         {
             Assert.Contains(

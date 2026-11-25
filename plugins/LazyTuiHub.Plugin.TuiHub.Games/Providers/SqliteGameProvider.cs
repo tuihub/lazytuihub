@@ -6,14 +6,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Plugin.TuiHub.Games;
 
-public abstract class SqliteGameProvider(string provider) : GameProviderPlugin(provider)
+public abstract class SqliteGameProvider(string provider) : IApplicationPlugin, IGameCatalog
 {
+    protected string Provider { get; } = provider;
+
     private const int CannotOpenDatabase = 14;
     private string database = string.Empty;
 
     public string? AvailableCatalog => File.Exists(database) ? Provider : null;
 
-    public override void Configure(PluginRegistration registration)
+    public virtual void Configure(PluginRegistration registration)
     {
         database = registration.Configuration[$"Games:{Provider}:Database"]
             ?? Path.Combine(
@@ -23,7 +25,7 @@ public abstract class SqliteGameProvider(string provider) : GameProviderPlugin(p
                 Provider + ".sqlite"
             );
         registration.Services.AddSingleton<SqliteGameProvider>(this);
-        base.Configure(registration);
+        registration.AddGameProvider(Provider, _ => this);
     }
 
     protected const string MatchingTitles = """
@@ -34,10 +36,10 @@ public abstract class SqliteGameProvider(string provider) : GameProviderPlugin(p
     protected abstract string Query(bool search);
     protected abstract GameMetadata Read(SqliteDataReader row);
 
-    protected override Task<GameMetadata[]> SearchAsync(HttpClient client, string query, CancellationToken token) =>
+    public Task<GameMetadata[]> SearchAsync(string query, CancellationToken token) =>
         Task.Run(() => Fetch(query, true, token), token);
 
-    protected override async Task<GameMetadata> LookupAsync(HttpClient client, string id, CancellationToken token) =>
+    public async Task<GameMetadata> LookupAsync(string id, CancellationToken token) =>
         (await Task.Run(() => Fetch(id, false, token), token)).SingleOrDefault()
         ?? throw new KeyNotFoundException($"No {Provider} game with ID '{id}'.");
 
