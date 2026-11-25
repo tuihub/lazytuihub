@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
@@ -47,6 +48,18 @@ public sealed partial class DesktopTests
         Assert.NotNull(GameCard(driver, "Untitled prototype"));
         await driver.ClickAsync(states.ContainerFromIndex(0)!);
         var search = GameControl<TextBox>(driver, "Search");
+        var shortcut = driver.Window.GetPlatformSettings()!.HotkeyConfiguration.CommandModifiers;
+        var modifier = shortcut == KeyModifiers.Meta ? RawInputModifiers.Meta : RawInputModifiers.Control;
+        driver.Window.FindControl<Button>("AppearanceButton")!.Focus();
+        await driver.KeyAsync(driver.Window, Key.F, modifier);
+        Assert.True(search.IsFocused);
+        await driver.TypeAsync(search, "CLANNAD");
+        await driver.KeyAsync(driver.Window, Key.F, modifier);
+        Assert.Equal("CLANNAD", search.SelectedText);
+        await driver.ClickAsync(GameControl<Button>(driver, "ClearQuery"));
+        Assert.True(search.IsFocused);
+        Assert.True(string.IsNullOrEmpty(search.Text));
+        Assert.True(GameControl<ItemsRepeater>(driver, "Shelf").ItemsSource!.Cast<object>().Count() > 1);
         await driver.TypeAsync(search, "クラナド");
         Assert.Equal("クラナド", search.Text);
         Assert.DoesNotContain(VisibleGame<TextBlock>(driver), item => item.Name == "SearchHint");
@@ -91,10 +104,14 @@ public sealed partial class DesktopTests
 
     private static async Task CheckShelfLayoutAsync(DesktopUiDriver driver, DesignSystem design)
     {
-        Rect Bounds(Control control) => new(control.TranslatePoint(default, driver.Window)!.Value, control.Bounds.Size);
+        Rect LayoutSlot(Control control) =>
+            new(
+                control.GetVisualParent()!.TranslatePoint(control.Bounds.Position, driver.Window)!.Value,
+                control.Bounds.Size
+            );
         var scopes = GameControl<ListBox>(driver, "States");
         Rect[] Tabs() =>
-            Enumerable.Range(0, scopes.ItemCount).Select(i => Bounds(scopes.ContainerFromIndex(i)!)).ToArray();
+            Enumerable.Range(0, scopes.ItemCount).Select(i => LayoutSlot(scopes.ContainerFromIndex(i)!)).ToArray();
         var tabs = Tabs();
         if (design == DesignSystem.Material)
         {
@@ -102,29 +119,29 @@ public sealed partial class DesktopTests
             var label = chip.GetVisualDescendants()
                 .OfType<Avalonia.Controls.Presenters.ContentPresenter>()
                 .Single(c => c.Name == "PART_ContentPresenter");
-            Assert.InRange(Math.Abs(Bounds(label).Center.X - Bounds(chip).Center.X), 0, 1);
+            Assert.InRange(Math.Abs(LayoutSlot(label).Center.X - LayoutSlot(chip).Center.X), 0, 1);
         }
         var filters = GameControl<Button>(driver, "MoreFilters");
-        var tools = Bounds(filters);
+        var tools = LayoutSlot(filters);
         await driver.ClickAsync(scopes.ContainerFromIndex(1)!);
         Assert.Equal(tabs, Tabs());
-        Assert.Equal(tools, Bounds(filters));
+        Assert.Equal(tools, LayoutSlot(filters));
         await driver.ClickAsync(scopes.ContainerFromIndex(0)!);
         var shelf = GameControl<ScrollViewer>(driver, "ShelfScroll");
-        var viewport = Bounds(shelf);
+        var viewport = LayoutSlot(shelf);
         await driver.ClickAsync(filters);
         var popup = Assert.IsType<Flyout>(filters.Flyout);
         Assert.True(popup.IsOpen);
-        Assert.Equal(viewport, Bounds(shelf));
+        Assert.Equal(viewport, LayoutSlot(shelf));
         popup.Hide();
         await driver.SettleAsync();
         var search = GameControl<TextBox>(driver, "Search");
-        var before = Bounds(search);
+        var before = LayoutSlot(search);
         await driver.ClickAsync(GameCard(driver, "CLANNAD"));
-        Assert.Equal(before, Bounds(search));
-        Assert.Equal(tools, Bounds(filters));
+        Assert.Equal(before, LayoutSlot(search));
+        Assert.Equal(tools, LayoutSlot(filters));
         await driver.ClickAsync(GameControl<Button>(driver, "CloseDetail"));
-        Assert.Equal(viewport, Bounds(shelf));
+        Assert.Equal(viewport, LayoutSlot(shelf));
     }
 
     private static async Task ExerciseGameEditsAsync(DesktopUiDriver driver, GameLibrary library)

@@ -29,7 +29,7 @@
             <x:Double x:Key="PosterMinWidth">148</x:Double>
             <x:Double x:Key="PosterColumnGap">14</x:Double>
             <x:Double x:Key="PosterRowGap">18</x:Double>
-            <x:Double x:Key="LibraryCardTitleSpace">32</x:Double>
+            <x:Double x:Key="PosterTitleHeight">NaN</x:Double>
             <x:Double x:Key="TitleLineHeight">26</x:Double>
             <x:Double x:Key="HeadlineLineHeight">32</x:Double>
             <x:Double x:Key="SectionLineHeight">22</x:Double>

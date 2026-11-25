@@ -8,6 +8,22 @@
 
 用户于 2026-11-18 确认了官方交互样板。Web 截图已通过 Chromium 软件渲染跑通，生成 24 组 PNG/JSON。原生 AppKit 视图缓存截图仍有缺陷，**不能作为图像基线**。独立的 Avalonia 程序从五套库生成 50 组 PNG/JSON，不加载产品样式，验证输入并检查主题生命周期。[设计系统审查](../../notes/2026-11-18-mvp-design-systems.zh.md) 记录结论和维护取舍。这些样板不证明像素一致，也不替代平台验证。
 
+## macOS 原生游戏库窗口
+
+在 Mac 上运行下面的命令，可以打开含两款游戏的 AppKit 窗口。关闭窗口即可退出。样板采用 NSSplitViewController 侧栏、带原生搜索项的 NSToolbar 和 SwiftUI 书架，与产品自查共享两个游戏名称、封面和缺图场景。它用于对照整窗布局，业务操作仅作展示。把产品切到 Games，在相同窗口宽度和明暗模式下比较。
+
+```sh
+mise run render:design-baselines:macos-library --show
+```
+
+省略 `--show` 时，工具在后台记录以点为单位的尺寸，用 ScreenCaptureKit 单独截取自身窗口的浅色和深色画面，输出到 `.local/design-baselines/`。运行需要 macOS 14.4 或更新版本及 Xcode 命令行工具。系统合成截图包含标题栏和侧栏；采集失败时，工具会写入明确标注的 `*.view-cache.png` 诊断图。此时应打开交互窗口核对材质。原生控件的外观取决于本机系统和链接的 SDK。[Apple 的 AppKit 窗口与侧栏演示](https://developer.apple.com/videos/play/wwdc2025/310/)
+
+## Windows 与 Android 原生导航
+
+在 Windows 上打开 WinUI 3 Gallery 的 NavigationView 页面，选中 Auto 后调整窗口宽度。在中等宽度下展开紧凑侧栏，观察展开前后的正文位置。[微软 NavigationView 示例](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/navigationview)
+
+在 Android 上安装官方 Material Components Catalog APK。打开 Navigation Bar → Label Visibility Demo，添加第四个入口并选择 Labeled。再打开 Navigation Rail → Demo，添加第四个入口。对照图标、标签、选中指示器和入口间距。将截图像素数除以模拟器的密度倍数，即可比较逻辑尺寸。本次使用 Android 16、420 dpi，每 dp 对应 2.625 像素。[Material Catalog 1.14.0](https://github.com/material-components/material-components-android/releases/tag/1.14.0)
+
 ## 运行
 
 使用仓库通过 mise 管理的 Node.js 和 pnpm。样板单独维护依赖锁文件，允许 esbuild 执行必要的安装脚本，不重复声明运行时版本。

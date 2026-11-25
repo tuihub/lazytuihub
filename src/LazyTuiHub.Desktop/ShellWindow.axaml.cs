@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,44 +37,74 @@ public sealed partial class ShellWindow : Window
                 .List()
                 .Where(plugin => string.Equals(plugin.Activation, "active", StringComparison.Ordinal))
                 .SelectMany(plugin =>
-                    plugin.Saved.Declaration.Pages.Select(page => new NavigationPage(page.Title, () =>
-                        DesktopPages.Resolve(host.Services, plugin.Saved.Spec.Id, page.Id)
+                    plugin.Saved.Declaration.Pages.Select(page => new NavigationPage(
+                        page.Title,
+                        () => DesktopPages.Resolve(host.Services, plugin.Saved.Spec.Id, page.Id),
+                        NavigationIcon(page.IconResource)
                     ))
                 ),
             .. access.Allows(ResourceUri.SystemControl("operations"), AccessMode.Write) ? ManagementPages(plugins) : [],
         ];
+        if (OperatingSystem.IsMacOS())
+            InstallViewMenu();
         Pages.ItemsSource = Navigation;
         Pages.SelectedIndex = selectedPage;
+        UpdateNavigation(new Size(Width, Height));
         ShowAppearance();
+        NavigationSplit.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == SplitView.IsPaneOpenProperty)
+                UpdateNavigationLabels();
+        };
+        AddHandler(KeyDownEvent, CloseNavigationOnEscape, RoutingStrategies.Tunnel);
+        Pages.AddHandler(TappedEvent, InvokeDestination, handledEventsToo: true);
         Closing += WindowClosing;
-        SizeChanged += (_, _) => UpdateNavigation();
+        SizeChanged += (_, e) => UpdateNavigation(e.NewSize);
+    }
+
+    private static Geometry? NavigationIcon(string? resource) =>
+        Application.Current!.FindResource(resource ?? "ActionIconGrid") as Geometry
+        ?? Application.Current!.FindResource("ActionIconGrid") as Geometry;
+
+    private void InstallViewMenu()
+    {
+        var view = new NativeMenu();
+        var toggle = new NativeMenuItem("Hide Sidebar") { Gesture = new(Key.S, KeyModifiers.Meta | KeyModifiers.Alt) };
+        toggle.Click += (_, _) => NavigationSplit.IsPaneOpen = !NavigationSplit.IsPaneOpen;
+        view.NeedsUpdate += (_, _) =>
+        {
+            toggle.IsEnabled = navigationLayout is not (NavigationLayout.MaterialBar or NavigationLayout.MaterialRail);
+            toggle.Header = NavigationSplit.IsPaneOpen ? "Hide Sidebar" : "Show Sidebar";
+        };
+        view.Items.Add(toggle);
+        view.Items.Add(new NativeMenuItemSeparator());
+        foreach (var page in Navigation)
+        {
+            var destination = new NativeMenuItem(page.Title);
+            destination.Click += (_, _) => Pages.SelectedItem = page;
+            view.Items.Add(destination);
+        }
+        NativeMenu.SetMenu(this, new NativeMenu { Items = { new NativeMenuItem("View") { Menu = view } } });
     }
 
     private NavigationPage[] ManagementPages(PluginRuntime plugins) =>
         [
-            new("Workflows", () =>
-                new WorkflowPage(plugins.Workflows, host.Services.GetRequiredService<WorkflowPageState>())
+            new(
+                "Workflows",
+                () => new WorkflowPage(plugins.Workflows, host.Services.GetRequiredService<WorkflowPageState>()),
+                NavigationIcon("ActionIconWorkflow")
             ),
-            new("Plugins", () =>
-                new PluginsPage(
-                    plugins,
-                    host.Services.GetRequiredService<PluginsPageState>(),
-                    host.Services.GetRequiredService<ILogger<PluginsPage>>()
-                )
+            new(
+                "Plugins",
+                () =>
+                    new PluginsPage(
+                        plugins,
+                        host.Services.GetRequiredService<PluginsPageState>(),
+                        host.Services.GetRequiredService<ILogger<PluginsPage>>()
+                    ),
+                NavigationIcon("ActionIconPlugin")
             ),
         ];
-
-    private void UpdateNavigation()
-    {
-        var compact = Bounds.Width <= 992;
-        CompactHeader.IsVisible = compact;
-        var mode = compact ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
-        if (NavigationSplit.DisplayMode != mode)
-        {
-            NavigationSplit.DisplayMode = mode;
-            NavigationSplit.IsPaneOpen = !compact;
-        }
-    }
 
     private void MenuClick(object? sender, RoutedEventArgs e) =>
         NavigationSplit.IsPaneOpen = !NavigationSplit.IsPaneOpen;
@@ -82,7 +114,7 @@ public sealed partial class ShellWindow : Window
         if (Pages.SelectedItem is not NavigationPage page)
             return;
         PageContent.Content = Resolve(page);
-        if (NavigationSplit.DisplayMode == SplitViewDisplayMode.Overlay)
+        if (HasOpenOverlay)
             NavigationSplit.IsPaneOpen = false;
     }
 

@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
@@ -74,12 +75,103 @@ public sealed partial class DesktopTests
                     );
                     await driver.SettleAsync();
                     await ReviewShelfAsync(driver, longTitle, design, mode, token);
+                    if (design is DesignSystem.Fluent or DesignSystem.Material)
+                        await ReviewNavigationAsync(driver, design, mode);
                     await CloseAsync(window, token);
                 }
                 return true;
             },
             token
         );
+    }
+
+    private static async Task ReviewNavigationAsync(DesktopUiDriver driver, DesignSystem design, ColorMode mode)
+    {
+        var window = driver.Window;
+        var pages = window.FindControl<ListBox>("Pages")!;
+        var content = window.FindControl<ContentControl>("PageContent")!;
+        var game = Assert.IsType<LazyTuiHub.Desktop.NavigationPage>(pages.SelectedItem);
+        var gameView = content.Content;
+        var split = window.FindControl<SplitView>("NavigationSplit")!;
+        foreach (var width in new[] { 1280, 800, 390 })
+        {
+            await driver.ResizeAsync(width, 800);
+            Assert.Same(game, pages.SelectedItem);
+            Assert.Same(gameView, content.Content);
+            await driver.CaptureAsync($"{design}-{mode}-navigation-{width}");
+            if (design == DesignSystem.Material)
+            {
+                var nav = DesktopVisualScene.Bounds(pages, window);
+                var page = DesktopVisualScene.Bounds(content, window);
+                if (width == 390)
+                    Assert.Equal(page.Bottom, nav.Top);
+                else
+                    Assert.Equal(nav.Right, page.Left);
+                foreach (var destination in pages.Items.Cast<LazyTuiHub.Desktop.NavigationPage>())
+                {
+                    var item = pages.ContainerFromItem(destination)!;
+                    var label = item.GetVisualDescendants()
+                        .OfType<TextBlock>()
+                        .Single(x => x.Classes.Contains("destination-label"));
+                    var glyph = item.GetVisualDescendants().OfType<PathIcon>().Single();
+                    Assert.True(
+                        DesktopVisualScene.Bounds(glyph, window).Bottom <= DesktopVisualScene.Bounds(label, window).Top
+                    );
+                    Assert.True(
+                        DesktopVisualScene.Bounds(item, window).Contains(DesktopVisualScene.Bounds(label, window))
+                    );
+                }
+            }
+            else if (width == 800)
+            {
+                Assert.Equal(SplitViewDisplayMode.CompactOverlay, split.DisplayMode);
+                Assert.False(split.IsPaneOpen);
+                var before = DesktopVisualScene.Bounds(content, window);
+                await driver.ClickAsync(window.FindControl<Button>("PaneToggle")!);
+                Assert.True(split.IsPaneOpen);
+                Assert.Equal(before, DesktopVisualScene.Bounds(content, window));
+                await driver.KeyAsync(window, Key.Escape);
+                Assert.False(split.IsPaneOpen);
+                Assert.True(window.FindControl<Button>("PaneToggle")!.IsFocused);
+            }
+        }
+        if (design == DesignSystem.Fluent)
+            await driver.ClickAsync(window.FindControl<Button>("MenuButton")!);
+        else
+        {
+            var settings = window.FindControl<Button>("AppearanceButton")!;
+            await driver.ClickAsync(settings);
+            var popup = Assert.IsType<Flyout>(settings.Flyout);
+            Assert.True(popup.IsOpen);
+            popup.Hide();
+            await driver.SettleAsync();
+        }
+        if (design == DesignSystem.Material)
+        {
+            pages.ContainerFromItem(game)!.Focus(NavigationMethod.Tab);
+            await driver.KeyAsync(window, Key.Left);
+            var readerItem = pages.ContainerFromIndex(0)!;
+            Assert.True(
+                readerItem.IsKeyboardFocusWithin,
+                $"Bottom navigation focus after Left: {window.FocusManager?.GetFocusedElement()}."
+            );
+            await driver.KeyAsync(window, Key.Enter);
+            Assert.Equal(0, pages.SelectedIndex);
+        }
+        else
+            await driver.ClickAsync(pages.ContainerFromIndex(0)!);
+        Assert.NotSame(gameView, content.Content);
+        Assert.False(split.IsPaneOpen);
+        if (design == DesignSystem.Fluent)
+            await driver.ClickAsync(window.FindControl<Button>("MenuButton")!);
+        await driver.ClickAsync(pages.ContainerFromItem(game)!);
+        Assert.Same(gameView, content.Content);
+        var search = GameControl<TextBox>(driver, "Search");
+        await driver.TypeAsync(search, "CLANNAD");
+        await driver.ResizeAsync(1280, 800);
+        Assert.Same(game, pages.SelectedItem);
+        Assert.Equal("CLANNAD", search.Text);
+        Assert.True(search.IsFocused);
     }
 
     private sealed class CoverFixture : HttpMessageHandler
@@ -159,7 +251,8 @@ public sealed partial class DesktopTests
             .ToArray();
         double Baseline(TextBlock text) =>
             DesktopVisualScene.Bounds(text, window).Y + text.TextLayout.TextLines[0].Baseline;
-        Assert.Equal(Baseline(captions[0]), Baseline(captions[1]));
+        var difference = Baseline(captions[1]) - Baseline(captions[0]);
+        Assert.Equal(design == DesignSystem.MacOS ? title.LineHeight : 0, difference);
         var buttonBounds = DesktopVisualScene.Bounds(add, window);
         Assert.True(buttonBounds.Contains(DesktopVisualScene.Bounds(label, window)));
         Assert.True(buttonBounds.Contains(DesktopVisualScene.Bounds(icon, window)));

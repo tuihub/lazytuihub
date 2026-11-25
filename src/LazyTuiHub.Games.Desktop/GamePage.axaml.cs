@@ -15,6 +15,7 @@ public sealed partial class GamePage : UserControl
     private const double SplitWidth = 840;
     private const int InspectorWidth = 456;
     private const int CompactToolbarWidth = 760;
+    private TopLevel? shortcutHost;
     private Action? cancelReveal;
     private (string Game, double Width, Vector Offset)? origin;
     private readonly GamePageModel model;
@@ -52,6 +53,36 @@ public sealed partial class GamePage : UserControl
             cancelReveal?.Invoke();
         };
         SizeChanged += (_, _) => UpdateLayoutMode();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        shortcutHost = TopLevel.GetTopLevel(this);
+        shortcutHost?.AddHandler(KeyDownEvent, FindInShelf, RoutingStrategies.Tunnel);
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        shortcutHost?.RemoveHandler(KeyDownEvent, FindInShelf);
+        shortcutHost = null;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void FindInShelf(object? sender, KeyEventArgs e)
+    {
+        if (
+            sender is TopLevel window
+            && model.InLibrary
+            && Search.IsEffectivelyVisible
+            && e.Key == Key.F
+            && e.KeyModifiers == window.GetPlatformSettings()?.HotkeyConfiguration.CommandModifiers
+        )
+        {
+            Search.Focus();
+            Search.SelectAll();
+            e.Handled = true;
+        }
     }
 
     private void Changed(object? sender, PropertyChangedEventArgs e) => UpdateLayoutMode();
@@ -246,9 +277,16 @@ public sealed partial class GamePage : UserControl
 
     private void ChangeView(object? sender, RoutedEventArgs args) => model.SetList(!model.CompactList);
 
+    private void ClearSearch(object? sender, RoutedEventArgs args)
+    {
+        Search.Clear();
+        Search.Focus();
+    }
+
     private void SearchChanged(object? sender, TextChangedEventArgs args)
     {
         SearchHint.IsVisible = string.IsNullOrEmpty(Search.Text);
+        ClearQuery.IsVisible = !SearchHint.IsVisible;
         if (DataContext is not null)
         {
             model.Search = Search.Text ?? string.Empty;

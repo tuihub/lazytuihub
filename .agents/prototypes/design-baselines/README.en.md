@@ -8,6 +8,22 @@ This isolated experiment assembles official design references and separate Avalo
 
 The user accepted the interactive official specimens on 2026-11-18. Web capture now works with Chromium software rendering and produces 24 PNG/JSON pairs. Native AppKit view-cache images still have capture defects and are **not accepted image baselines**. An independent Avalonia program produces 50 PNG/JSON pairs from five libraries; it verifies input and examines theme lifecycle without product style overrides. The [design-system audit](../../notes/2026-11-18-mvp-design-systems.en.md) records the findings and maintenance choices. These samples do not establish pixel conformance or replace platform validation.
 
+## Native Mac library window
+
+On a Mac, open the two-game library in a real AppKit window with the command below. Close the window to exit. The scene uses an NSSplitViewController sidebar, a unified NSToolbar with a native search item, and SwiftUI shelf content. It shares the review scene’s two titles, artwork and missing-cover case. The page provides a static composition reference. Library actions are illustrative. Compare it with the Games page in the product window at the same width and appearance.
+
+```sh
+mise run render:design-baselines:macos-library --show
+```
+
+Without `--show`, the tool keeps its window in the background, records dimensions in points, and captures its own window in light and dark mode under `.local/design-baselines/`. It requires a Mac with Xcode command-line tools and macOS 14.4 or later. ScreenCaptureKit includes the system-composited title bar and sidebar. If capture fails, the tool writes explicitly named `*.view-cache.png` diagnostics. Use the interactive window to judge materials in that case. The native controls follow the installed OS and linked SDK. [Apple’s AppKit window and sidebar walkthrough](https://developer.apple.com/videos/play/wwdc2025/310/)
+
+## Native Windows and Android navigation
+
+On Windows, open the NavigationView page in the WinUI 3 Gallery, choose Auto and resize the window. In the middle width range, open the compact pane and compare the position of the page before and after expanding it. [Microsoft NavigationView examples](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/navigationview)
+
+On Android, install the official Material Components Catalog APK. In Navigation Bar → Label Visibility Demo, add a fourth item and choose Labeled. In Navigation Rail → Demo, add a fourth destination. Compare the icon, label, selection indicator and distance between destinations. Divide screenshot pixel measurements by the emulator’s density factor to compare logical sizes. The recorded run used Android 16 at 420 dpi (2.625 pixels per dp). [Material Catalog 1.14.0](https://github.com/material-components/material-components-android/releases/tag/1.14.0)
+
 ## Run
 
 Use the repository's mise-managed Node.js and pnpm versions. The prototype has its own dependency lockfile and permits esbuild's required install script. It does not add another runtime version declaration.

@@ -39,6 +39,17 @@
         </ControlTheme>
     </UserControl.Resources>
     <UserControl.Styles>
+        <Style Selector="Button.clear-search">
+            <Setter Property="Padding" Value="3,0" />
+            <Setter Property="Margin" Value="1" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
         <Style Selector="Button.coverCard:pointerover /template/ Border#CardFrame">
             <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
         </Style>
@@ -140,7 +151,7 @@
                             x:Name="Search"
                             Height="{DynamicResource ShelfSearchHeight}"
                             MinHeight="0"
-                            Padding="10,0"
+                            Padding="32,0,32,0"
                             VerticalContentAlignment="Center"
                             VerticalAlignment="Center"
                             AutomationProperties.Name="Search library"
@@ -152,12 +163,34 @@
                             IsHitTestVisible="False"
                             CornerRadius="{DynamicResource RowRadius}"
                         />
+                        <PathIcon
+                            Classes="action inline"
+                            HorizontalAlignment="Left"
+                            Margin="8,0,0,0"
+                            Foreground="{DynamicResource SecondaryText}"
+                            Data="{DynamicResource ActionIconSearch}"
+                        />
+                        <Button
+                            x:Name="ClearQuery"
+                            Classes="quiet clear-search"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Stretch"
+                            AutomationProperties.Name="Clear search"
+                            ToolTip.Tip="Clear search"
+                            Click="ClearSearch"
+                            IsVisible="False"
+                        >
+                            <PathIcon
+                                Classes="action inline"
+                                Data="{DynamicResource ActionIconClear}"
+                            />
+                        </Button>
                         <TextBlock
                             x:Name="SearchHint"
                             IsHitTestVisible="False"
                             AutomationProperties.AccessibilityView="Raw"
                             Classes="caption"
-                            Margin="11,0"
+                            Margin="32,0,8,0"
                             VerticalAlignment="Center"
                             Text="Search titles and aliases"
                             TextWrapping="NoWrap"
@@ -341,7 +374,7 @@
                                                     Grid.Row="1"
                                                     Text="{Binding Game.Title}"
                                                     Classes="item-title"
-                                                    Height="{DynamicResource LibraryCardTitleSpace}"
+                                                    Height="{DynamicResource PosterTitleHeight}"
                                                     VerticalAlignment="Top"
                                                     Margin="0,8,0,2"
                                                     MaxLines="2"

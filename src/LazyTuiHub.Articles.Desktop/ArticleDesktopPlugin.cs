@@ -16,8 +16,11 @@ public sealed class ArticleDesktopPlugin : IApplicationPlugin
             services.GetRequiredService<ILogger<ReaderModel>>(),
             services.GetRequiredService<PluginRuntime>().IsActive("rss") ? services.GetRequiredService<IRssApi>() : null
         ));
-        registration.AddDesktopPage("reader", "Reader", services => new ReaderPage(
-            services.GetRequiredService<ReaderModel>()
-        ));
+        registration.AddDesktopPage(
+            "reader",
+            "Reader",
+            services => new ReaderPage(services.GetRequiredService<ReaderModel>()),
+            "ActionIconBook"
+        );
     }
 }

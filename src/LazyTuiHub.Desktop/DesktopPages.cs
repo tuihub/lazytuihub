@@ -10,10 +10,11 @@ public static class DesktopPages
         this PluginRegistration registration,
         string id,
         string title,
-        Func<IServiceProvider, Control> create
+        Func<IServiceProvider, Control> create,
+        string? iconResource = null
     )
     {
-        registration.Pages.Add(new(id, title));
+        registration.Pages.Add(new(id, title, iconResource));
         registration.Services.AddKeyedTransient<Control>((registration.Id, id), (services, _) => create(services));
     }
 

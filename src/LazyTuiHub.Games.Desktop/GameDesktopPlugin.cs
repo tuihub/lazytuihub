@@ -10,9 +10,14 @@ public sealed class GameDesktopPlugin : IApplicationPlugin
     {
         registration.Services.AddSingleton<GamePageModel>();
         registration.Services.AddSingleton<GameCovers>();
-        registration.AddDesktopPage("library", "Games", services => new GamePage(
-            services.GetRequiredService<GamePageModel>(),
-            services.GetRequiredService<GameCovers>()
-        ));
+        registration.AddDesktopPage(
+            "library",
+            "Games",
+            services => new GamePage(
+                services.GetRequiredService<GamePageModel>(),
+                services.GetRequiredService<GameCovers>()
+            ),
+            "ActionIconGames"
+        );
     }
 }

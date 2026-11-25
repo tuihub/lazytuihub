@@ -72,7 +72,7 @@ Workflows 展示已保存的定义、当前执行计划和节点不可用的原�
 
 本轮参考 waiter 对应用导航、页面内容和次要表单的分离。依据是它的[应用外壳与模块布局](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/frame_page.dart)、[断点](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/layout/bootstrap_breakpoints.dart)、[最近文章页](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/yesod/yesod_recent_page.dart)和[文章预览](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/lib/view/pages/yesod/yesod_preview_card.dart)。借鉴范围是信息层次和窄屏导航，不引入 Flutter，也不复制完整控件包装层。
 
-应用导航在宽度超过 992 个逻辑单位时常驻，较窄时通过 Menu 打开。共用的 AdaptivePane 根据页面实际分配宽度判断：超过 768 时并排显示 360 宽的列表和详情，否则一次只显示一栏。鼠标选中条目或按 Enter 进入详情，Back 在布局完成后将键盘焦点还给选中的条目。Reader、Workflows 和 Plugins 共用这个行为。这些数字决定呈现方式，不构成最小窗口尺寸或平台支持承诺。缩放复用控件和模型；设计系统切换通过已有页面状态保留当前列表／详情位置。
+应用导航随设计系统变化。macOS 在 992 个逻辑单位处切换侧栏与菜单，Fluent 使用展开、紧凑和最小三档，Material 根据窗口大小与入口数选择侧轨或底栏。[设计系统审查](2026-11-18-mvp-design-systems.zh.md)记录了平台依据和各档取值。共用的 AdaptivePane 根据页面实际分配宽度判断：超过 768 时并排显示 360 宽的列表和详情，否则一次只显示一栏。鼠标选中条目或按 Enter 进入详情，Back 在布局完成后将键盘焦点还给选中的条目。Reader、Workflows 和 Plugins 共用这个行为。这些数字决定呈现方式，不构成最小窗口尺寸或平台支持承诺。缩放复用控件和模型；设计系统切换通过已有页面状态保留当前列表／详情位置。
 
 阅读列表以 Library 标题和数量为起点，放置订阅／阅读状态筛选、随上下文变化的刷新操作，订阅表单独立打开。刷新抓取所选订阅，或在 All sources 下读取已存文章；右键菜单另提供明确的本地重载。卡片区分来源、标题、摘要、未读状态和日期，预览的行数限制不截断存储内容或完整文章。正文限制行宽，来源网址移到文末；普通操作数量不再占据常驻状态栏，错误继续显示。外观设置保留在导航底部的弹层中。导航、文章卡片和低强调的工具栏按钮使用少量应用专属模板，普通输入控件继续遵循所选设计系统。
 

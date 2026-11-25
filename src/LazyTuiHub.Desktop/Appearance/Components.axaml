@@ -1,6 +1,7 @@
 <Styles
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Desktop"
 >
     <Styles.Resources>
         <ControlTheme x:Key="ActionGlyph" TargetType="PathIcon">
@@ -95,6 +96,10 @@
             TargetType="ListBoxItem"
             BasedOn="{StaticResource CollectionRow}"
         >
+            <Setter
+                Property="AutomationProperties.Name"
+                Value="{Binding Title, x:DataType=local:NavigationPage}"
+            />
             <Setter Property="Padding" Value="{DynamicResource NavigationPadding}" />
             <Setter Property="Margin" Value="{DynamicResource NavigationMargin}" />
             <Setter Property="CornerRadius" Value="{DynamicResource NavigationRadius}" />
@@ -205,6 +210,17 @@
     </Style>
     <Style Selector="ListBox.collection">
         <Setter Property="ItemContainerTheme" Value="{StaticResource CollectionRow}" />
+    </Style>
+    <Style Selector="ListBox.navigation:not(.material-destinations) StackPanel.destination">
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="Spacing" Value="8" />
+    </Style>
+    <Style Selector="ListBox.navigation:not(.material-destinations) PathIcon.action">
+        <Setter Property="Width" Value="{DynamicResource InlineActionIconSize}" />
+        <Setter Property="Height" Value="{DynamicResource InlineActionIconSize}" />
+    </Style>
+    <Style Selector="ListBox.navigation:not(.bottom-destinations)">
+        <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="ListBox.navigation">
         <Setter Property="ItemContainerTheme" Value="{StaticResource NavigationRow}" />

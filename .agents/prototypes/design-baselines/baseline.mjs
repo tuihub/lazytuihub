@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile, copyFile } from 'node:fs/promises';
 import { dirname, resolve, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
@@ -177,8 +177,16 @@ else if (command === 'review') {
   await desktopReview({ repository, run, serve, dependencies });
 }
 else if (command === 'serve') console.log(`Official component specimens: ${(await serve()).url}`);
+else if (command === 'render' && target === 'macos-library') {
+  if (process.platform !== 'darwin') throw new Error('The native library reference requires macOS.');
+  const binary = resolve(output, 'appkit-library');
+  await run('xcrun', ['swiftc', resolve(directory, 'macos-library/main.swift'), '-o', binary]);
+  const args = process.argv.slice(4);
+  const captures = args.includes('--show') ? output : await mkdtemp(resolve(output, 'macos-library-'));
+  await run(binary, [captures, resolve(repository, 'tests/LazyTuiHub.Tests/Fixtures/review-cover.png'), ...args]);
+}
 else if (command === 'render' && ['all', 'web', 'macos', 'avalonia'].includes(target)) {
   if (target === 'all' || target === 'web') await renderWeb();
   if (target === 'all' || target === 'avalonia') await renderAvalonia();
   if (target === 'all' || target === 'macos') await renderMacOS();
-} else throw new Error('Usage: baseline.mjs setup | serve | review | render [all|web|macos|avalonia]');
+} else throw new Error('Usage: baseline.mjs setup | serve | review | render [all|web|macos|avalonia|macos-library [--show]]');

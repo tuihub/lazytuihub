@@ -61,10 +61,10 @@ internal sealed class DesktopUiDriver(Window window, CancellationToken token)
         await SettleAsync();
     }
 
-    public async Task KeyAsync(TopLevel root, Key key)
+    public async Task KeyAsync(TopLevel root, Key key, RawInputModifiers modifiers = RawInputModifiers.None)
     {
-        root.KeyPress(key, RawInputModifiers.None, PhysicalKey.None, null);
-        root.KeyRelease(key, RawInputModifiers.None, PhysicalKey.None, null);
+        root.KeyPress(key, modifiers, PhysicalKey.None, null);
+        root.KeyRelease(key, modifiers, PhysicalKey.None, null);
         await SettleAsync();
     }
 

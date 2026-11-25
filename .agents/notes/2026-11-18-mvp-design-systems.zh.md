@@ -20,13 +20,21 @@ Fluent 以桌面 Fluent 为目标，采用 Avalonia 官方主题及其强调按�
 
 Material 通过 CCSWE 提供文本编辑、选择器、菜单和浮层等标准控件。项目维护填充、描边、文本和图标按钮模板、从指针落点扩散的波纹、键盘焦点环、M3 语义配色及阅读排版。Roboto Regular 和 Medium 来自 Uno.Fonts.Roboto 2.10.1，随附 OFL 许可。页面和 CCSWE 控件使用同一套浅深色语义色板。业务页面在三个设计中使用相同的角色。
 
-按钮采用 waiter 按操作名称选择图标的做法。页面引用添加、刷新、导航、返回、关闭和外观六种语义资源，宿主按当前设计解析矢量轮廓，保留原始画框和留白，图标随按钮前景色变化。Fluent 使用微软 Regular 20，macOS 使用 Cupertino Icons 1.0.9，Material 使用 Material Symbols Outlined（光学尺寸 24、字重 400、未填充、grade 0）。独立图标分别以 20、18 和 24 个逻辑单位绘制；文字旁的图标分别为 20、16 和 18。Material 工具栏按钮在 48 的点击区域内绘制 40 的状态层。各主题的图标字典保留上游名称，发行时随附许可。[waiter 操作映射](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/packages/universal_ui/lib/src/icons.dart)、[Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons)、[Cupertino Icons](https://pub.dev/packages/cupertino_icons/versions/1.0.9)、[Material Symbols 源码版本](https://github.com/google/material-design-icons/tree/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/variablefont)。
+按钮和导航沿用 waiter 按用途选择图标的做法。插件注册页面时可以声明导航图标，未提供或找不到资源时使用网格图标。宿主按当前设计解析矢量轮廓，保留原始画框和留白，图标随按钮前景色变化。Fluent 使用微软 Regular 20，macOS 使用 Cupertino Icons 1.0.9，Material 使用 Material Symbols Outlined（光学尺寸 24、字重 400、未填充、grade 0）。独立图标分别以 20、18 和 24 个逻辑单位绘制；文字旁的图标分别为 20、16 和 18。Material 工具栏按钮在 48 的点击区域内绘制 40 的状态层。各主题的图标字典保留上游名称，发行时随附许可。[waiter 操作映射](https://github.com/tuihub/waiter/blob/ae1ae6f349eef99a8a300ed9276c319683ef5797/packages/universal_ui/lib/src/icons.dart)、[Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons)、[Cupertino Icons](https://pub.dev/packages/cupertino_icons/versions/1.0.9)、[Material Symbols 源码版本](https://github.com/google/material-design-icons/tree/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/variablefont)。
 
 产品无窗口场景在三套设计下操作订阅面板，验证键盘焦点和激活，记录宽窄布局、外观弹层和深色模式。测试还验证 Material 主按钮实际解析 Roboto，并响应指针按下和释放。JSON 快照包含实际解析的主字体。独立的五套组件库样板保留原始库的外观，供将来升级时对照。
+
+Fluent 采用 WinUI NavigationView 的默认宽度分档。中等宽度保留 48 DIP 图标栏，可直接进入页面；展开标签时覆盖正文，页面位置保持不动。宽侧栏采用项目的 208 DIP。产品通过 Avalonia SplitView 呈现同一组已注册页面。本轮 Windows 参照取自微软原生控件文档和配图，产品尺寸取自 macOS 无窗口渲染。[微软 NavigationView](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/navigationview) · [Windows 应用布局](https://learn.microsoft.com/en-us/windows/apps/design/basics/app-silhouette)
+
+Material 遇到紧凑宽度或高度时使用底栏，其余窗口使用带文字的侧轨。底栏用于三个至五个入口，侧轨用于三个至七个；其他数量通过抽屉或侧栏显示完整列表。外观设置保持独立。Google Material Components Catalog 1.14.0 在 420 dpi 的 Android 16 模拟器中运行，四入口样板的底栏约高 64 dp、侧轨宽 96 dp、图标为 24 dp，选中指示器为 56 × 32 dp。产品采用样板的常显标签选项，便于识别插件页面。这组尺寸对应本次实测版本与主题。[Google 自适应导航](https://developer.android.com/develop/ui/compose/layouts/adaptive/build-adaptive-navigation) · [侧轨](https://developer.android.com/develop/ui/compose/components/navigation-rail) · [Material Catalog 1.14.0](https://github.com/material-components/material-components-android/releases/tag/1.14.0)
+
+Mac 侧栏从页面入口开始。原生 View 菜单列出当前用户可进入的页面，并提供侧栏开关。Option–Command–S 沿用 Finder 的快捷键。游戏库采用当前平台的查找快捷键，已有查询可直接选中替换，清除后恢复符合其余筛选条件的游戏并将焦点交回搜索框。[Apple 侧栏指南](https://developer.apple.com/design/human-interface-guidelines/sidebars) · [Finder 快捷键](https://support.apple.com/en-us/102650) · [Apple 搜索框指南](https://developer.apple.com/design/human-interface-guidelines/search-fields)
 
 ## 已验证的参照与方法
 
 [样板工具](../prototypes/design-baselines/README.zh.md) 使用 Microsoft Fluent UI React、Google Material Web 和 Apple 原生 AppKit。前两者是 Web 参照。Fluent Web 不等同于 WinUI；Material 参照采用 Material 3，此前使用的 Material.Avalonia 则沿用较早的设计体系。AppKit 是原生平台参照，不是另一套 Skia 渲染器。
+
+双游戏参照把 SwiftUI 书架放入 AppKit 原生分栏、工具栏和搜索组件，形成可直接比较的完整窗口。macOS 26.6.2 搭配 macOS 27.2 SDK，在 2× 缩放下，1280 × 800 点的窗口实测工具栏高 52 点、侧栏宽 200 点。产品在窗口内容区自行绘制导航和书架工具栏。当前 Avalonia 的 Mac 后端支持把内容延伸进系统标题栏。锁屏时能读取 AppKit 布局，但 WindowServer 无法采集材质，产品的显示帧时钟也未能启动。采用标题栏整合前，还需在已解锁的真实窗口核对系统按钮、拖动和页内操作。[AppKit 窗口设计](https://developer.apple.com/videos/play/wwdc2025/310/) · [Avalonia 12.1.6 的 Mac 窗口实现](https://github.com/AvaloniaUI/Avalonia/blob/12.1.6/native/Avalonia.Native/src/OSX/WindowImpl.mm)
 
 Web 截图改用 Chromium 软件渲染后，已生成 24 组 PNG／JSON，覆盖浅深色下的默认、悬停、输入焦点、弹层、下拉菜单和窄屏。这些图用于观察状态，不构成动画符合性测试。AppKit 视图缓存截图仍会丢失合成内容，不能作为图片基线；用户确认的是交互样板。
 

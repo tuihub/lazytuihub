@@ -32,7 +32,7 @@ public sealed class PosterShelf : Decorator
             Columns = Pair;
         var cell = (width - (Columns - 1) * grid.MinColumnSpacing) / Columns;
         var inset = Pair * (TilePadding + ((Thickness)this.FindResource("TileFrameWidth")!).Top);
-        var title = (double)this.FindResource("LibraryCardTitleSpace")!;
+        var title = 2 * (double)this.FindResource("ItemTitleLineHeight")!;
         var caption = (double)this.FindResource("MetadataLineHeight")!;
         grid.MinItemWidth = Math.Max(1, Math.Floor(width / Columns) - grid.MinColumnSpacing);
         grid.MaximumRowsOrColumns = Columns;

@@ -240,7 +240,6 @@ public sealed partial class DesktopTests
     private static async Task ExerciseInspectorsAsync(DesktopUiDriver driver)
     {
         await driver.ResizeAsync(390, 740);
-        await driver.ClickAsync(driver.Window.FindControl<Button>("MenuButton")!);
         var pages = driver.Window.FindControl<ListBox>("Pages")!;
         await driver.ClickAsync(
             pages.ContainerFromItem(
@@ -252,7 +251,6 @@ public sealed partial class DesktopTests
         await driver.ClickAsync(definitions.ContainerFromIndex(0)!);
         Assert.True(workflow.FindControl<AdaptivePane>("Pane")!.DetailOpen);
         await driver.CaptureAsync("workflow-narrow");
-        await driver.ClickAsync(driver.Window.FindControl<Button>("MenuButton")!);
         await driver.ClickAsync(
             pages.ContainerFromItem(
                 pages.Items.OfType<LazyTuiHub.Desktop.NavigationPage>().Single(page => page.Title == "Plugins")

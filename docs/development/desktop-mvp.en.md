@@ -39,7 +39,9 @@ Fluent uses Avalonia's official theme; macOS uses Devolutions' theme with Fluent
 
 ## Responsive content
 
-Wide windows keep application navigation, article summaries, and the reading surface side by side. At 992 logical units or less, Menu opens application navigation as an overlay. Each `AdaptivePane` independently changes from a list/detail split to a single pane at 768 logical units of available page width. Click a list item or press Enter to open its details; Back restores the list and keyboard focus. Workflows and Plugins use the same arrangement.
+Fluent shows labelled destinations in wide windows, an icon column from 641 to 1007 logical units, and a menu at 640 or below. In the icon column, an icon opens its page directly. The menu button reveals labels over the page. Material shows a labelled rail for the four standard destinations and moves them to a bottom bar when the window is narrower than 600 or shorter than 480 logical units. Appearance stays available in the header when the bar is at the bottom. If the registered destinations do not fit the chosen Material pattern, a sidebar or drawer lists the full set. The Mac appearance uses a sidebar and switches to an overlay at 992 or below.
+
+Each `AdaptivePane` independently changes from a list/detail split to a single pane at 768 logical units of available page width. Click a list item or press Enter to open its details; Back restores the list and keyboard focus. Workflows and Plugins use the same arrangement.
 
 Resizing keeps the existing views, selection, draft input, and loaded data. It does not reload services or change the theme. The current detail/list state also survives a design switch. Article cards prioritize source, title, excerpt, unread state, and publication date. Card previews occupy a limited number of lines; the stored title/content and full reading view remain complete. Reading text uses a maximum line width, and source URLs follow the body. Subscription entry opens a separate panel; ordinary loaded-count messages appear beside Library, while failures stay visible. The source content still displays as text rather than rendered HTML.
 

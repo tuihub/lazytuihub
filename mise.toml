@@ -249,6 +249,10 @@ run = "node .agents/prototypes/design-baselines/baseline.mjs serve"
 description = "Capture official Fluent and Material Web component states"
 run = "node .agents/prototypes/design-baselines/baseline.mjs render web"
 
+[tasks."render:design-baselines:macos-library"]
+description = "Capture the native Mac library reference or open it with --show"
+run = "node .agents/prototypes/design-baselines/baseline.mjs render macos-library"
+
 [tasks."render:design-baselines:avalonia"]
 description = "Exercise and capture installed and candidate Avalonia themes"
 run = "node .agents/prototypes/design-baselines/baseline.mjs render avalonia"

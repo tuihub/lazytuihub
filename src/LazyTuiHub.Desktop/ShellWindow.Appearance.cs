@@ -42,6 +42,7 @@ public sealed partial class ShellWindow
         ColorPicker.SelectedIndex = (int)appearance.Preferences.Color;
         MotionPicker.IsChecked = appearance.Preferences.ReduceMotion;
         AppearanceStatus.Text = appearance.Status;
+        AppearanceStatus.IsVisible = !string.IsNullOrEmpty(appearance.Status);
         appearanceReady = true;
     }
 
@@ -62,6 +63,7 @@ public sealed partial class ShellWindow
         catch (Exception error)
         {
             ShowAppearance();
+            AppearanceStatus.IsVisible = true;
             AppearanceStatus.Text = $"Could not change appearance: {error.GetBaseException().Message}";
             LogAppearanceFailure(host.Services.GetRequiredService<ILogger<ShellWindow>>(), error);
         }
