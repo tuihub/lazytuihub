@@ -44,7 +44,7 @@ Preserve the original requirement levels, conditions, and exceptions; do not tur
 
 Proto comments are the source of interface explanations and examples. Structural facts such as routes, types, requiredness, and output-only fields come from declarations and annotations. Keep these consistent with the implementation; do not maintain a second interface description in Markdown or edit derived OpenAPI.
 
-`mise run generate:api` runs Proto → OpenAPI → Scalar Markdown alongside client generation. The generated [reference index](../api/index.md) links operation and message pages. Put request and response examples and HTTP invocation examples in method comments using labeled fenced code blocks; describe relevant defaults and behavior on fields. Comments follow AIP-192; complete requirements and exceptions remain in the adopted original.
+`mise -E development run generate:api` runs Proto → OpenAPI → Scalar Markdown alongside client generation. The generated [reference index](../api/index.md) links operation and message pages. Put request and response examples and HTTP invocation examples in method comments using labeled fenced code blocks; describe relevant defaults and behavior on fields. Comments follow AIP-192; complete requirements and exceptions remain in the adopted original.
 
 `docs/api/` is entirely generated English Markdown, explicitly exempt from bilingual naming and pairing. Other Markdown rules and the 1 MiB file limit still apply. Generation removes obsolete pages; the drift check rejects edited, missing, extra, or stale files without rewriting them. Linked model pages avoid recursive schema expansion; detected upstream truncation fails generation instead of publishing incomplete field documentation. Put handwritten development instructions in `docs/development/`. Website rendering and deployment are outside this API workflow.
 
@@ -55,7 +55,7 @@ Scalar's synthesized date examples use fixed placeholder dates so repeated gener
 Prepare tools and dependencies using the [repository setup commands](../../AGENTS.md#development-commands). After changing Proto, generate and check the derived artifacts:
 
 ```sh
-mise run generate:api
+mise -E development run generate:api
 mise run check:api
 ```
 
@@ -72,7 +72,7 @@ Automated checks cannot establish correct resource modeling, authorization, dedu
 Run the integrated example to compare direct application calls with generated-client HTTP calls:
 
 ```sh
-mise run demo:api
+mise -E development run demo:api
 ```
 
 The demo starts the service on a temporary loopback port, checks matching responses from both paths, and stops. To run the HTTP service for manual calls:

@@ -18,7 +18,7 @@ export function publishHost(rid, directory) {
 async function release() {
     const [requested, ...extra] = process.argv.slice(2);
     const rid = requested ?? execFileSync('dotnet', ['msbuild', host, '-getProperty:NETCoreSdkPortableRuntimeIdentifier'], {encoding: 'utf8'}).trim();
-    if (extra.length || !/^[a-z0-9][a-z0-9.-]*$/i.test(rid)) throw new Error('Usage: mise run release [runtime-identifier]');
+    if (extra.length || !/^[a-z0-9][a-z0-9.-]*$/i.test(rid)) throw new Error('Usage: mise -E production run release [runtime-identifier]');
 
     const root = resolve('.local/release');
     await mkdir(root, {recursive: true});

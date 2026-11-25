@@ -20,31 +20,32 @@ Use mise to manage development tools and tasks on macOS, Windows, and Linux. Ins
 
 Follow the [repository .NET toolchain and delivery policy](.agents/notes/2026-11-24-dotnet-delivery.en.md). Use `global.json` as the version source for the .NET SDK and `package.json` for Node.js and pnpm. Let mise read and manage these versions; do not duplicate declarations.
 
-Run `mise doctor project` to inspect the current environment. It reports problems and suggested fixes without installing tools or repairing the environment. Use `mise install` to install project tools managed by mise.
+Run `mise doctor project` to inspect the current environment. The [project diagnostics](.mise/conf.d/doctor.toml) report problems and suggested fixes without installing tools or repairing the environment. Use `mise install` to install project tools managed by mise.
 
 ## Development commands
 
 ```sh
 mise install
-mise exec -- pnpm install --frozen-lockfile
-mise exec -- dotnet tool restore
-mise run setup:aip
+mise run setup
+mise doctor project
 mise run check
 ```
 
-Use `mise run <task>` to build and run the application, run checks, or format C# code. Use `mise run release [rid]` to produce the self-contained JIT host and remote CLI. The [release guide](docs/development/release.en.md) describes the packages. Task definitions live in `mise.toml`; use `mise tasks ls` to list the available commands.
+Keep frequent commands and project basics in `mise.toml`. The default list (`mise tasks ls`) covers setup, building, running, testing, code lint and formatting, and Note lookup. `mise run check` runs the full local checks. Its individual checks live in [the shared check definitions](.agents/mise-checks.toml) and can be listed with `mise tasks ls --hidden` or invoked by name.
+
+Use `mise -E development tasks ls` for specialized development tasks, including API generation, CI reproduction, desktop review, multi-node tests and experiments. Put personal tasks in the automatically loaded, Git-ignored `mise.local.toml`. Use `mise -E production run release [rid]` for the self-contained JIT host and remote CLI. The [release guide](docs/development/release.en.md) describes the packages.
 
 ## API development
 
 Use the [API design skill](.agents/skills/api-design/SKILL.md) when designing or changing Proto contracts, HTTP mappings, or API behavior. The [API development guide](docs/development/api-design.en.md) covers the adopted standard and development workflow; consult relevant official AIP originals from the local checkout prepared by `mise run setup:aip`. Its upstream revision is declared in `mise.toml`.
 
-Proto is the source of transport contracts and API reference content. Write interface explanations and examples in Proto comments. Run `mise run generate:api` after contract changes and `mise run check:api` to verify Google rules and generated artifacts. Use `mise run demo:api` to compare local calls with the generated HTTP client.
+Proto is the source of transport contracts and API reference content. Write interface explanations and examples in Proto comments. Run `mise -E development run generate:api` after contract changes and `mise run check:api` to verify Google rules and generated artifacts. Use `mise -E development run demo:api` to compare local calls with the generated HTTP client.
 
 `docs/api/` is entirely generated English Markdown, an explicit exception to bilingual pairing. Keep all other Markdown and file-size checks. Generation owns the complete directory and removes stale pages; do not add handwritten files there. Put handwritten development instructions in `docs/development/`. This pipeline does not deploy a documentation website.
 
 ## Continuous integration
 
-The [CI workflow](.github/workflows/ci.yml) checks main-branch snapshots. Run `mise run check:ci` to reproduce its quality job locally; `mise run check:workflows` validates workflow definitions. CI uses snapshot checks rather than local commit-message or Note-history gates. The local `mise run check` entry point retains those development checks.
+The [CI workflow](.github/workflows/ci.yml) checks main-branch snapshots. Run `mise -E development run check:ci` to reproduce its quality job locally; `mise -E development run check:workflows` validates workflow definitions. CI uses snapshot checks rather than local commit-message or Note-history gates. The local `mise run check` entry point retains those development checks.
 
 The separate [CodeQL workflow](.github/workflows/codeql.yml) analyzes supported repository languages and uploads security results. The [CI Note](.agents/notes/2026-11-16-github-ci.en.md) records its coverage, compatibility limits, and pending runner validation.
 
@@ -58,15 +59,15 @@ The proposed [plugin Note](.agents/notes/2026-11-17-mvp-plugins.en.md) records t
 
 The proposed [storage and DAO Note](.agents/notes/2026-11-17-mvp-storage-dao.en.md) records three access modes for all DAO resources: consistent encapsulation across implementations, backend-specific encapsulation, and native access. Contracts live in `src/LazyTuiHub.Dao/`; the cold-start SQLite provider in `plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/` implements records/TTL, FTS5, and a native connection source. Plugins pass namespaced tables to reusable tools. Common cleanup only processes explicit persisted delegations; RSS details do not expire unless configured. Use `--command dao` for diagnostics and retention controls. SQLite remains the sole implemented backend; durable execution inputs and cross-store coordination remain open.
 
-Run `mise run demo:workflow` for streaming with synchronized configuration updates and cancellation. Run `mise run demo:rss` for an isolated local RSS/HTTP/SQLite example with a cross-business branch. Run `mise run test:multinode` for optional Docker scenarios covering network asymmetry, resource changes, and remote primary writes. Run `mise run test` for product tests; both local checks and CI include them. The current interfaces are CLI, generated HTTP APIs, and an Avalonia desktop reader; pipeline definitions are editable JSON stored in SQLite. This is an exploratory implementation, without a visual graph editor or distributed execution guarantees.
+Run `mise -E development run demo:workflow` for streaming with synchronized configuration updates and cancellation. Run `mise -E development run demo:rss` for an isolated local RSS/HTTP/SQLite example with a cross-business branch. Run `mise -E development run test:multinode` for optional Docker scenarios covering network asymmetry, resource changes, and remote primary writes. Run `mise run test` for product tests; both local checks and CI include them. The current interfaces are CLI, generated HTTP APIs, and an Avalonia desktop reader; pipeline definitions are editable JSON stored in SQLite. This is an exploratory implementation, without a visual graph editor or distributed execution guarantees.
 
 CLI and GUI share the [interactive capability contract](.agents/notes/2026-11-23-mvp-win7-cli.en.md). Register application operations once with `PluginRegistration.AddCapabilities<T>` and `[Capability]`. Dedicated views call the typed operations. The CLI and desktop operation browser derive discovery, arguments and invocation from those same methods. Select the local workspace or the HTTPS client before composing presentations.
 
 Avalonia is the current MVP renderer and remains replaceable under the provisional-choice agreement above. Keep business services, workflow execution, and storage independent of the renderer. The [UI selection Note](.agents/notes/2026-11-17-mvp-ui-comparison.en.md) records the decision, comparison evidence, and remaining platform work; it remains proposed under the MVP agreement. The [desktop MVP guide](docs/development/desktop-mvp.en.md) covers `mise run run:desktop`, real RSS/SQLite operations, workflow inspection, and cold-start plugin management. Keep generic UI composition in `src/LazyTuiHub.Desktop/` and the article reader in the dynamically loaded `plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/`; business/framework code must remain independent of Avalonia. Desktop mode shares application services and tasks without an HTTP listener. Product tests include headless desktop integration.
 
-Use `mise run test:desktop` to drive the product UI with programmatic pointer/keyboard input and produce screenshots plus control-state JSON in `.local/desktop/`. For new UI and changes to shared controls, follow the [desktop UI self-review standard](docs/development/desktop-ui-review.en.md). Declare relevant interaction targets in the product test and run `mise run review:desktop` for local state differences, glyph measurements and reference comparisons. Functional checks do not establish visual fidelity. The proposed [design-system audit](.agents/notes/2026-11-18-mvp-design-systems.en.md) separates integration errors, library limits, alternatives, and maintenance ownership. Use `mise run run:design-baselines` to view official references and `mise run render:design-baselines:avalonia` to regenerate isolated library specimens; these experiments remain outside default CI.
+Use `mise -E development run test:desktop` to drive the product UI with programmatic pointer/keyboard input and produce screenshots plus control-state JSON in `.local/desktop/`. For new UI and changes to shared controls, follow the [desktop UI self-review standard](docs/development/desktop-ui-review.en.md). Declare relevant interaction targets in the product test and run `mise -E development run review:desktop` for local state differences, glyph measurements and reference comparisons. Functional checks do not establish visual fidelity. The proposed [design-system audit](.agents/notes/2026-11-18-mvp-design-systems.en.md) separates integration errors, library limits, alternatives, and maintenance ownership. Use `mise -E development run run:design-baselines` to view official references and `mise -E development run render:design-baselines:avalonia` to regenerate isolated library specimens; these experiments remain outside default CI.
 
-The optional [UI comparison guide](docs/development/ui-comparison.en.md) covers the retained Avalonia and Uno prototypes in `.agents/prototypes/ui-comparison/`. They share a reader fixture and graph model, with separate framework-native DLL plugin pages. Use `mise run demo:ui:avalonia` to run the selected framework's prototype; `mise run demo:ui:uno` and `mise run check:ui` remain available to reproduce the comparison. These experiments are outside the product solution and default CI; Uno is retained as comparison evidence.
+The optional [UI comparison guide](docs/development/ui-comparison.en.md) covers the retained Avalonia and Uno prototypes in `.agents/prototypes/ui-comparison/`. They share a reader fixture and graph model, with separate framework-native DLL plugin pages. Use `mise -E development run demo:ui:avalonia` to run the selected framework's prototype; `mise -E development run demo:ui:uno` and `mise -E development run check:ui` remain available to reproduce the comparison. These experiments are outside the product solution and default CI; Uno is retained as comparison evidence.
 
 ## Commits
 

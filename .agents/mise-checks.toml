@@ -1,0 +1,59 @@
+["check:analyzers"]
+hide = true
+description = "Build with analyzer warnings enforced"
+depends = ["check:files"]
+run = "dotnet build LazyTuiHub.slnx --no-incremental -warnaserror"
+
+["check:format"]
+hide = true
+description = "Check C# formatting"
+depends = ["check:files"]
+run = "dotnet csharpier check ."
+
+["check:duplicates"]
+hide = true
+description = "Check duplicate product C#"
+depends = ["check:files"]
+run = "pnpm exec jscpd"
+
+["check:files"]
+hide = true
+description = "Check the 1 MiB file limit and the 16-file C# directory limit"
+run = "node .agents/scripts/check-file-sizes.mjs"
+
+["check:markdown"]
+hide = true
+description = "Check Markdown"
+run = "pnpm run lint:markdown"
+
+["check:notes"]
+hide = true
+description = "Check note transitions and frozen content against Git"
+run = "node .agents/scripts/check-note-history.mjs"
+
+["check:commit"]
+hide = true
+description = "Check a commit message against Conventional Commits"
+run = "node .agents/scripts/commits.mjs check"
+
+["restore:api"]
+hide = true
+description = "Restore Proto contract dependencies"
+run = "dotnet restore src/LazyTuiHub.Api/LazyTuiHub.Api.csproj"
+
+["check:proto"]
+hide = true
+description = "Check Proto contracts with Google API Linter"
+depends = ["restore:api"]
+run = "node .agents/scripts/api.mjs lint"
+
+["check:generated"]
+hide = true
+description = "Check that generated API artifacts match Proto"
+depends = ["restore:api"]
+run = "node .agents/scripts/api.mjs check"
+
+["check:api"]
+hide = true
+description = "Check API contracts and generated artifacts"
+depends = ["check:proto", "check:generated"]

@@ -5,10 +5,10 @@ English | [中文](release.zh.md)
 Use `mise run run:desktop` or `mise run run:cli` for development. The following task builds both distributable packages for the current machine.
 
 ```sh
-mise run release
+mise -E production run release
 ```
 
-Pass a .NET runtime identifier to target another OS or architecture, for example `mise run release win-x64`, `mise run release linux-arm64` or `mise run release osx-arm64`. Distribute the complete package from `.local/release/<rid>/`. Each package includes its own JIT runtime. Users can run it without installing mise, the .NET SDK or a shared .NET runtime.
+Pass a .NET runtime identifier to target another OS or architecture, for example `mise -E production run release win-x64`, `mise -E production run release linux-arm64` or `mise -E production run release osx-arm64`. Distribute the complete package from `.local/release/<rid>/`. Each package includes its own JIT runtime. Users can run it without installing mise, the .NET SDK or a shared .NET runtime.
 
 | Package | Entry point |
 | --- | --- |

@@ -9,16 +9,16 @@ Avalonia was selected as the product UI framework on 2026-11-18. The [selection 
 Run these commands from the repository root with the normal mise environment:
 
 ```sh
-mise run demo:ui:avalonia
-mise run demo:ui:uno
-mise run demo:ui:uno -- --cupertino
-mise run demo:ui:avalonia -- --without-plugin
-mise run demo:ui:uno -- --without-plugin
+mise -E development run demo:ui:avalonia
+mise -E development run demo:ui:uno
+mise -E development run demo:ui:uno -- --cupertino
+mise -E development run demo:ui:avalonia -- --without-plugin
+mise -E development run demo:ui:uno -- --without-plugin
 ```
 
 Each command builds the selected prototype in Release mode with analyzer warnings treated as errors. Close its window to stop it. The default theme is Fluent on both frameworks; Uno's optional Cupertino run uses its published theme package.
 
-On macOS, `mise run bundle:ui` creates local application wrappers in `.agents/prototypes/ui-comparison/artifacts/`. Open `LazyTuiHub-Avalonia.app` and `LazyTuiHub-Uno.app` to compare them. `mise run bundle:ui:cupertino` creates the separate `LazyTuiHub-Uno-Cupertino.app` variant. These wrappers use the local mise-managed .NET runtime; they are development launchers, not distributable installers. Windows and Linux use the run commands; their native behavior has not been verified in this iteration.
+On macOS, `mise -E development run bundle:ui` creates local application wrappers in `.agents/prototypes/ui-comparison/artifacts/`. Open `LazyTuiHub-Avalonia.app` and `LazyTuiHub-Uno.app` to compare them. `mise -E development run bundle:ui:cupertino` creates the separate `LazyTuiHub-Uno-Cupertino.app` variant. These wrappers use the local mise-managed .NET runtime; they are development launchers, not distributable installers. Windows and Linux use the run commands; their native behavior has not been verified in this iteration.
 
 ## Common workload
 
@@ -48,7 +48,7 @@ Avalonia uses its native menu API for Reader/Workflow entries in addition to the
 ## Automated verification
 
 ```sh
-mise run check:ui
+mise -E development run check:ui
 ```
 
 This optional check builds both prototypes and runs their official headless hosts. It checks reader layout and initial selection, search results, shared feed/read-state behavior, plugin view creation, disabled-plugin startup, missing-DLL diagnostics, Flex wrapping/growth, and graph/zoom state. Uno is checked with both Fluent and Cupertino resources. The Uno search check awaits `TextChanged`, which is delivered asynchronously.

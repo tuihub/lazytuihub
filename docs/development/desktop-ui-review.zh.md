@@ -22,8 +22,8 @@ await scene.CheckAsync(readFilter);
 ## 运行与判读
 
 ```sh
-mise run setup:design-baselines
-mise run review:desktop
+mise -E development run setup:design-baselines
+mise -E development run review:desktop
 ```
 
 首次使用或样板依赖变化时运行第一条。打开 `.local/desktop-review/index.html` 查看最近一次成功报告，每次运行都有独立的 JSON 测量和 PNG 局部图。修复问题时保留前一次报告，使用相同的数据、主题、缩放、字体和输入状态复测。产品与官方 Web 样板均在后台无窗口渲染。

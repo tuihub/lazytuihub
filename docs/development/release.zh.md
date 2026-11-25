@@ -5,10 +5,10 @@
 开发时用 `mise run run:desktop` 或 `mise run run:cli` 启动。以下命令为当前机器构建两个可分发包。
 
 ```sh
-mise run release
+mise -E production run release
 ```
 
-指定 .NET 运行时标识可面向其他系统或架构构建，例如 `mise run release win-x64`、`mise run release linux-arm64` 或 `mise run release osx-arm64`。从 `.local/release/<rid>/` 复制所需的完整包。每个包自带 JIT 运行时，用户无需安装 mise、.NET SDK 或共享运行时。
+指定 .NET 运行时标识可面向其他系统或架构构建，例如 `mise -E production run release win-x64`、`mise -E production run release linux-arm64` 或 `mise -E production run release osx-arm64`。从 `.local/release/<rid>/` 复制所需的完整包。每个包自带 JIT 运行时，用户无需安装 mise、.NET SDK 或共享运行时。
 
 | 产品包 | 启动入口 |
 | --- | --- |

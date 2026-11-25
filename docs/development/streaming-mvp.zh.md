@@ -44,7 +44,7 @@ NodeRegistry.Register 接收具名、有类型的输入／输出声明和一个�
 
 ## 跨实例运行
 
-准备 Docker 引擎和 Compose，运行 `mise run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。 ARM64 引擎若缓存了 AMD64 的 .NET 镜像，可设置 `TEST_APP_PLATFORM=linux/amd64`。这个选项同时选择应用节点的发布目标和容器架构。
+准备 Docker 引擎和 Compose，运行 `mise -E development run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。 ARM64 引擎若缓存了 AMD64 的 .NET 镜像，可设置 `TEST_APP_PLATFORM=linux/amd64`。这个选项同时选择应用节点的发布目标和容器架构。
 
 | 配置 | 用途 |
 | --- | --- |
@@ -72,8 +72,8 @@ SynchronizedInput 包含 messageKey 和完整同步输入组的只读字典。�
 ## 运行示例
 
 ```sh
-mise run demo:workflow
-mise run demo:rss
+mise -E development run demo:workflow
+mise -E development run demo:rss
 mise run test
 ```
 

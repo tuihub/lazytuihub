@@ -1,6 +1,6 @@
 # LazyTuiHub API
 
-> Generated from Proto declarations. Run `mise run generate:api` to update; do not edit `docs/api`.
+> Generated from Proto declarations. Run `mise -E development run generate:api` to update; do not edit `docs/api`.
 
 **API version:** `v1`
 

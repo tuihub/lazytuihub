@@ -75,7 +75,7 @@ async function generate(files, include, sources) {
                 await mkdir(path.dirname(output), {recursive: true});
                 await writeFile(output, content);
             } else if (content !== (await readFile(output, 'utf8')).replaceAll('\r\n', '\n')) {
-                throw new Error(`${destination} differs from Proto. Run \`mise run generate:api\`.`);
+                throw new Error(`${destination} differs from Proto. Run \`mise -E development run generate:api\`.`);
             }
         }
         await updateApiDocs(path.join(root, 'docs/api'), pages, mode);

@@ -33,7 +33,7 @@ export async function renderApiDocs(document, sources) {
 
     pages.set('index.md', [
         `# ${document.info.title}`,
-        '> Generated from Proto declarations. Run `mise run generate:api` to update; do not edit `docs/api`.',
+        '> Generated from Proto declarations. Run `mise -E development run generate:api` to update; do not edit `docs/api`.',
         document.info.description,
         `**API version:** \`${document.info.version}\``,
         '## Operations',
@@ -93,11 +93,11 @@ export async function updateApiDocs(directory, pages, mode) {
     }).sort();
     const stale = existing.filter(filename => !pages.has(filename));
     if (mode === 'check') {
-        if (stale.length) throw new Error(`Unexpected generated API documentation: ${stale.join(', ')}. Run \`mise run generate:api\`.`);
+        if (stale.length) throw new Error(`Unexpected generated API documentation: ${stale.join(', ')}. Run \`mise -E development run generate:api\`.`);
         for (const [filename, content] of pages) {
             const actual = existing.includes(filename) ? await readFile(path.join(directory, filename), 'utf8') : '';
             if (actual.replaceAll('\r\n', '\n') !== content) {
-                throw new Error(`docs/api/${filename} differs from Proto. Run \`mise run generate:api\`.`);
+                throw new Error(`docs/api/${filename} differs from Proto. Run \`mise -E development run generate:api\`.`);
             }
         }
     } else {

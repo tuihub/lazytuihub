@@ -65,6 +65,10 @@ nunit-*.xml
 # Node.js tooling
 node_modules/
 
+# Personal mise overrides
+/mise.local.toml
+/mise.*.local.toml
+
 # Repository-local development output
 .local/
 

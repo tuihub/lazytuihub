@@ -22,8 +22,8 @@ await scene.CheckAsync(readFilter);
 ## Run and interpret
 
 ```sh
-mise run setup:design-baselines
-mise run review:desktop
+mise -E development run setup:design-baselines
+mise -E development run review:desktop
 ```
 
 Run setup on first use and after reference dependencies change. Open `.local/desktop-review/index.html`. The latest completed report links to its own JSON measurements and PNGs. For a correction, keep the previous run and compare the same fixture, theme, scale, font, and input state. Both the Avalonia capture and the reference browser run headless.

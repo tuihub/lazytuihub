@@ -12,139 +12,50 @@ protoc = "36.2"
 aip_repository = "https://github.com/aip-dev/google.aip.dev.git"
 aip_revision = "2ccc61a4e09882bdd63aea1a42dceebc37bf3bd5"
 
-[doctor.checks.dotnet]
-description = ".NET SDK {{ read_json(path='global.json')['sdk']['version'] }} is available"
-run = "dotnet --version"
-hint = "Run `mise install dotnet` to install the SDK declared in global.json."
+[task_config]
+includes = [".agents/mise-checks.toml"]
 
-[doctor.checks.node]
-description = "Node.js {{ read_json(path='package.json')['devEngines']['runtime']['version'] }} is available"
-run = '''node -e "process.exit(process.versions.node === '{{ read_json(path="package.json")["devEngines"]["runtime"]["version"] }}' ? 0 : 1)"'''
-hint = "Run `mise install node` to install the Node.js version declared in package.json."
+[tasks.setup]
+description = "Install repository dependencies and prepare the official AIP references"
+depends = ["setup:aip"]
+run = ["pnpm install --frozen-lockfile", "dotnet tool restore"]
 
-[doctor.checks.pnpm]
-description = "pnpm is available"
-depends = "node"
-run = "mise which pnpm --version && pnpm --version"
-hint = "Run `mise install pnpm` to install the package manager declared in package.json."
-
-[doctor.checks.csharpier]
-description = "The repository-local CSharpier tool is available"
-depends = "dotnet"
-run = "dotnet csharpier --version"
-hint = "Run `mise exec -- dotnet tool restore`."
-
-[doctor.checks.jscpd]
-description = "The product duplication checker is available"
-depends = "pnpm"
-run = "pnpm exec jscpd --version"
-hint = "Run `mise exec -- pnpm install --frozen-lockfile`."
-
-[doctor.checks.api-linter]
-description = "Google API Linter is available"
-run = "api-linter --version"
-hint = "Run `mise install`."
-
-[doctor.checks.protoc]
-description = "The Proto compiler is available"
-run = "protoc --version"
-hint = "Run `mise install`."
-
-[doctor.checks.openapi-generator]
-description = "The Proto to OpenAPI generator is available"
-run = "mise which protoc-gen-openapi"
-hint = "Run `mise install`."
-
-[doctor.checks.nswag]
-description = "The repository-local NSwag tool is available"
-depends = "dotnet"
-run = "dotnet nswag version"
-hint = "Run `mise exec -- dotnet tool restore`."
-
-[doctor.checks.aip]
-description = "Official AIP references match the project revision"
-depends = "node"
-run = "node .agents/scripts/setup-aip.mjs {{vars.aip_repository}} {{vars.aip_revision}} --check"
-hint = "Run `mise run setup:aip`."
-
-[tasks.build]
-description = "Build the application"
-run = "dotnet build LazyTuiHub.slnx"
-
-[tasks."check:code"]
-description = "Check C# analyzers, formatting, and duplication"
-depends = ["check:analyzers", "check:format", "check:duplicates"]
-
-[tasks."check:analyzers"]
-description = "Build with analyzer warnings enforced"
-depends = ["check:files"]
-run = "dotnet build LazyTuiHub.slnx --no-incremental -warnaserror"
-
-[tasks."check:format"]
-description = "Check C# formatting"
-depends = ["check:files"]
-run = "dotnet csharpier check ."
-
-[tasks."check:duplicates"]
-description = "Check duplicate product C#"
-depends = ["check:files"]
-run = "pnpm exec jscpd"
-
-[tasks."check:files"]
-description = "Check the 1 MiB file limit and the 16-file C# directory limit"
-run = "node .agents/scripts/check-file-sizes.mjs"
-
-[tasks."test:lint"]
-description = "Verify lint gates, thresholds, and test isolation"
-run = "node --test .agents/tests/csharp-lint.test.mjs .agents/tests/check-file-sizes.test.mjs"
-
-[tasks."test:tools"]
-description = "Run development tooling tests"
-run = 'node --test ".agents/tests/*.test.mjs"'
-
-[tasks."check:workflows"]
-description = "Check GitHub Actions workflow syntax and semantics"
-run = "actionlint"
-
-[tasks."check:ci"]
-description = "Check the committed snapshot without development-history gates"
-depends = ["check:files", "check:markdown", "check:code", "demo:api", "test", "test:tools", "check:workflows"]
-
-[tasks."check:markdown"]
-description = "Check Markdown"
-run = "pnpm run lint:markdown"
-
-[tasks."check:notes"]
-description = "Check note transitions and frozen content against Git"
-run = "node .agents/scripts/check-note-history.mjs"
-
-[tasks."check:commit"]
-description = "Check a commit message against Conventional Commits"
-run = "node .agents/scripts/commits.mjs check"
+[tasks."setup:aip"]
+description = "Prepare the pinned official AIP reference checkout"
+run = "node .agents/scripts/setup-aip.mjs {{vars.aip_repository}} {{vars.aip_revision}}"
 
 [tasks."setup:hooks"]
 description = "Enable this repository's Git commit-message hook"
 run = "node .agents/scripts/commits.mjs setup"
 
-[tasks.check]
-description = "Run all checks"
-depends = ["check:code", "check:api", "check:markdown", "check:notes", "check:commit", "test"]
+[tasks.build]
+description = "Build the application"
+run = "dotnet build LazyTuiHub.slnx"
 
 [tasks.run]
 description = "Run the application"
 run = "dotnet run --project src/LazyTuiHub/LazyTuiHub.csproj --"
 
+[tasks."run:desktop"]
+description = "Run the desktop with a local workspace or an HTTPS endpoint"
+run = "dotnet run --project src/LazyTuiHub -- --desktop"
+
 [tasks."run:cli"]
 description = "Run the user CLI with local services or an HTTPS endpoint"
 run = "dotnet run --project src/LazyTuiHub -- --cli"
 
-[tasks."test:win7"]
-description = "Install a Windows 7 x64 QEMU baseline or test a payload in a disposable overlay"
-run = "node tests/win7/lab.mjs"
+[tasks.test]
+description = "Test pipeline execution, RSS, SQLite, and local/HTTP behavior"
+wait_for = ["check:analyzers"]
+run = "dotnet run --project tests/LazyTuiHub.Tests"
 
-[tasks.release]
-description = "Publish the self-contained host and remote CLI for a runtime identifier"
-run = "node .agents/scripts/release.mjs"
+[tasks.check]
+description = "Run all checks"
+depends = ["check:code", "check:api", "check:markdown", "check:notes", "check:commit", "test"]
+
+[tasks."check:code"]
+description = "Check C# analyzers, formatting, and duplication"
+depends = ["check:analyzers", "check:format", "check:duplicates"]
 
 [tasks."format:code"]
 description = "Format C# code"
@@ -155,108 +66,3 @@ description = "List and filter agent notes"
 run = "node .agents/scripts/filter-frontmatter.mjs .agents/notes"
 output = "interleave"
 quiet = true
-
-[tasks."setup:aip"]
-description = "Prepare the pinned official AIP reference checkout"
-run = "node .agents/scripts/setup-aip.mjs {{vars.aip_repository}} {{vars.aip_revision}}"
-
-[tasks."restore:api"]
-description = "Restore Proto contract dependencies"
-run = "dotnet restore src/LazyTuiHub.Api/LazyTuiHub.Api.csproj"
-
-[tasks."generate:api"]
-description = "Generate OpenAPI, the HTTP client, and Markdown reference from Proto"
-depends = ["restore:api"]
-run = "node .agents/scripts/api.mjs generate"
-
-[tasks."check:proto"]
-description = "Check Proto contracts with Google API Linter"
-depends = ["restore:api"]
-run = "node .agents/scripts/api.mjs lint"
-
-[tasks."check:generated"]
-description = "Check that generated API artifacts match Proto"
-depends = ["restore:api"]
-run = "node .agents/scripts/api.mjs check"
-
-[tasks."check:api"]
-description = "Check API contracts and generated artifacts"
-depends = ["check:proto", "check:generated"]
-
-[tasks."demo:api"]
-description = "Run Hello World through local and generated HTTP clients"
-depends = ["check:api"]
-wait_for = ["check:analyzers", "test"]
-run = "dotnet run --project src/LazyTuiHub -- --demo true"
-
-[tasks.test]
-description = "Test pipeline execution, RSS, SQLite, and local/HTTP behavior"
-wait_for = ["check:analyzers"]
-run = "dotnet run --project tests/LazyTuiHub.Tests"
-
-[tasks."test:multinode"]
-description = "Publish the host and exercise cross-instance execution on isolated Docker networks"
-run = "node tests/multinode/run.mjs"
-
-[tasks."demo:rss"]
-description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"
-wait_for = ["check:analyzers", "test", "demo:api", "demo:workflow"]
-run = "dotnet run --project src/LazyTuiHub -- --rss-demo"
-
-[tasks."demo:workflow"]
-description = "Run local streaming and synchronized inputs with live configuration and cancellation"
-wait_for = ["check:analyzers", "test", "demo:api"]
-run = "dotnet run --project src/LazyTuiHub -- --workflow-demo"
-
-[tasks."check:ui"]
-description = "Build and verify both optional UI comparison prototypes"
-run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs check both"
-
-[tasks."demo:ui:avalonia"]
-description = "Run the Avalonia RSS, workflow canvas, and DLL plugin prototype"
-run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs run avalonia"
-
-[tasks."demo:ui:uno"]
-description = "Run the Uno RSS, workflow canvas, and DLL plugin prototype"
-run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs run uno"
-
-[tasks."bundle:ui"]
-description = "Prepare both local macOS UI prototype app wrappers"
-run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle both"
-
-[tasks."bundle:ui:cupertino"]
-description = "Prepare the local Uno Cupertino theme prototype app"
-run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle uno --cupertino"
-
-[tasks."test:desktop"]
-description = "Drive the desktop UI with headless input and save rendered screenshots"
-env.LAZYTUIHUB_UI_ARTIFACTS = "{{config_root}}/.local/desktop"
-run = "dotnet run --project tests/LazyTuiHub.Tests -- -class LazyTuiHub.Tests.DesktopTests"
-
-[tasks."review:desktop"]
-description = "Review registered desktop UI scenes, rendered states and reference specimens"
-run = "node .agents/prototypes/design-baselines/baseline.mjs review"
-
-[tasks."setup:design-baselines"]
-description = "Install isolated official design reference tools and fonts"
-run = "node .agents/prototypes/design-baselines/baseline.mjs setup"
-
-[tasks."run:design-baselines"]
-description = "Serve official design references and Avalonia control comparisons"
-run = "node .agents/prototypes/design-baselines/baseline.mjs serve"
-
-[tasks."render:design-baselines:web"]
-description = "Capture official Fluent and Material Web component states"
-run = "node .agents/prototypes/design-baselines/baseline.mjs render web"
-
-[tasks."render:design-baselines:macos-library"]
-description = "Capture the native Mac library reference or open it with --show"
-run = "node .agents/prototypes/design-baselines/baseline.mjs render macos-library"
-
-[tasks."render:design-baselines:avalonia"]
-description = "Exercise and capture installed and candidate Avalonia themes"
-run = "node .agents/prototypes/design-baselines/baseline.mjs render avalonia"
-
-[tasks."run:desktop"]
-description = "Run the desktop with a local workspace or an HTTPS endpoint"
-run = "dotnet run --project src/LazyTuiHub -- --desktop"

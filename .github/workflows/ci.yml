@@ -23,14 +23,10 @@ jobs:
           persist-credentials: false
       - name: Install project tools
         uses: jdx/mise-action@v5
-      - name: Install Node dependencies
-        run: mise exec -- pnpm install --frozen-lockfile
-      - name: Restore .NET tools
-        run: mise exec -- dotnet tool restore
-      - name: Prepare AIP references
-        run: mise run setup:aip
+      - name: Set up repository dependencies
+        run: mise run setup
       - name: Check snapshot
-        run: mise run check:ci
+        run: mise -E development run check:ci
 
   platform:
     name: Platform (${{ matrix.os }})
@@ -54,4 +50,4 @@ jobs:
       - name: Build
         run: mise run build
       - name: Compare local and HTTP calls
-        run: mise run demo:api
+        run: mise -E development run demo:api

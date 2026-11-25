@@ -13,7 +13,7 @@
 在 Mac 上运行下面的命令，可以打开含两款游戏的 AppKit 窗口。关闭窗口即可退出。样板采用 NSSplitViewController 侧栏、带原生搜索项的 NSToolbar 和 SwiftUI 书架，与产品自查共享两个游戏名称、封面和缺图场景。它用于对照整窗布局，业务操作仅作展示。把产品切到 Games，在相同窗口宽度和明暗模式下比较。
 
 ```sh
-mise run render:design-baselines:macos-library --show
+mise -E development run render:design-baselines:macos-library --show
 ```
 
 省略 `--show` 时，工具在后台记录以点为单位的尺寸，用 ScreenCaptureKit 单独截取自身窗口的浅色和深色画面，输出到 `.local/design-baselines/`。运行需要 macOS 14.4 或更新版本及 Xcode 命令行工具。系统合成截图包含标题栏和侧栏；采集失败时，工具会写入明确标注的 `*.view-cache.png` 诊断图。此时应打开交互窗口核对材质。原生控件的外观取决于本机系统和链接的 SDK。[Apple 的 AppKit 窗口与侧栏演示](https://developer.apple.com/videos/play/wwdc2025/310/)
@@ -29,11 +29,11 @@ mise run render:design-baselines:macos-library --show
 使用仓库通过 mise 管理的 Node.js 和 pnpm。样板单独维护依赖锁文件，允许 esbuild 执行必要的安装脚本，不重复声明运行时版本。
 
 ```sh
-mise run setup:design-baselines
-mise run render:design-baselines:web
+mise -E development run setup:design-baselines
+mise -E development run render:design-baselines:web
 mise exec -- node .agents/prototypes/design-baselines/baseline.mjs render macos
-mise run render:design-baselines:avalonia
-mise run run:design-baselines
+mise -E development run render:design-baselines:avalonia
+mise -E development run run:design-baselines
 ```
 
 `setup` 安装局部依赖，将 Playwright 的 Chromium headless shell 下载到 `.local/design-baselines/browsers/`，将 Google 提供的 Roboto 字体缓存到 `.local/design-baselines/web/fonts/`，并在 `sources.json` 中记录字体来源。之后渲染使用本地资源。`serve` 输出回环地址，可交互查看 Fluent、Material 官方参考和 Avalonia 图片对照，按 Ctrl+C 结束。对照页支持切换浅色／深色及五种状态，并提供指标链接。不带目标的 `render` 运行 Web、macOS 和 Avalonia 截图。原生目标需要 macOS、可用的桌面会话和 Xcode 命令行工具；运行时会短暂显示自己的窗口，然后关闭。

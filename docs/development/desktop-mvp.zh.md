@@ -67,18 +67,18 @@ Fluent 在宽窗口显示带标签的侧栏，宽度为 641 至 1007 个逻辑�
 无需操作电脑即可运行桌面交互场景并生成审阅截图：
 
 ```sh
-mise run test:desktop
+mise -E development run test:desktop
 ```
 
 [DesktopUiDriver](../../tests/LazyTuiHub.Tests/Desktop/DesktopUiDriver.cs) 向真实控件发送 Avalonia 无窗口鼠标和键盘输入，调整窗口尺寸，并捕获 Skia 绘制的画面。[布局场景](../../tests/LazyTuiHub.Tests/Desktop/DesktopTests.Layout.cs) 创建临时 SQLite 工作区和本地 RSS 服务，通过表单输入订阅、抓取文章、进入详情、标记已读、返回并恢复焦点，再切换检查器页面。场景检查三套设计在 1280、820、390 个逻辑单位下的布局，以及外观弹层和深色模式。任务将 PNG 及同名 JSON 控件快照（边界、字体、前景色、启用／焦点状态）写入已忽略的 `.local/desktop/`；直接调用测试运行器时，可通过 `LAZYTUIHUB_UI_ARTIFACTS` 指定截图目录。常规产品测试也执行这些场景，但不写截图。
 
-自动检查桌面交互时，优先运行无窗口的 `mise run test:desktop`。在 macOS 上验证打包产物时，可用 `open -g -j /path/to/LazyTuiHub.app` 在后台隐藏启动，避免打断正在使用的应用。
+自动检查桌面交互时，优先运行无窗口的 `mise -E development run test:desktop`。在 macOS 上验证打包产物时，可用 `open -g -j /path/to/LazyTuiHub.app` 在后台隐藏启动，避免打断正在使用的应用。
 
 [游戏库交互场景](../../tests/LazyTuiHub.Tests/Desktop/DesktopTests.Games.cs) 检查封面比例、标题颜色、筛选项宽度和工具栏位置，并通过实际控件验证别名搜索、窄屏返回焦点、资料编辑、字段恢复、归属纠错与账户表单。
 
-新增页面或修改共享控件时，按[桌面 UI 自查标准](desktop-ui-review.zh.md)登记场景。运行 `mise run review:desktop` 生成阅读器工具栏、游戏书架等页面的统一报告。
+新增页面或修改共享控件时，按[桌面 UI 自查标准](desktop-ui-review.zh.md)登记场景。运行 `mise -E development run review:desktop` 生成阅读器工具栏、游戏书架等页面的统一报告。
 
-外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。[设计系统审查](../../.agents/notes/2026-11-18-mvp-design-systems.zh.md) 记录组件库对照、产品组件的维护归属和平台边界。首次执行 `mise run setup:design-baselines`，用 `mise run render:design-baselines:avalonia` 生成组件库样板，再用 `mise run run:design-baselines` 对照官方交互参考。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
+外观弹层通过打开状态、独立视觉根节点和颜色选择器的键盘交互验证；截图使用弹层实际所在的视觉根节点，既支持覆盖式弹层，也支持独立窗口。computer use 截图未包含弹层，本身不能证明应用失败。生成图像用于人工审阅，不引入逐像素基准图门禁。[设计系统审查](../../.agents/notes/2026-11-18-mvp-design-systems.zh.md) 记录组件库对照、产品组件的维护归属和平台边界。首次执行 `mise -E development run setup:design-baselines`，用 `mise -E development run render:design-baselines:avalonia` 生成组件库样板，再用 `mise -E development run run:design-baselines` 对照官方交互参考。无窗口渲染不代表原生弹层位置、系统字体一致性、无障碍或 GPU 性能已经验证。
 
 
 `mise run check` 包含产品构建／分析器、格式、API 一致性、文档／Note 规则和产品测试。`mise run test` 通过 Avalonia 官方无窗口主机，连接实际动态装配的 RSS 服务和独立 SQLite 工作区，覆盖分页、已读状态持久化、输入错误、导航、界面插件关闭／缺失／恢复、业务依赖不可用、桌面不启动 HTTP 服务以及协作退出。视图通过构造函数注入依赖并使用编译式初始化；两个 UI 项目仅豁免 AVLN3001，它提示缺少无参构造函数导致未使用的 URI 构造方式不可用。

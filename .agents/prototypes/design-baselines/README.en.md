@@ -13,7 +13,7 @@ The user accepted the interactive official specimens on 2026-11-18. Web capture 
 On a Mac, open the two-game library in a real AppKit window with the command below. Close the window to exit. The scene uses an NSSplitViewController sidebar, a unified NSToolbar with a native search item, and SwiftUI shelf content. It shares the review scene’s two titles, artwork and missing-cover case. The page provides a static composition reference. Library actions are illustrative. Compare it with the Games page in the product window at the same width and appearance.
 
 ```sh
-mise run render:design-baselines:macos-library --show
+mise -E development run render:design-baselines:macos-library --show
 ```
 
 Without `--show`, the tool keeps its window in the background, records dimensions in points, and captures its own window in light and dark mode under `.local/design-baselines/`. It requires a Mac with Xcode command-line tools and macOS 14.4 or later. ScreenCaptureKit includes the system-composited title bar and sidebar. If capture fails, the tool writes explicitly named `*.view-cache.png` diagnostics. Use the interactive window to judge materials in that case. The native controls follow the installed OS and linked SDK. [Apple’s AppKit window and sidebar walkthrough](https://developer.apple.com/videos/play/wwdc2025/310/)
@@ -29,11 +29,11 @@ On Android, install the official Material Components Catalog APK. In Navigation 
 Use the repository's mise-managed Node.js and pnpm versions. The prototype has its own dependency lockfile and permits esbuild's required install script. It does not add another runtime version declaration.
 
 ```sh
-mise run setup:design-baselines
-mise run render:design-baselines:web
+mise -E development run setup:design-baselines
+mise -E development run render:design-baselines:web
 mise exec -- node .agents/prototypes/design-baselines/baseline.mjs render macos
-mise run render:design-baselines:avalonia
-mise run run:design-baselines
+mise -E development run render:design-baselines:avalonia
+mise -E development run run:design-baselines
 ```
 
 `setup` installs the local packages, downloads Playwright's Chromium headless shell into `.local/design-baselines/browsers/`, and caches Google's Roboto font in `.local/design-baselines/web/fonts/`. It records font URLs in `sources.json`. Rendering then uses local assets. `serve` prints a loopback URL for interactive Fluent and Material references and an Avalonia image gallery; stop it with Ctrl+C. The gallery switches between light/dark and five states, with links to measurements. `render` without a target runs Web, macOS, and Avalonia captures. The native target needs macOS, an available desktop session, and Xcode command-line tools. It briefly displays its own window, then closes it.

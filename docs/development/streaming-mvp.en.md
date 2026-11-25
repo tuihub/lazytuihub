@@ -44,7 +44,7 @@ The planner combines each node descriptor's required resource with any extra res
 
 ## Running across instances
 
-Use `mise run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration. Set `TEST_APP_PLATFORM=linux/amd64` when the cached .NET image is AMD64 on an ARM64 engine. This selects the RID and platform for the application nodes only.
+Use `mise -E development run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration. Set `TEST_APP_PLATFORM=linux/amd64` when the cached .NET image is AMD64 on an ARM64 engine. This selects the RID and platform for the application nodes only.
 
 | Setting | Purpose |
 | --- | --- |
@@ -72,8 +72,8 @@ A port closes after its last producer finishes. An incomplete group missing a cl
 ## Running the examples
 
 ```sh
-mise run demo:workflow
-mise run demo:rss
+mise -E development run demo:workflow
+mise -E development run demo:rss
 mise run test
 ```
 

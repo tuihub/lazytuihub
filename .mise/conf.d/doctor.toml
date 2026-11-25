@@ -1,0 +1,54 @@
+[doctor.checks.dotnet]
+description = ".NET SDK {{ read_json(path=config_root ~ '/global.json')['sdk']['version'] }} is available"
+run = "dotnet --version"
+hint = "Run `mise install dotnet` to install the SDK declared in global.json."
+
+[doctor.checks.node]
+description = "Node.js {{ read_json(path=config_root ~ '/package.json')['devEngines']['runtime']['version'] }} is available"
+run = '''node -e "process.exit(process.versions.node === '{{ read_json(path=config_root ~ "/package.json")["devEngines"]["runtime"]["version"] }}' ? 0 : 1)"'''
+hint = "Run `mise install node` to install the Node.js version declared in package.json."
+
+[doctor.checks.pnpm]
+description = "pnpm is available"
+depends = "node"
+run = "mise which pnpm --version && pnpm --version"
+hint = "Run `mise install pnpm` to install the package manager declared in package.json."
+
+[doctor.checks.csharpier]
+description = "The repository-local CSharpier tool is available"
+depends = "dotnet"
+run = "dotnet csharpier --version"
+hint = "Run `mise exec -- dotnet tool restore`."
+
+[doctor.checks.jscpd]
+description = "The product duplication checker is available"
+depends = "pnpm"
+run = "pnpm exec jscpd --version"
+hint = "Run `mise exec -- pnpm install --frozen-lockfile`."
+
+[doctor.checks.api-linter]
+description = "Google API Linter is available"
+run = "api-linter --version"
+hint = "Run `mise install`."
+
+[doctor.checks.protoc]
+description = "The Proto compiler is available"
+run = "protoc --version"
+hint = "Run `mise install`."
+
+[doctor.checks.openapi-generator]
+description = "The Proto to OpenAPI generator is available"
+run = "mise which protoc-gen-openapi"
+hint = "Run `mise install`."
+
+[doctor.checks.nswag]
+description = "The repository-local NSwag tool is available"
+depends = "dotnet"
+run = "dotnet nswag version"
+hint = "Run `mise exec -- dotnet tool restore`."
+
+[doctor.checks.aip]
+description = "Official AIP references match the project revision"
+depends = "node"
+run = "node .agents/scripts/setup-aip.mjs {{vars.aip_repository}} {{vars.aip_revision}} --check"
+hint = "Run `mise run setup:aip`."

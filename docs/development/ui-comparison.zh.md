@@ -9,16 +9,16 @@
 在仓库根目录使用常规 mise 环境运行：
 
 ```sh
-mise run demo:ui:avalonia
-mise run demo:ui:uno
-mise run demo:ui:uno -- --cupertino
-mise run demo:ui:avalonia -- --without-plugin
-mise run demo:ui:uno -- --without-plugin
+mise -E development run demo:ui:avalonia
+mise -E development run demo:ui:uno
+mise -E development run demo:ui:uno -- --cupertino
+mise -E development run demo:ui:avalonia -- --without-plugin
+mise -E development run demo:ui:uno -- --without-plugin
 ```
 
 每个命令以 Release 模式构建选定原型，并将分析器警告视为错误。关闭窗口即可停止运行。两边默认使用 Fluent 主题；Uno 的可选 Cupertino 运行使用其已发布的主题包。
 
-在 macOS 上，`mise run bundle:ui` 会在 `.agents/prototypes/ui-comparison/artifacts/` 下创建本地应用包装。打开 `LazyTuiHub-Avalonia.app` 和 `LazyTuiHub-Uno.app` 即可比较。`mise run bundle:ui:cupertino` 另生成 `LazyTuiHub-Uno-Cupertino.app`。包装使用本机 mise 管理的 .NET 运行时，只用于开发启动，不是可分发的安装包。Windows 和 Linux 使用上述运行命令；本轮尚未验证它们的原生表现。
+在 macOS 上，`mise -E development run bundle:ui` 会在 `.agents/prototypes/ui-comparison/artifacts/` 下创建本地应用包装。打开 `LazyTuiHub-Avalonia.app` 和 `LazyTuiHub-Uno.app` 即可比较。`mise -E development run bundle:ui:cupertino` 另生成 `LazyTuiHub-Uno-Cupertino.app`。包装使用本机 mise 管理的 .NET 运行时，只用于开发启动，不是可分发的安装包。Windows 和 Linux 使用上述运行命令；本轮尚未验证它们的原生表现。
 
 ## 共同场景
 
@@ -48,7 +48,7 @@ mise run demo:ui:uno -- --without-plugin
 ## 自动验证
 
 ```sh
-mise run check:ui
+mise -E development run check:ui
 ```
 
 该可选检查构建两个原型，并运行各自官方的无窗口主机，检查阅读布局与初始选择、搜索结果、共同的订阅源与已读状态、插件视图创建、禁用插件后的启动、缺失 DLL 诊断、Flex 换行与伸缩、图和缩放状态。Uno 同时检查 Fluent 与 Cupertino 资源。Uno 搜索检查会等待异步送达的 `TextChanged` 事件。

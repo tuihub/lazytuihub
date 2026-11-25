@@ -44,7 +44,7 @@
 
 接口说明和示例以 Proto 注释为来源；路径、类型、必填和只读等结构事实以声明及注解为来源。说明应与实际实现一致，不在 Markdown 中另行维护接口定义，也不修改派生的 OpenAPI。
 
-`mise run generate:api` 在生成客户端时一并执行 Proto → OpenAPI → Scalar Markdown。[生成的参考索引](../api/index.md)链接操作页与消息页。请求响应示例和 HTTP 调用示例写在方法注释中，使用带标签的围栏代码块；字段注释解释相关默认值与行为。注释遵循 AIP-192，完整要求和例外仍以采用的原文为准。
+`mise -E development run generate:api` 在生成客户端时一并执行 Proto → OpenAPI → Scalar Markdown。[生成的参考索引](../api/index.md)链接操作页与消息页。请求响应示例和 HTTP 调用示例写在方法注释中，使用带标签的围栏代码块；字段注释解释相关默认值与行为。注释遵循 AIP-192，完整要求和例外仍以采用的原文为准。
 
 `docs/api/` 全部由工具生成英文 Markdown，明确豁免双语命名与配对，其他 Markdown 规则和 1 MiB 文件上限继续生效。生成清理过期页面，差异检查拒绝手工改动、缺失、多余或过期文件，不写回结果。消息通过页面链接引用，避免递归展开；检测到上游截断时生成失败，不发布缺少字段的文档。手写开发说明放在 `docs/development/`，网页渲染及部署不属于 API 工作范围。
 
@@ -55,7 +55,7 @@ Scalar 自动合成的日期示例使用固定占位时间，保证重复生成�
 按[仓库初始化命令](../../AGENTS.md#development-commands)准备工具和依赖。修改 Proto 后生成并检查派生产物：
 
 ```sh
-mise run generate:api
+mise -E development run generate:api
 mise run check:api
 ```
 
@@ -72,7 +72,7 @@ Grpc.Tools 在 .NET 构建时生成 C# 消息与服务基类。显式生成任�
 运行集成示例，比较应用服务直调与生成客户端的 HTTP 调用：
 
 ```sh
-mise run demo:api
+mise -E development run demo:api
 ```
 
 演示在回环地址的临时端口启动服务，检查两条路径返回相同结果后停止。需要手动调用时，运行 HTTP 服务：

@@ -1,0 +1,93 @@
+[tasks."check:ci"]
+description = "Check the committed snapshot without development-history gates"
+depends = ["check:files", "check:markdown", "check:code", "demo:api", "test", "test:tools", "check:workflows"]
+
+[tasks."check:workflows"]
+description = "Check GitHub Actions workflow syntax and semantics"
+run = "actionlint"
+
+[tasks."test:lint"]
+description = "Verify lint gates, thresholds, and test isolation"
+run = "node --test .agents/tests/csharp-lint.test.mjs .agents/tests/check-file-sizes.test.mjs"
+
+[tasks."test:tools"]
+description = "Run development tooling tests"
+run = 'node --test ".agents/tests/*.test.mjs"'
+
+[tasks."generate:api"]
+description = "Generate OpenAPI, the HTTP client, and Markdown reference from Proto"
+depends = ["restore:api"]
+run = "node .agents/scripts/api.mjs generate"
+
+[tasks."demo:api"]
+description = "Run Hello World through local and generated HTTP clients"
+depends = ["check:api"]
+wait_for = ["check:analyzers", "test"]
+run = "dotnet run --project src/LazyTuiHub -- --demo true"
+
+[tasks."test:multinode"]
+description = "Publish the host and exercise cross-instance execution on isolated Docker networks"
+run = "node tests/multinode/run.mjs"
+
+[tasks."test:desktop"]
+description = "Drive the desktop UI with headless input and save rendered screenshots"
+env.LAZYTUIHUB_UI_ARTIFACTS = "{{config_root}}/.local/desktop"
+run = "dotnet run --project tests/LazyTuiHub.Tests -- -class LazyTuiHub.Tests.DesktopTests"
+
+[tasks."review:desktop"]
+description = "Review registered desktop UI scenes, rendered states and reference specimens"
+run = "node .agents/prototypes/design-baselines/baseline.mjs review"
+
+[tasks."test:win7"]
+description = "Install a Windows 7 x64 QEMU baseline or test a payload in a disposable overlay"
+run = "node tests/win7/lab.mjs"
+
+[tasks."demo:rss"]
+description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"
+wait_for = ["check:analyzers", "test", "demo:api", "demo:workflow"]
+run = "dotnet run --project src/LazyTuiHub -- --rss-demo"
+
+[tasks."demo:workflow"]
+description = "Run local streaming and synchronized inputs with live configuration and cancellation"
+wait_for = ["check:analyzers", "test", "demo:api"]
+run = "dotnet run --project src/LazyTuiHub -- --workflow-demo"
+
+[tasks."check:ui"]
+description = "Build and verify both optional UI comparison prototypes"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs check both"
+
+[tasks."demo:ui:avalonia"]
+description = "Run the Avalonia RSS, workflow canvas, and DLL plugin prototype"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs run avalonia"
+
+[tasks."demo:ui:uno"]
+description = "Run the Uno RSS, workflow canvas, and DLL plugin prototype"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs run uno"
+
+[tasks."bundle:ui"]
+description = "Prepare both local macOS UI prototype app wrappers"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle both"
+
+[tasks."bundle:ui:cupertino"]
+description = "Prepare the local Uno Cupertino theme prototype app"
+run = "node .agents/prototypes/ui-comparison/ui-comparison.mjs bundle uno --cupertino"
+
+[tasks."setup:design-baselines"]
+description = "Install isolated official design reference tools and fonts"
+run = "node .agents/prototypes/design-baselines/baseline.mjs setup"
+
+[tasks."run:design-baselines"]
+description = "Serve official design references and Avalonia control comparisons"
+run = "node .agents/prototypes/design-baselines/baseline.mjs serve"
+
+[tasks."render:design-baselines:web"]
+description = "Capture official Fluent and Material Web component states"
+run = "node .agents/prototypes/design-baselines/baseline.mjs render web"
+
+[tasks."render:design-baselines:macos-library"]
+description = "Capture the native Mac library reference or open it with --show"
+run = "node .agents/prototypes/design-baselines/baseline.mjs render macos-library"
+
+[tasks."render:design-baselines:avalonia"]
+description = "Exercise and capture installed and candidate Avalonia themes"
+run = "node .agents/prototypes/design-baselines/baseline.mjs render avalonia"
