@@ -16,11 +16,6 @@ internal sealed class ArticleDesktopPlugin : IPluginFrontend
             services.GetRequiredService<ILogger<ReaderModel>>(),
             services.GetService<Func<IArticleSources?>>()?.Invoke()
         ));
-        registration.AddDesktopPage(
-            "reader",
-            "Reader",
-            services => new ReaderPage(services.GetRequiredService<ReaderModel>()),
-            "ActionIconBook"
-        );
+        registration.AddDesktopPage<ReaderPage>("reader", "Reader", "ActionIconBook");
     }
 }

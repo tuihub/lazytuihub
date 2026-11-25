@@ -5,6 +5,20 @@ namespace LazyTuiHub.Sdk.Avalonia;
 
 public static class DesktopPages
 {
+    public static void AddDesktopPage<TPage>(
+        this PluginServices registration,
+        string id,
+        string title,
+        string? iconResource = null
+    )
+        where TPage : Control =>
+        registration.AddDesktopPage(
+            id,
+            title,
+            services => ActivatorUtilities.CreateInstance<TPage>(services),
+            iconResource
+        );
+
     public static void AddDesktopPage(
         this PluginServices registration,
         string id,

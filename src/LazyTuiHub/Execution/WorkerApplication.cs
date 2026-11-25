@@ -4,7 +4,6 @@ using Google.Protobuf;
 using Grpc.Core;
 using LazyTuiHub.Api;
 using LazyTuiHub.Api.Execution.V1;
-using LazyTuiHub.Api.Hosting;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 
@@ -50,19 +49,19 @@ internal sealed partial class WorkerApplication(
     )
     {
         if (!string.Equals(request.Instance, instance, StringComparison.Ordinal))
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.FailedPrecondition,
                 "INSTANCE_MISMATCH",
                 "The requested execution instance does not match this worker."
             );
         if (!exports.Contains(request.NodeType))
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.PermissionDenied,
                 "NOT_EXPORTED",
                 "This worker does not export the requested operation."
             );
         if (!request.RequiredResources.All(resources.Contains))
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.Unavailable,
                 "RESOURCE_UNAVAILABLE",
                 "This instance no longer offers the required resources."
@@ -85,11 +84,11 @@ internal sealed partial class WorkerApplication(
         }
         catch (InstanceUnavailableException error)
         {
-            throw ApiErrors.Create(StatusCode.Unavailable, "INSTANCE_UNAVAILABLE", error.Message);
+            throw RpcErrors.Create(StatusCode.Unavailable, "INSTANCE_UNAVAILABLE", error.Message);
         }
         catch (JsonException)
         {
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.InvalidArgument,
                 "INVALID_PACKET",
                 "The packet or settings do not match this operation."
@@ -97,7 +96,7 @@ internal sealed partial class WorkerApplication(
         }
         catch (PacketRejectedException error)
         {
-            throw ApiErrors.Create(StatusCode.FailedPrecondition, "UPSTREAM_REJECTED", error.Message);
+            throw RpcErrors.Create(StatusCode.FailedPrecondition, "UPSTREAM_REJECTED", error.Message);
         }
     }
 

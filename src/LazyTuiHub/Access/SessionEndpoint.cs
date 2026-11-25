@@ -1,7 +1,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using LazyTuiHub.Api;
 using LazyTuiHub.Api.Access.V1;
-using LazyTuiHub.Api.Hosting;
 using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Access;
@@ -27,7 +27,7 @@ internal sealed class SessionEndpoint(AccountAuthority authority) : SessionServi
         }
         catch (AccessRequiredException)
         {
-            throw ApiErrors.Create(StatusCode.Unauthenticated, "INVALID_CREDENTIALS", "The credentials are invalid.");
+            throw RpcErrors.Create(StatusCode.Unauthenticated, "INVALID_CREDENTIALS", "The credentials are invalid.");
         }
     }
 

@@ -5,7 +5,6 @@ using LazyTuiHub.Framework;
 using LazyTuiHub.Plugin.TuiHub.Rss.Api;
 using LazyTuiHub.Plugin.TuiHub.Rss.Application;
 using LazyTuiHub.Plugin.TuiHub.Rss.Frontend;
-using LazyTuiHub.Plugin.TuiHub.Rss.Transport;
 using LazyTuiHub.Sdk;
 
 namespace LazyTuiHub.Plugin.TuiHub.Rss;
@@ -68,6 +67,6 @@ internal sealed class RssPlugin : IApplicationPlugin
         registration.Services.AddTransient<FeedOperations>(services =>
             services.GetRequiredService<LocalFeedOperations>()
         );
-        registration.MapEndpoints = endpoints => endpoints.MapGrpcService<RssService>();
+        registration.MapEndpoints = endpoints => endpoints.MapGrpcService<RssServiceEndpoint>();
     }
 }

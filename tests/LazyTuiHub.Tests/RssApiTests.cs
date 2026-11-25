@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Grpc.Core;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Plugin.TuiHub.Articles.Api;
@@ -15,6 +16,30 @@ namespace LazyTuiHub.Tests;
 
 public sealed class RssApiTests
 {
+    [Fact]
+    public async Task MissingFeedIdReturnsTheSameErrorThroughLocalAndHttpClients()
+    {
+        using var workspace = new PluginWorkspace();
+        await using var app = ApplicationHost.Create(["--demo", "true", "--database", workspace.Database]);
+        var token = TestContext.Current.CancellationToken;
+        await app.StartAsync(token);
+        try
+        {
+            using var http = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
+            foreach (var api in new IRssApi[] { app.Services.GetRequiredService<IRssApi>(), new RssHttpClient(http) })
+            {
+                var error = await Assert.ThrowsAsync<RpcException>(() =>
+                    api.GetFeedAsync(new() { Name = "feeds/" }, token)
+                );
+                Assert.Equal(StatusCode.InvalidArgument, error.StatusCode);
+            }
+        }
+        finally
+        {
+            await app.StopAsync(CancellationToken.None);
+        }
+    }
+
     [Fact]
     public async Task PaginationErrorsAndRequestIdsSurviveHttpAndRestart()
     {

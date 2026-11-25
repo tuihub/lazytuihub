@@ -43,7 +43,9 @@ Server 注册业务服务、节点和后台任务。Client 注册两种界面共
 
 插件项目引用 [LazyTuiHub.Sdk](../../src/LazyTuiHub.Sdk/)，取得入口契约、构建声明和工作流执行接口。包名、程序集名和根命名空间一致。工作流、DAO 和交互类型保留各自的命名空间，通过包依赖提供。插件通过 NodeRegistration 注册节点，通过 IWorkflowExecutor 请求执行工作流。宿主管理节点注册表、计划执行和插件目录。提供 Proto 端点的插件还可引用共享的 API 传输工具。
 
-ClientGui 入口可再引用 [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/)，注册 Avalonia 控件、响应工作区更新，并使用共享的页面模型、自适应布局与动效。桌面宿主提供当前主题，通过 RunDesktopOperation 跟踪界面操作，负责窗口、主题切换和关闭流程。将渲染类型放在 GUI 代码中，同一 DLL 的服务端和 CLI 入口即可在无界面宿主加载。
+基础 SDK 的 `StreamWorkflow.Chain` 按声明顺序连接标准流端口，生成普通节点和边，保留节点归属、设置和资源要求。手工连线与顺序连线共用框架的规划器和执行器。API 构建工具生成插件自有的传输适配。业务插件定义 provider 操作及其预期结果。
+
+ClientGui 入口可再引用 [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/)，用 `AddDesktopPage<TPage>` 按类型注册控件或提供页面工厂，响应工作区更新，并使用共享的页面模型、自适应布局与动效。桌面宿主提供当前主题，通过 RunDesktopOperation 跟踪界面操作，负责窗口、主题切换和关闭流程。将渲染类型放在 GUI 代码中，同一 DLL 的服务端和 CLI 入口即可在无界面宿主加载。
 
 插件优先通过工作流节点提供可复用能力，允许其他插件直接引用其有意公开的 public 类型。直接引用由双方维护语义与兼容性，框架仅核对显式声明的插件依赖。插件自己决定如何组织公开类型。例如，[游戏插件的 provider 类型](../../plugins/LazyTuiHub.Plugin.TuiHub.Games/Providers/)供 Steam、Bangumi 和 VNDB 直接引用。文章插件公开文章草稿和订阅来源接口，RSS 实现该接口，阅读器按服务可用性显示订阅功能。
 

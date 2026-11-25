@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using Grpc.Core;
+using LazyTuiHub.Api;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace LazyTuiHub.Api.Hosting;
@@ -14,7 +15,7 @@ public sealed class PageTokens(IDataProtectionProvider provider)
     public static int PageSize(int requested) =>
         requested switch
         {
-            < 0 => throw ApiErrors.Create(
+            < 0 => throw RpcErrors.Create(
                 StatusCode.InvalidArgument,
                 "INVALID_PAGE_SIZE",
                 "Page size cannot be negative."
@@ -39,7 +40,7 @@ public sealed class PageTokens(IDataProtectionProvider provider)
         }
         catch (Exception exception) when (exception is CryptographicException or JsonException or FormatException)
         {
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.InvalidArgument,
                 "INVALID_PAGE_TOKEN",
                 "The page token is invalid for this query."

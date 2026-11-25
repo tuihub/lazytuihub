@@ -1,6 +1,7 @@
 using LazyTuiHub.Framework;
 using LazyTuiHub.Nodes;
 using LazyTuiHub.Plugin.TuiHub.Articles.Api;
+using LazyTuiHub.Sdk;
 
 namespace LazyTuiHub.Plugin.TuiHub.Articles;
 
@@ -63,10 +64,9 @@ internal static class ArticleModule
                 ("articles.mark-read", "articles.mark-read"),
             }
         )
-            yield return new(
+            yield return StreamWorkflow.Chain(
                 name,
-                [PipelineNode.Create("source", type), PipelineNode.Create("output", "articles.output")],
-                [new("source", StreamNodes.Output, "output", StreamNodes.Input)]
+                [PipelineNode.Create("source", type), PipelineNode.Create("output", "articles.output")]
             );
     }
 

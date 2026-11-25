@@ -2,6 +2,7 @@ using System.Globalization;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Nodes;
 using LazyTuiHub.Plugin.TuiHub.Articles.Api;
+using LazyTuiHub.Sdk;
 
 namespace LazyTuiHub.Plugin.TuiHub.Rss;
 
@@ -40,7 +41,7 @@ internal static class RssModule
 
     public static IEnumerable<PipelineDefinition> Pipelines(TimeSpan refreshInterval)
     {
-        yield return new(
+        yield return StreamWorkflow.Chain(
             "rss.ingest",
             [
                 PipelineNode.Create(
@@ -54,20 +55,12 @@ internal static class RssModule
                 PipelineNode.Create("parse", "rss.parse"),
                 PipelineNode.Create("store", "articles.store", pluginId: PluginProject.Articles),
                 PipelineNode.Create(OutputNode, "articles.output", pluginId: PluginProject.Articles),
-            ],
-            [
-                new("timer", StreamNodes.Output, "feeds", StreamNodes.Input),
-                new("feeds", StreamNodes.Output, "fetch", StreamNodes.Input),
-                new("fetch", StreamNodes.Output, "parse", StreamNodes.Input),
-                new("parse", StreamNodes.Output, "store", StreamNodes.Input),
-                new("store", StreamNodes.Output, OutputNode, StreamNodes.Input),
             ]
         );
         foreach (var (name, type) in new[] { (SubscribeNodeType, SubscribeNodeType), ("rss.feeds", "rss.read-feeds") })
-            yield return new(
+            yield return StreamWorkflow.Chain(
                 name,
-                [PipelineNode.Create("source", type), PipelineNode.Create(OutputNode, "rss.output-feeds")],
-                [new("source", StreamNodes.Output, OutputNode, StreamNodes.Input)]
+                [PipelineNode.Create("source", type), PipelineNode.Create(OutputNode, "rss.output-feeds")]
             );
     }
 

@@ -18,9 +18,9 @@
 
 当前实现以 [IGreetingApi](../../src/LazyTuiHub.Api/IGreetingApi.cs) 为共享调用边界。[GreetingApplication](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/Backend/GreetingApplication.cs) 直接实现该接口，[传输服务](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/Backend/GreetingService.cs)将转码请求及取消信号交给它。生成 HTTP 客户端的[手写 partial](../../src/LazyTuiHub.Client/GreetingHttpClient.cs) 实现同一接口，配置 JSON 字段命名及相对路径。其中的 `./` 路径前缀防止自定义方法的冒号被解析为 URI scheme。
 
-订阅使用 [IRssApi](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Api/IRssApi.cs)，各类来源的文章使用 [IArticleApi](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/IArticleApi.cs)。应用服务执行共享管线，[客户端 partial](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Frontend/RssHttpClient.cs) 将资源名称与查询参数适配到生成方法。Proto 消息使用 Protobuf JSON 序列化，正确处理时间戳和 repeated 字段；生成器按配置的服务分别输出客户端。[MVP 指南](streaming-mvp.zh.md)说明模块组合及当前使用 ASP.NET Core 原生 HTTP 错误表示的明确例外，该例外不改变其他 AIP 要求。
+RSS 和文章插件各自实现[订阅接口](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Api/IRssApi.cs)和[文章接口](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/IArticleApi.cs)。两条调用路径共享资源名解析。例如，`feeds/` 缺少 ID 时返回 `InvalidArgument`，HTTP 客户端在发送请求前就能发现错误。应用服务负责授权、执行工作流并解释业务错误。HTTP 错误的 ASP.NET Core 表示见 [MVP 指南](streaming-mvp.zh.md)。
 
-业务 Proto 随插件放在 Api/Protos 目录中。Frontend/http-client.json 指定服务、HTTP 客户端类名，以及与该插件手写 partial 类一致的命名空间。消息和服务桩的 C# 命名空间由 Proto 中的 csharp_namespace 指定。生成任务汇总业务和宿主协议，生成统一的 OpenAPI、API 参考文档，并将各业务客户端写入插件自己的 Frontend/Generated 目录。
+业务 Proto 放在插件的 `Api/Protos`。在 `Frontend/http-client.json` 中指定服务、客户端类和命名空间。采用 Proto 请求消息和取消令牌的一元 RPC 服务，可将 `requestInterface` 设为应用接口的完整类型名。生成工具读取 protoc 的 HTTP 注解与派生 OpenAPI 参数，将请求对象重载和 NSwag 客户端一同写入 `Frontend/Generated`，将共享资源名解析与 gRPC 转发端点写入 `Api/Generated`。插件通过 `MapGrpcService` 注册生成的端点。其他传输形式可自行提供适配器。
 
 ## 设计要求
 

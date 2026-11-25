@@ -1,6 +1,7 @@
 using System.Globalization;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using LazyTuiHub.Api;
 using LazyTuiHub.Api.Articles.V1;
 using LazyTuiHub.Api.Hosting;
 using LazyTuiHub.Framework;
@@ -58,12 +59,7 @@ internal sealed class ArticleApplication(
     private Task<Article> ReadArticleAsync(string pipeline, string name, CancellationToken cancellationToken) =>
         RunAsync(async () =>
         {
-            if (name.Split('/') is not ["articles", { Length: > 0 } article])
-                throw ApiErrors.Create(
-                    StatusCode.InvalidArgument,
-                    "INVALID_ARTICLE_NAME",
-                    "Use an article name of the form articles/{article}."
-                );
+            var article = ArticleServicePaths.ArticleId(name);
             var articles = await workflows.CollectAsync<ArticleRecord>(pipeline, article, cancellationToken);
             return ToArticle(articles.Single());
         });

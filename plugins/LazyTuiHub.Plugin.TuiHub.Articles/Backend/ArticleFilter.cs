@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Grpc.Core;
-using LazyTuiHub.Api.Hosting;
+using LazyTuiHub.Api;
 
 namespace LazyTuiHub.Plugin.TuiHub.Articles;
 
@@ -42,7 +42,7 @@ internal static partial class ArticleFilter
     private static partial Regex Expression();
 
     private static RpcException InvalidFilter() =>
-        ApiErrors.Create(
+        RpcErrors.Create(
             StatusCode.InvalidArgument,
             "INVALID_FILTER",
             "Use equality on source or read, optionally combined with AND."

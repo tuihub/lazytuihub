@@ -1,3 +1,4 @@
+using Grpc.Core;
 using LazyTuiHub.Client;
 using LazyTuiHub.Interaction;
 using LazyTuiHub.Plugins;
@@ -36,6 +37,7 @@ public static class RemoteConsole
             when (error
                     is SessionApiException
                         or IRemoteApiError
+                        or RpcException
                         or HttpRequestException
                         or ArgumentException
                         or FormatException

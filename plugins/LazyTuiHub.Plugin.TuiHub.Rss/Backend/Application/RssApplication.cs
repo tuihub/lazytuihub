@@ -1,5 +1,6 @@
 using System.Globalization;
 using Grpc.Core;
+using LazyTuiHub.Api;
 using LazyTuiHub.Api.Hosting;
 using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Framework;
@@ -31,7 +32,7 @@ internal sealed class RssApplication(
                 || !Uri.TryCreate(request.Feed.Uri, UriKind.Absolute, out var uri)
                 || uri.Scheme is not ("http" or "https")
             )
-                throw ApiErrors.Create(
+                throw RpcErrors.Create(
                     StatusCode.InvalidArgument,
                     "INVALID_FEED_URI",
                     "Provide an absolute HTTP or HTTPS feed URI."
@@ -43,7 +44,7 @@ internal sealed class RssApplication(
                     || !request.FeedId.Equals(id.ToString("D"), StringComparison.Ordinal)
                 )
             )
-                throw ApiErrors.Create(
+                throw RpcErrors.Create(
                     StatusCode.InvalidArgument,
                     "INVALID_FEED_ID",
                     "The feed ID must be a lowercase, hyphenated UUID."
@@ -79,7 +80,7 @@ internal sealed class RssApplication(
         });
 
     public Task<Feed> GetFeedAsync(GetFeedRequest request, CancellationToken cancellationToken = default) =>
-        RunAsync(async () => ToFeed(await FindFeedAsync(FeedId(request.Name), cancellationToken)));
+        RunAsync(async () => ToFeed(await FindFeedAsync(RssServicePaths.FeedId(request.Name), cancellationToken)));
 
     public Task<RefreshFeedResponse> RefreshFeedAsync(
         RefreshFeedRequest request,
@@ -87,7 +88,7 @@ internal sealed class RssApplication(
     ) =>
         RunAsync(async () =>
         {
-            var id = FeedId(request.Name);
+            var id = RssServicePaths.FeedId(request.Name);
             access.Require(
                 ResourceUri.InAccount(PluginProject.Id, access.Account, FeedCollection, id),
                 AccessMode.Write
@@ -103,18 +104,7 @@ internal sealed class RssApplication(
     {
         var feeds = await workflows.CollectAsync<FeedRecord>("rss.feeds", new FeedSelection(id), cancellationToken);
         return feeds.SingleOrDefault()
-            ?? throw ApiErrors.Create(StatusCode.NotFound, "FEED_NOT_FOUND", "The subscription does not exist.");
-    }
-
-    private static string FeedId(string name)
-    {
-        if (name.Split('/') is not [FeedCollection, { Length: > 0 } id])
-            throw ApiErrors.Create(
-                StatusCode.InvalidArgument,
-                "INVALID_FEED_NAME",
-                "Use a subscription name of the form feeds/{feed}."
-            );
-        return id;
+            ?? throw RpcErrors.Create(StatusCode.NotFound, "FEED_NOT_FOUND", "The subscription does not exist.");
     }
 
     private static string NormalizeRequestId(string value)
@@ -126,7 +116,7 @@ internal sealed class RssApplication(
             || id.Version != RequestUuidVersion
             || id.Variant is < MinimumRequestUuidVariant or > MaximumRequestUuidVariant
         )
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.InvalidArgument,
                 "INVALID_REQUEST_ID",
                 "The request ID must be a UUID version 4."
@@ -144,12 +134,12 @@ internal sealed class RssApplication(
 
     private Task<T> RunAsync<T>(Func<Task<T>> run) => ApiErrors.RunAsync(run, logger, error => error switch
             {
-                RssConflictException { Reason: "FEED_EXISTS" } conflict => ApiErrors.Create(
+                RssConflictException { Reason: "FEED_EXISTS" } conflict => RpcErrors.Create(
                     StatusCode.AlreadyExists,
                     conflict.Reason,
                     conflict.Message
                 ),
-                RssConflictException conflict => ApiErrors.Create(
+                RssConflictException conflict => RpcErrors.Create(
                     StatusCode.InvalidArgument,
                     conflict.Reason,
                     conflict.Message

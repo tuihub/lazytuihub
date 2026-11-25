@@ -1,25 +1,13 @@
-using Google.Protobuf;
-using Google.Protobuf.WellKnownTypes;
-using Google.Rpc;
 using Grpc.Core;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Sdk;
 using Microsoft.Extensions.Logging;
+using static LazyTuiHub.Api.RpcErrors;
 
 namespace LazyTuiHub.Api.Hosting;
 
 public static partial class ApiErrors
 {
-    public static RpcException Create(StatusCode code, string reason, string message)
-    {
-        var status = new Google.Rpc.Status { Code = (int)code, Message = message };
-        status.Details.Add(Any.Pack(new ErrorInfo { Reason = reason, Domain = "lazytuihub.tuihub.org" }));
-        return new(
-            new Grpc.Core.Status(code, message),
-            new Metadata { { "grpc-status-details-bin", status.ToByteArray() } }
-        );
-    }
-
     public static async Task<T> RunAsync<T>(
         Func<Task<T>> run,
         ILogger logger,

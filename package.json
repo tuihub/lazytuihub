@@ -14,6 +14,7 @@
     "lint:markdown": "remark . --ext md --frail --no-stdout"
   },
   "devDependencies": {
+    "@bufbuild/protobuf": "2.17.0",
     "@scalar/openapi-to-markdown": "1.7.6",
     "ajv": "8.20.0",
     "conventional-commits-parser": "7.1.4",

@@ -5,7 +5,6 @@ using Grpc.Core;
 using LazyTuiHub.Access;
 using LazyTuiHub.Api;
 using LazyTuiHub.Api.Execution.V1;
-using LazyTuiHub.Api.Hosting;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 
@@ -26,7 +25,7 @@ internal sealed class WorkerEndpoint(IWorkerApi application, ResourceAccess acce
     {
         var account = context.GetHttpContext().Request.Headers[AccessHosting.AccountHeader].FirstOrDefault();
         if (access.IsSingleAccount != (account is null))
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.FailedPrecondition,
                 "ACCOUNT_SCOPE_MISMATCH",
                 "The coordinator and worker must agree on account-scoped execution."
@@ -34,7 +33,7 @@ internal sealed class WorkerEndpoint(IWorkerApi application, ResourceAccess acce
         if (account is null)
             return await application.ExecutePacketAsync(request, context.CancellationToken);
         if (!ResourceUri.IsAccountId(account))
-            throw ApiErrors.Create(
+            throw RpcErrors.Create(
                 StatusCode.InvalidArgument,
                 "INVALID_ACCOUNT",
                 "The assignment has an invalid account."

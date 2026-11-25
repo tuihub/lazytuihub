@@ -12,14 +12,6 @@ internal sealed class GameDesktopPlugin : IPluginFrontend
             return;
         registration.Services.AddSingleton<GamePageModel>();
         registration.Services.AddSingleton<GameCovers>();
-        registration.AddDesktopPage(
-            "library",
-            "Games",
-            services => new GamePage(
-                services.GetRequiredService<GamePageModel>(),
-                services.GetRequiredService<GameCovers>()
-            ),
-            "ActionIconGames"
-        );
+        registration.AddDesktopPage<GamePage>("library", "Games", "ActionIconGames");
     }
 }

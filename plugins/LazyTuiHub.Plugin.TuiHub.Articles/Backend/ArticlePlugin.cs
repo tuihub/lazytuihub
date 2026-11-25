@@ -29,6 +29,6 @@ internal sealed class ArticlePlugin : IApplicationPlugin
         registration.Services.AddTransient<ArticleOperations>(services =>
             services.GetRequiredService<LocalArticleOperations>()
         );
-        registration.MapEndpoints = endpoints => endpoints.MapGrpcService<ArticleService>();
+        registration.MapEndpoints = endpoints => endpoints.MapGrpcService<ArticleServiceEndpoint>();
     }
 }
