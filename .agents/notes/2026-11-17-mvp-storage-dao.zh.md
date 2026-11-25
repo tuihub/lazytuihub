@@ -145,9 +145,9 @@ TTL 工具可以由业务插件主动调用；统一后台清理需要通过 Plu
 
 ## 当前实现与下一轮验证
 
-[DAO 契约与工具入口](../../src/LazyTuiHub.Dao/) 不引用 SQLite 驱动；[SQLite 提供者插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/) 实现统一记录工具、FTS5 专项服务及原生连接源。[SqliteDatabase](../../src/LazyTuiHub.Framework/Storage/SqliteDatabase.cs) 仍作为最小工作区基础设施；[BusinessStorage](../../src/LazyTuiHub.Framework/Storage/BusinessStorage.cs) 使用 DbConnection／DbTransaction 协调工作区原子登记。[PluginRegistration](../../src/LazyTuiHub.PluginSdk/PluginRegistration.cs) 通过 Daos、DaoServices 和 Retentions 收集声明，框架保存普通描述以支持提供者缺失诊断。
+[DAO 契约与工具入口](../../src/LazyTuiHub.Dao/) 不引用 SQLite 驱动；[SQLite 提供者插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/) 实现统一记录工具、FTS5 专项服务及原生连接源。[SqliteDatabase](../../src/LazyTuiHub.Framework/Storage/SqliteDatabase.cs) 仍作为最小工作区基础设施；[BusinessStorage](../../src/LazyTuiHub.Framework/Storage/BusinessStorage.cs) 使用 DbConnection／DbTransaction 协调工作区原子登记。[PluginRegistration](../../src/LazyTuiHub.Sdk/PluginRegistration.cs) 通过 Daos、DaoServices 和 Retentions 收集声明，框架保存普通描述以支持提供者缺失诊断。
 
-[RssStore](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/RssStore.cs) 保存订阅，[RssDetails](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/RssDetails.cs) 使用通用记录工具保存抓取明细。[ArticleStore](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/ArticleStore.cs) 在 articles 命名空间管理文章及全文索引，通过同一事务提交内容、索引及可选的来源关联。关闭 RSS 后仍可阅读和搜索文章。新版表结构和默认图使用新的工作区。
+[RssStore](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Backend/RssStore.cs) 保存订阅，[RssDetails](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Backend/RssDetails.cs) 使用通用记录工具保存抓取明细。[ArticleStore](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Backend/ArticleStore.cs) 在 articles 命名空间管理文章及全文索引，通过同一事务提交内容、索引及可选的来源关联。关闭 RSS 后仍可阅读和搜索文章。新版表结构和默认图使用新的工作区。
 
 产品测试覆盖工具对多个目标的复用、命名空间与标识符安全、到期可见性、长期保留、暂停状态跨启动保留、拥有者关闭时继续受托清理、模式／实例／后端匹配、首次缺失能力、提供者 DLL 移走／恢复，以及搜索、业务与框架登记共同回滚。既有本地／HTTP、图和插件保留场景继续通过。当前只有一个实际后端，跨后端兼容性、其他专项能力、内容快照及持久运行状态仍需真实用例验证。
 

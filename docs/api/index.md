@@ -41,9 +41,9 @@
 ## Source declarations
 
 - [lazytuihub/access/v1/session_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/access/v1/session_service.proto)
-- [lazytuihub/articles/v1/article.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/Protos/lazytuihub/articles/v1/article.proto)
-- [lazytuihub/articles/v1/article_service.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/Protos/lazytuihub/articles/v1/article_service.proto)
+- [lazytuihub/articles/v1/article.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/Protos/lazytuihub/articles/v1/article.proto)
+- [lazytuihub/articles/v1/article_service.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/Protos/lazytuihub/articles/v1/article_service.proto)
 - [lazytuihub/execution/v1/worker_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/execution/v1/worker_service.proto)
 - [lazytuihub/greeting/v1/greeting_service.proto](../../src/LazyTuiHub.Api/Protos/lazytuihub/greeting/v1/greeting_service.proto)
-- [lazytuihub/rss/v1/feed.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/contracts/Protos/lazytuihub/rss/v1/feed.proto)
-- [lazytuihub/rss/v1/rss_service.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/contracts/Protos/lazytuihub/rss/v1/rss_service.proto)
+- [lazytuihub/rss/v1/feed.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Api/Protos/lazytuihub/rss/v1/feed.proto)
+- [lazytuihub/rss/v1/rss_service.proto](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Api/Protos/lazytuihub/rss/v1/rss_service.proto)

@@ -16,29 +16,44 @@ The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real
 | - | - |
 | [Framework](../../src/LazyTuiHub.Framework/) | Generic data relationships, node/port registration, planning, asynchronous delivery, synchronized-input alignment, fan-out, backpressure, and cancellation. |
 | [Node library](../../src/LazyTuiHub.Nodes/) | Common port types and helpers for source, transform and sink nodes. |
-| [Plugin SDK](../../src/LazyTuiHub.PluginSdk/) | Registration, workflow calls, optional capability lookup and lifecycle hooks. |
+| [Plugin SDK](../../src/LazyTuiHub.Sdk/) | Registration, workflow calls, optional capability lookup and lifecycle hooks. |
+| [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/) | Page registration, workspace refresh, adaptive panes, motion and host-tracked GUI operations. |
 | [Plugins](../../src/LazyTuiHub.Plugins/) | Trusted DLL composition, retained declarations/intent, workflow management, and task/hook invocation. |
 | [DAO toolkit](../../src/LazyTuiHub.Dao/) | Backend-neutral contracts, access requirements/capabilities, and namespaced table targets. |
 | [SQLite provider](../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/) | Required storage plugin supplying common JSON records/TTL, SQLite FTS5, native connections, and delegated cleanup. |
-| [Core plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/) | Required distribution plugin for greetings and built-in node registration. |
-| [RSS plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/) | Subscriptions, scheduled fetching, fetch observations, and RSS/Atom parsing. |
-| [Articles](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
+| [Core plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/Backend/) | Required distribution plugin for greetings and built-in node registration. |
+| [RSS plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Backend/) | Subscriptions, scheduled fetching, fetch observations, and RSS/Atom parsing. |
+| [Articles](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Backend/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
 | [Game library and providers](../../.agents/notes/2026-11-23-mvp-games.en.md) | Personal games, categories and sessions, with Steam, Bangumi and VNDB lookup and import workflows. |
 | [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, desktop/web composition, shared DI infrastructure, and lifecycle. |
 | [CLI](../../src/LazyTuiHub.Cli/) | User-facing reader and subscription commands. Run `mise run run:cli -- --command articles --action list` locally or pass `--endpoint https://SERVER` for a remote account. The standalone publish runs without the server, database or GUI. [Win7 CLI evaluation](../../.agents/notes/2026-11-23-mvp-win7-cli.en.md) |
-| [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
+| [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
 
 PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. Each business plugin writes its own tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
 
 The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, articles.store, and articles.output. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP callers use IRssApi for subscriptions and IArticleApi for articles; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
 
-To connect another source, emit [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/ArticleDraft.cs) and connect the output to articles.store. The source resource name and its entry ID identify the article together. For example, notebooks/a and notebooks/b can both use entry ID 1. Repeating an entry updates its content and preserves its article name and read state. A packet carrying a registered origin reference also records the relationship in the same transaction.
+To connect another source, emit [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/ArticleDraft.cs) and connect the output to articles.store. The source resource name and its entry ID identify the article together. For example, notebooks/a and notebooks/b can both use entry ID 1. Repeating an entry updates its content and preserves its article name and read state. A packet carrying a registered origin reference also records the relationship in the same transaction.
 
-A bundled plugin declares its lowercase `lazytuihub.plugin.<publisher>.<name>` ID in plugin.json. Prefer the corresponding PascalCase package and source root, for example [LazyTuiHub.Plugin.TuiHub.Steam](../../plugins/LazyTuiHub.Plugin.TuiHub.Steam/). Add the project to BundledPlugin in the [host project](../../src/LazyTuiHub/LazyTuiHub.csproj) to include it in the distribution. The build collects the entry assembly, dependencies and content marked for output. At cold startup the loader reads the distribution’s selection and the installed `plugins/<id>/plugin.json` for each selected ID. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) describes version constraints and extracting a plugin into another repository.
+Reference `LazyTuiHub.Sdk` directly when building a plugin with NuGet. The package supplies the registration contracts and imports the build targets that generate the embedded manifest from the project. Add `LazyTuiHub.Sdk.Avalonia` for a ClientGui entry that registers a page. Keep Avalonia types in that entry and its views so the same DLL can supply its other entries in a CLI or server process.
+
+Name the project at each plugin root using the full dotted PascalCase ID, including the publisher. The .NET SDK uses the project name for AssemblyName and RootNamespace by default. Place plugin-owned types under that namespace. For example, the Games plugin exposes LazyTuiHub.Plugin.TuiHub.Games.GameEntry. Reference entry types through `$(RootNamespace)` in the project. Declare PluginId, Title, optional PluginVersion and each PluginEntryPoint in the [project file](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj). Server registers backend services, Client registers shared client operations, and ClientGui and ClientCli register interface-specific interactions. The host selects distribution members with BundledPlugin. The build generates the embedded manifest and distribution index. Code obtains its identity from the registration context or generated PluginProject.Id. PackageId independently sets the NuGet name. [Plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md)
+
+A report can reference article operations and offer game statistics when Games is available. Rebuilding resolves the article project's current PluginId. A PackageReference with PluginRelation reads the plugin identity shipped in its NuGet package. Use PluginReference for a runtime relationship by ID when there is no compiler reference.
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="../Articles/Articles.csproj" PluginRelation="Requires" />
+  <PluginReference Include="lazytuihub.plugin.tuihub.games"
+                   PluginRelation="CompatibleWith" PluginVersionRange="[1.0.0,2.0.0)" />
+</ItemGroup>
+```
+
+The host calls the Articles entry points before the reporting plugin’s. Games and the reporting plugin may start in either order, even if both declare a compatible version range for the other. Resolve the game capability when a user opens game statistics. Without Games the report still starts. If Games 2.0.0 is enabled, the host blocks the reporting plugin and reports the requested range and actual version.
 
 ## Ports and execution plans
 
-NodeRegistry.Register accepts typed, named input/output declarations and one asynchronous execution function. Each category may have any number of ports, including zero. Connections identify source, sourcePort, target, and targetPort. Type and delivery mode must match exactly; object is not a catch-all receiving port. Unused outputs may remain unconnected; every declared input needs a producer.
+NodeRegistration.Register accepts typed, named input/output declarations and one asynchronous execution function. Each category may have any number of ports, including zero. Connections identify source, sourcePort, target, and targetPort. Type and delivery mode must match exactly; object is not a catch-all receiving port. Unused outputs may remain unconnected; every declared input needs a producer.
 
 The planner combines each node descriptor's required resource with any extra resource names in the workflow node’s `requires` array. Each instance registers its resources independently. For example, `articles.store` requires `workspace.primary`, while a digest workflow can request `compute.batch`. Workflow JSON contains only logical nodes, settings, requirements, and edges. A plan shows the resolved requirements and candidate instances, plus any unreachable inventory endpoints. Running a saved definition builds a fresh plan. Saving retains definitions with missing capabilities and reports diagnostics.
 

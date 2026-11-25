@@ -10,7 +10,7 @@ x-worker: &worker
   networks: [control, private]
   volumes:
     - ${TEST_PUBLISH_DIR}:/app:ro
-    - ./worker-plugins.json:/app/plugins/plugins.json:ro
+    - ${TEST_PUBLISH_DIR}/worker-plugins.json:/app/plugins/plugins.json:ro
 x-worker-environment: &worker-environment
   Cluster__AllowInsecureHttp: "true"
   Cluster__Export__0: builtin.http-fetch

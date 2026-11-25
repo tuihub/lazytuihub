@@ -3,7 +3,7 @@ using Google.Protobuf.WellKnownTypes;
 using Google.Rpc;
 using Grpc.Core;
 using LazyTuiHub.Framework;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.Logging;
 
 namespace LazyTuiHub.Api.Hosting;

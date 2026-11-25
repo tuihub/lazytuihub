@@ -1,3 +1,3 @@
 namespace LazyTuiHub.Plugins;
 
-public sealed record PluginSelection(string Id, bool Required = false);
+public sealed record PluginSelection(string Id, string Assembly, bool Required = false);

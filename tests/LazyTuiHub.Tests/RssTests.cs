@@ -1,10 +1,11 @@
 using System.Net;
-using LazyTuiHub.Articles;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Nodes;
+using LazyTuiHub.Plugin.TuiHub.Articles;
+using LazyTuiHub.Plugin.TuiHub.Rss;
 using LazyTuiHub.Plugins;
-using LazyTuiHub.Rss;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -68,7 +69,7 @@ public sealed class RssTests
                     )
                 )
             );
-            handler.Xml = RssDemo.FeedXml.Replace("Hello streaming", "Updated title", StringComparison.Ordinal);
+            handler.Xml = RssFixture.FeedXml.Replace("Hello streaming", "Updated title", StringComparison.Ordinal);
             Assert.Equal(
                 2,
                 await restarted.RefreshAsync(new(feed.Id), cancellationToken: TestContext.Current.CancellationToken)
@@ -109,7 +110,7 @@ public sealed class RssTests
 
     private sealed class FeedHandler : HttpMessageHandler
     {
-        public string Xml { get; set; } = RssDemo.FeedXml;
+        public string Xml { get; set; } = RssFixture.FeedXml;
 
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,

@@ -1,5 +1,8 @@
 using LazyTuiHub.Client;
+using LazyTuiHub.Interaction;
+using LazyTuiHub.Plugins;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Cli;
 
@@ -19,13 +22,20 @@ public static class RemoteConsole
                 return 0;
             }
             using var remote = new RemoteWorkspace(endpoint, config["Access:Session"], config["Access:Account"]);
-            return await CapabilityConsole.RunAsync(remote.Catalog, config, token);
+            var services = new ServiceCollection();
+            remote.Configure(
+                services,
+                config["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
+                FrontendKind.Cli,
+                Console.Error.WriteLine
+            );
+            await using var provider = services.BuildServiceProvider();
+            return await CapabilityConsole.RunAsync(provider.GetRequiredService<CapabilityCatalog>(), config, token);
         }
         catch (Exception error)
             when (error
                     is SessionApiException
-                        or ArticleApiException
-                        or RssApiException
+                        or IRemoteApiError
                         or HttpRequestException
                         or ArgumentException
                         or FormatException

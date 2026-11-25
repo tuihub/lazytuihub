@@ -1,7 +1,7 @@
 <UserControl
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:LazyTuiHub.Desktop"
+    xmlns:sdk="clr-namespace:LazyTuiHub.Sdk.Avalonia;assembly=LazyTuiHub.Sdk.Avalonia"
     xmlns:framework="clr-namespace:LazyTuiHub.Framework;assembly=LazyTuiHub.Framework"
     x:Class="LazyTuiHub.Desktop.WorkflowPage"
 >
@@ -10,8 +10,8 @@
             <TextBlock Text="Workflows" Classes="title" />
             <TextBlock x:Name="WorkflowCount" Classes="caption" />
         </StackPanel>
-        <local:AdaptivePane x:Name="Pane" Grid.Row="1" BackLabel="Back to workflows">
-            <local:AdaptivePane.Master>
+        <sdk:AdaptivePane x:Name="Pane" Grid.Row="1" BackLabel="Back to workflows">
+            <sdk:AdaptivePane.Master>
                 <Grid>
                     <ListBox
                         x:Name="Definitions"
@@ -47,8 +47,8 @@
                         VerticalAlignment="Center"
                     />
                 </Grid>
-            </local:AdaptivePane.Master>
-            <local:AdaptivePane.Detail>
+            </sdk:AdaptivePane.Master>
+            <sdk:AdaptivePane.Detail>
                 <Grid RowDefinitions="Auto,Auto,*" Margin="24">
                     <TextBlock x:Name="WorkflowTitle" Classes="title" TextWrapping="Wrap" />
                     <TextBlock
@@ -81,7 +81,7 @@
                         </TabItem>
                     </TabControl>
                 </Grid>
-            </local:AdaptivePane.Detail>
-        </local:AdaptivePane>
+            </sdk:AdaptivePane.Detail>
+        </sdk:AdaptivePane>
     </Grid>
 </UserControl>

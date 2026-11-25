@@ -3,6 +3,7 @@ using LazyTuiHub.Execution;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Interaction;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace LazyTuiHub;
@@ -12,7 +13,7 @@ internal static class HostComposition
     public static PluginRuntime Configure(
         IServiceCollection services,
         IConfiguration configuration,
-        bool interactive = false
+        FrontendKind frontend = FrontendKind.None
     )
     {
         var path = configuration["database"]
@@ -45,7 +46,7 @@ internal static class HostComposition
         if (authority is not null)
             services.AddSingleton(authority);
         AccessPrincipal? principal = null;
-        if (interactive && authority is not null)
+        if (frontend != FrontendKind.None && authority is not null)
         {
             var session = new ClientSession(configuration["Access:Session"]);
             void SetPrincipal() =>
@@ -62,7 +63,8 @@ internal static class HostComposition
             configuration,
             configuration["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
             new ResourceAccess(singleAccount: !enabled, sessionPrincipal: () => Volatile.Read(ref principal)),
-            Operations.WorkspaceCapabilities.Groups
+            Operations.WorkspaceCapabilities.Groups,
+            frontend
         );
         try
         {

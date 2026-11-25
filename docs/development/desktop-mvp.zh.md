@@ -52,11 +52,12 @@ Fluent 在宽窗口显示带标签的侧栏，宽度为 641 至 1007 个逻辑�
 | 部分 | 职责 |
 | - | - |
 | [应用宿主](../../src/LazyTuiHub/) | 共用服务／插件装配；桌面模式使用通用宿主，HTTP／CLI 模式使用 Web 宿主。 |
+| [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/) | 注册页面、刷新工作区、使用自适应面板与动效，并将界面操作交给宿主跟踪。 |
 | [桌面层](../../src/LazyTuiHub.Desktop/) | Avalonia 应用／窗口、页面装配、工作流／插件检查器、界面操作跟踪及退出。 |
-| [文章阅读插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | 阅读控件与状态，读取文章调用 IArticleApi，RSS 启用时通过 IRssApi 管理订阅。 |
+| [文章阅读插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | 阅读控件与状态，读取文章调用 IArticleApi，RSS 启用时通过 IRssApi 管理订阅。 |
 | [插件框架](../../src/LazyTuiHub.Plugins/) | 普通页面声明、所属插件、元数据保留、依赖激活和冷启动开关。 |
 
-桌面宿主启动相同的可用后台任务，不启动 HTTP 监听。业务和 DAO 代码不引用 Avalonia。桌面插件作为发行产物构建并动态加载，宿主不在运行时引用它的实现程序集。`AddDesktopPage` 同时提交普通页面声明和带键的 Avalonia 控件工厂；导航只接入已激活插件的页面，首次打开页面时才在 UI 线程创建控件。默认共享程序集上下文保持契约和 Avalonia 类型身份一致。
+桌面宿主启动相同的可用后台任务，不启动 HTTP 监听。业务和 DAO 代码不引用 Avalonia。宿主从业务插件 DLL 加载 ClientGui 入口，页面实现在插件内部维护。`AddDesktopPage` 同时提交普通页面声明和带键的 Avalonia 控件工厂；导航只接入已激活插件的页面，首次打开页面时才在 UI 线程创建控件。默认共享程序集上下文保持契约和 Avalonia 类型身份一致。
 
 阅读操作将服务工作移出 UI 线程，同一页面内串行执行。错误保留在界面上，不转换为空的成功结果。关闭主窗口时取消并等待受跟踪的界面操作，再停止后台任务，最后释放服务。取消不回滚已经提交的数据库变更，也不提供工作流的持久化暂停。
 

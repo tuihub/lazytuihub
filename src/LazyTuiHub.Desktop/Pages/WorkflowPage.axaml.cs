@@ -2,6 +2,7 @@ using System.Text.Json;
 using Avalonia.Controls;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk.Avalonia;
 
 namespace LazyTuiHub.Desktop;
 

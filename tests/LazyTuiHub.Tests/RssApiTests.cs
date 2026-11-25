@@ -1,10 +1,11 @@
 using System.Net;
 using System.Text.Json;
-using LazyTuiHub.Api;
-using LazyTuiHub.Api.Articles;
 using LazyTuiHub.Api.Rss.V1;
-using LazyTuiHub.Client;
 using LazyTuiHub.Examples;
+using LazyTuiHub.Plugin.TuiHub.Articles.Api;
+using LazyTuiHub.Plugin.TuiHub.Articles.Frontend;
+using LazyTuiHub.Plugin.TuiHub.Rss.Api;
+using LazyTuiHub.Plugin.TuiHub.Rss.Frontend;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +27,7 @@ public sealed class RssApiTests
         {
             await using (var app = ApplicationHost.Create(["--demo", "true", "--database", database]))
             {
-                app.MapGet("/fixture", () => Results.Text(RssDemo.FeedXml, "application/rss+xml"));
+                app.MapGet("/fixture", () => Results.Text(RssFixture.FeedXml, "application/rss+xml"));
                 await app.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
                 try
                 {

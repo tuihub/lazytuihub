@@ -29,21 +29,48 @@ category: architecture
 
 ## 源码归属与插件协作
 
-业务代码位于 [plugins](../../plugins/)。每个业务目录拥有入口清单、实现、资源及专属测试。公开端口类型、Proto、HTTP 客户端及专用桌面页面随所属业务维护。桌面入口可以在同一业务目录内拥有独立的 ID 和启停状态。公共问候协议归宿主 API 示例。跨插件和跨前端的工作流由仓库集成测试覆盖。
+每个插件 ID 对应 [plugins](../../plugins/) 下的一个源码根目录和根目录中的一个 C# 项目。后端、共用前端逻辑、GUI、CLI、公开类型和资源随同一 DLL 交付。小插件可以平铺文件；业务增多时按职责分目录。包和源码目录建议使用 ID 的 PascalCase 写法。迁出到独立仓库时可调整项目引用、构建配置、脚本和 CI，业务源码保持原样。
 
-适合端口与执行模型的公共能力优先注册为工作流节点。执行计划据此检查类型、解释缺失节点、匹配资源并调度可远程运行的操作。RSS 通过文章契约输出 ArticleDraft。默认采集图使用 articles.store，卸下文章实现后，解析节点仍可向其他消费者输出同一类型。插件也可以直接调用对方的接口或实现，由双方维护语义和兼容性。
+插件根项目声明 PluginId、显示名 Title、可选的 PluginVersion 和各 PluginEntryPoint 的角色与类型。基础 SDK 的构建规则生成插件清单并嵌入 DLL。发行索引从所选项目取得 ID 和 DLL 文件名，由宿主指定核心成员。入口共享插件身份和启停状态。编译器核对入口类型和接口，冷启动时宿主先读程序集元数据，再实例化当前模式所需的入口。入口可使用 internal，提供公开无参构造函数。
 
-[通用插件 SDK](../../src/LazyTuiHub.PluginSdk/) 提供注册、工作流调用、生命周期 hook、任务及类型化操作入口。加载器和元数据目录位于 LazyTuiHub.Plugins。[游戏 SDK](../../plugins/LazyTuiHub.Plugin.TuiHub.Games/sdk/) 提供 provider 节点、公共数据类型、可选的 SQLite 数据集工具，以及账户和安装扫描的直接调用接口。Steam、Bangumi、VNDB 都引用这个 SDK。游戏库写入及各平台登录实现由各自插件维护。
+| 运行方式 | 宿主调用已声明的入口 |
+| - | - |
+| 仅服务端 | Server |
+| 本地 GUI 或 CLI | Server 和 Client，再加上与界面对应的 ClientGui 或 ClientCli |
+| 连接远端的 GUI 或 CLI | Client，再加上与界面对应的 ClientGui 或 ClientCli |
 
-迁出插件时保留业务源码。可以更换项目文件、依赖引用、生成脚本和 CI。独立 Steam 构建将工程引用换成本地打包的 SDK，用生成的 DLL 装回宿主后运行了 provider 搜索。
+Server 注册业务服务、节点和后台任务。Client 注册两种界面共用的操作，按连接方式绑定本地服务或 HTTP 适配器。ClientGui 和 ClientCli 各自注册界面交互。无界面宿主可以使用同一 DLL，前提是服务端和共用客户端的类型及初始化可在该宿主解析。宿主提供所需依赖时，每个操作系统只需分发一个插件 DLL。私有依赖和外部资源随 DLL 交付。
+
+插件项目引用 [LazyTuiHub.Sdk](../../src/LazyTuiHub.Sdk/)，取得入口契约、构建声明和工作流执行接口。包名、程序集名和根命名空间一致。工作流、DAO 和交互类型保留各自的命名空间，通过包依赖提供。插件通过 NodeRegistration 注册节点，通过 IWorkflowExecutor 请求执行工作流。宿主管理节点注册表、计划执行和插件目录。提供 Proto 端点的插件还可引用共享的 API 传输工具。
+
+ClientGui 入口可再引用 [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/)，注册 Avalonia 控件、响应工作区更新，并使用共享的页面模型、自适应布局与动效。桌面宿主提供当前主题，通过 RunDesktopOperation 跟踪界面操作，负责窗口、主题切换和关闭流程。将渲染类型放在 GUI 代码中，同一 DLL 的服务端和 CLI 入口即可在无界面宿主加载。
+
+插件优先通过工作流节点提供可复用能力，允许其他插件直接引用其有意公开的 public 类型。直接引用由双方维护语义与兼容性，框架仅核对显式声明的插件依赖。插件自己决定如何组织公开类型。例如，[游戏插件的 provider 类型](../../plugins/LazyTuiHub.Plugin.TuiHub.Games/Providers/)供 Steam、Bangumi 和 VNDB 直接引用。文章插件公开文章草稿和订阅来源接口，RSS 实现该接口，阅读器按服务可用性显示订阅功能。
 
 ## 插件标识与资源命名空间
 
-每个可独立加载的入口在 plugin.json 中声明稳定 ID，格式为 `lazytuihub.plugin.<发布者>.<插件名>`。发布者占一段，插件名可用点分段。每段使用小写 ASCII 字母和数字，词间可用连字符。宿主精确匹配完整 ID。插件依赖、工作流节点归属、插件 ACL 命名空间和存储归属都引用这个 ID。版本单独声明。宿主在同一进程中对每个 ID 至多装配一个插件实例。同一插件可部署到多台设备，各处沿用同一 ID。设备 ID 另行标识部署位置。
+每个插件在项目文件中声明稳定 ID，格式为 `lazytuihub.plugin.<发布者>.<插件名>`。发布者占一段，插件名可用点分段。每段使用小写 ASCII 字母和数字，词间可用连字符。宿主精确匹配完整 ID。插件依赖、工作流节点归属、插件 ACL 命名空间和存储归属都引用这个 ID。版本单独声明。宿主在同一进程中对每个 ID 至多装配一个插件实例。同一插件可部署到多台设备，各处沿用同一 ID。设备 ID 另行标识部署位置。
 
-建议包名和插件源码根目录名采用 ID 的点分 PascalCase 写法。例如，`lazytuihub.plugin.tuihub.steam` 的源码位于 `plugins/LazyTuiHub.Plugin.TuiHub.Steam/`，入口程序集名为 LazyTuiHub.Plugin.TuiHub.Steam.dll。安装目录使用完整的小写 ID。项目选择其他名称或迁到独立仓库时，仍以清单声明的身份为准。同一源码根目录下的 SDK 无需声明插件 ID。平台标识、CLI 命令和工作流节点类型沿用业务名称。
+项目名、入口程序集名和插件自有 C# 类型的根命名空间默认采用包含发布者的完整插件 ID 的点分 PascalCase 写法。例如，游戏插件的入口程序集为 LazyTuiHub.Plugin.TuiHub.Games.dll，公开类型为 LazyTuiHub.Plugin.TuiHub.Games.GameEntry。其他发布者可以在自己的前缀下使用相同的业务类型名。.NET SDK 默认将项目名用于 AssemblyName 和 RootNamespace。另行命名项目时，可显式设置这两个属性。插件的 HTTP 客户端与手写 partial 类位于插件命名空间下，Proto 决定生成的传输类型的命名空间。PackageId 独立指定 NuGet 包名，只改包名即可沿用原有 CLR 类型名和消费方的 using。调整公开命名空间属于 C# API 变更。
+
+安装目录使用完整的小写 PluginId。修改该 ID 后重新构建，发行索引、项目间依赖、资源 URI 及新工作流均使用新身份。既有工作区按原身份保存。平台标识、CLI 命令和节点类型沿用业务名称。
 
 业务插件贡献受权限控制的资源时，以自己的插件 ID 作为 URI 的首个命名成分。框架按加载时确认的插件 ID 绑定注册的命名空间，插件定义命名空间内的资源标识及读写语义。账户归属与资源标识仍由该资源的声明确定。[账户身份与权限 Note](2026-11-19-mvp-account-identity.zh.md)
+
+## 插件关系与版本
+
+每次冷启动都按当前进程选用的插件检查关系。本地宿主使用已选中、已启用且 DLL 存在的插件。远程前端检查自己的发行目录。A 在项目中声明关系，构建从目标项目读取 PluginId，宿主从 DLL 读回声明。
+
+| A 对 B 的声明 | B 缺席或停用 | B 的版本匹配 | B 的版本超出范围或未声明所需版本 |
+| - | - | - | - |
+| requires（依赖） | 阻止 A | 先调用 B 的入口，本地激活 A 还需要 B 已激活 | 阻止 A，报告 B、要求的范围和实际版本 |
+| compatibleWith（兼容） | A 可独立启动 | A 可在使用联动功能时接入 B，双方没有顺序要求 | 同样阻止 A，B 继续按自己的声明启动 |
+
+在 ProjectReference 或 PackageReference 上声明 PluginRelation 和可选的 PluginVersionRange。前者从被引用项目读取 ID，后者从 NuGet 包携带的构建元数据读取 ID。PluginProjectReference 只读取另一项目的身份，PluginReference 直接引用已知 ID。PluginAlias 将引用的 ID 提供给业务代码，工作流可据此标明节点归属。只声明别名不会约束插件的加载顺序。省略版本范围表示接受任意版本。插件可用 SemVer 表达主、次、修订和预发布版本。宿主用 NuGet.Versioning 匹配已安装的版本：`1.2.0` 表示至少 1.2.0，`[1.2.0]` 为精确版本，`[1.0.0,2.0.0)` 包含下界、排除上界；`1.*` 使用 NuGet 的浮动匹配。每个 ID 仍只装配一个已选实例。Steam、Bangumi、VNDB 都依赖游戏插件的 `[1.0.0,2.0.0)` 接口。[NuGet 版本与范围](https://learn.microsoft.com/en-us/nuget/concepts/package-versioning) · [SemVer](https://semver.org/)
+
+宿主在调用入口前根据本次选用的插件清单校验版本。A 和 B 可互相声明 compatibleWith，各自的范围只约束声明方。只有 requires 决定入口调用顺序及依赖环诊断，本地激活还会等待硬依赖和所需 DAO 就绪。若版本匹配的 B 配置或激活失败，A 仍可独立运行其余功能。插件在入口中注册服务或工厂，在使用可选功能时解析对方的能力；启动过程中看到的激活状态可能随后变化。工作流连线由执行计划处理。
+
+Factorio 的可选依赖也会在目标存在且版本不符时阻止声明方，另有单独的互斥声明。本轮采用依赖和兼容。三个游戏 provider 可以共存，命令重名已有注册诊断。若出现两个实现独占同一进程资源，或只需排除某个已知有问题的版本，再以实际冲突决定是否增加互斥关系及其处理方式。[Factorio 模组依赖](https://lua-api.factorio.com/latest/auxiliary/mod-structure.html#dependencies)
 
 ## 框架元数据所有权
 
@@ -65,7 +92,7 @@ category: architecture
 
 启动按职责分阶段：读取框架目录和启用意图，发现并加载可用实现，汇总服务与能力贡献，建立共享服务容器和节点注册，再绑定实现、生成需要运行的计划并启动任务。注册顺序不能碰巧决定跨插件工作流是否可用。声明元数据由框架更新，不让插件任意改全局注册状态。
 
-临时采用 IApplicationPlugin 入口，通过 PluginRegistration 贡献服务、节点、数据类型、默认工作流、命令、路由、任务和可选 hook。PluginRuntime 在宿主构造前暂存服务贡献，在激活前暂存节点和端点声明。必要插件 ID 形成简单的启动依赖图，提供方缺失或激活失败会阻止依赖方激活；工作流连线不形成这种服务依赖。全部节点注册完成后才保存默认工作流并检查任务可执行性。不承诺插件副作用及后续激活失败的全局回滚。
+后端采用 IApplicationPlugin 入口，通过 PluginRegistration 贡献服务、节点、数据类型、默认工作流、命令、路由、任务和可选 hook。PluginRuntime 在宿主构造前暂存服务贡献，在激活前暂存节点和端点声明。清单中的硬依赖决定入口调用顺序，硬依赖和 DAO 需求共同决定本地激活条件。全部节点注册完成后才保存默认工作流并检查任务可执行性。不承诺插件副作用及后续激活失败的全局回滚。
 
 原型使用默认 AssemblyLoadContext 和统一依赖基线，保留共享契约的严格类型身份。AssemblyDependencyResolver 定位附加托管依赖，尚不支持独立依赖版本及任意原生依赖部署。[.NET 官方插件教程](https://learn.microsoft.com/en-us/dotnet/core/tutorials/creating-app-with-plugin-support)为 DLL／依赖处理提供参考，不要求本项目采用私有加载上下文。本轮没有运行中卸载、私有版本求解、市场或热更新。
 
@@ -107,9 +134,9 @@ Factorio 明确说明[原型移除会使存储引用失效](https://lua-api.fact
 
 ## 当前原型与验证
 
-后续[桌面实现](2026-11-17-mvp-ui-comparison.zh.md) 将普通页面身份／标题声明纳入框架拥有的插件元数据。Avalonia 工厂位于桌面层，桌面阅读器依赖文章库，RSS 插件激活时提供订阅操作。导航只接入已激活插件，缺失／关闭的页面声明仍可读取。桌面与 Web 宿主共用服务装配，桌面激活接收服务提供者，不映射 HTTP 端点；既有任务和冷启动保留语义对两种宿主均生效。
+后续[桌面实现](2026-11-17-mvp-ui-comparison.zh.md) 将普通页面身份／标题声明纳入框架拥有的插件元数据。Avalonia 工厂位于桌面层，桌面阅读器依赖文章库，RSS 插件激活时提供订阅操作。导航使用本次已激活插件入口的页面。目录按入口保存已观察到的页面和命令，在切换宿主模式、停用或缺失时仍可读取。桌面与 Web 宿主共用服务装配，桌面激活接收服务提供者，不映射 HTTP 端点；既有任务和冷启动保留语义对两种宿主均生效。
 
-宿主选择随应用交付的插件并标记不可关闭的核心项。构建与发布将各插件的入口清单、程序集和私有文件放入各自的 `plugins/<id>/` 目录。发行索引 plugins/plugins.json 选择插件 ID 和核心项。每次冷启动时，加载器读取已安装插件的清单并核对依赖。替换已选插件即可更新版本及依赖声明，无需重建宿主。只声明 ID 时要求目标插件已启用；声明 `{"id":"lazytuihub.plugin.tuihub.games","version":"[1.0.0,2.0.0)"}` 时还要求目标已声明版本并落在这个 NuGet 区间内，`[1.0.0]` 表示精确版本。目标缺失、未声明所需版本或区间不匹配时，由依赖方报告原因。通过检查只表明声明的依赖成立。框架元数据目录独立于部署目录保存启停意图、设置和能力声明。[NuGet 版本范围](https://learn.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges)
+宿主选择发行插件并标记核心项。构建与发布将已内嵌清单的程序集及所需私有文件放入各自的 `plugins/<id>/` 目录。发行索引 plugins/plugins.json 记录插件 ID、DLL 文件名和核心标记。替换已选插件后，下一次冷启动会读取新清单中的版本与关系。元数据目录独立于部署目录，保留启停意图、设置及能力声明。
 
 核心、RSS、文章和 SQLite 插件 使用同一入口契约。公开 DAO 契约位于 LazyTuiHub.Dao，插件声明访问需求，与具体表目标分开；提供者发布能力，使用者匹配档位／契约／实例／底层后激活，不依赖清单顺序。首次启动无法激活的使用者也保留需求／提供声明。存储插件提供记录／TTL、FTS5、原生连接及委托清理；缺失时最小框架元数据仍可用。RSS 拥有自己的 API 实现、协议适配、CLI 命令、初始化和刷新任务。最小宿主保留插件管理、DAO 诊断／保留控制及工作流查看、编辑、执行入口。WorkflowRuntime 负责图存储、注册与计划，业务服务获得 IWorkflowExecutor。既有 RSS 业务操作仍通过工作流，让它们不再强制依赖工作流留待后续迭代。
 

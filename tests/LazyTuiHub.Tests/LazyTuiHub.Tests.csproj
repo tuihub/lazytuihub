@@ -1,18 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PluginId>lazytuihub.plugin.tests.compatibility</PluginId>
+    <Title>Compatibility probe</Title>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../RssDemo/RssDemo.csproj" />
     <Compile Include="../../plugins/*/tests/**/*.cs" />
+    <PluginEntryPoint Include="Client" Type="LazyTuiHub.Tests.PluginDependencyTests+Frontend" />
     <EmbeddedResource Include="Fixtures/review-cover.png" LogicalName="review-cover.png" />
     <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
-    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
-    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/runtime/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
-    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
-    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/LazyTuiHub.Plugin.TuiHub.Articles.Desktop.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/LazyTuiHub.Plugin.TuiHub.Games.csproj"
+                      PluginRelation="CompatibleWith" PluginVersionRange="[2.0.0,3.0.0)" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
     <PackageReference Include="Avalonia.Headless" Version="12.1.6" />
     <PackageReference Include="xunit.v3" Version="4.0.3" />
   </ItemGroup>
+  <Import Project="../../src/LazyTuiHub.Sdk/build/LazyTuiHub.Sdk.targets" />
 </Project>

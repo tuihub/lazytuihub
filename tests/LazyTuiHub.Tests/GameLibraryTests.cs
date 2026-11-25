@@ -1,7 +1,8 @@
 using System.Text.Json;
 using LazyTuiHub.Framework;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

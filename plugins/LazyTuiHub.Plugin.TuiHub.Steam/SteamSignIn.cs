@@ -1,13 +1,13 @@
 using System.Globalization;
 using System.Net;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 
-namespace LazyTuiHub.Steam;
+namespace LazyTuiHub.Plugin.TuiHub.Steam;
 
 internal static class SteamSignIn
 {

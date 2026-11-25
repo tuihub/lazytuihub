@@ -1,0 +1,499 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Plugin.TuiHub.Games.Desktop"
+    x:ClassModifier="internal"
+    x:Class="LazyTuiHub.Plugin.TuiHub.Games.Desktop.GamePage"
+    x:DataType="local:GamePageModel"
+    KeyDown="HandleKey"
+>
+    <UserControl.Resources>
+        <ControlTheme x:Key="CoverCardTheme" TargetType="Button">
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+            <Setter Property="VerticalAlignment" Value="Top" /><Setter
+                Property="HorizontalAlignment"
+                Value="Stretch"
+            /><Setter Property="Padding" Value="6" /><Setter Property="Margin" Value="0" /><Setter
+                Property="HorizontalContentAlignment"
+                Value="Stretch"
+            /><Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        x:Name="CardFrame"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="{DynamicResource TileFrameWidth}"
+                        CornerRadius="{DynamicResource RowRadius}"
+                        Padding="{TemplateBinding Padding}"
+                    >
+                        <ContentPresenter
+                            Name="PART_ContentPresenter"
+                            Foreground="{DynamicResource PrimaryText}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            HorizontalContentAlignment="Stretch"
+                        />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="Button.clear-search">
+            <Setter Property="Padding" Value="3,0" />
+            <Setter Property="Margin" Value="1" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.coverCard:pointerover /template/ Border#CardFrame">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        </Style>
+        <Style Selector="Button.coverCard.chosen /template/ Border#CardFrame">
+            <Setter Property="Background" Value="{DynamicResource SelectionBrush}" /><Setter
+                Property="BorderBrush"
+                Value="{DynamicResource DividerBrush}"
+            />
+        </Style>
+        <Style Selector="Button.coverCard TextBlock.item-title">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+        </Style>
+        <Style Selector="Button.coverCard.chosen TextBlock.item-title">
+            <Setter Property="Foreground" Value="{DynamicResource SelectedText}" />
+        </Style>
+        <Style Selector="Button.coverCard:focus-visible /template/ Border#CardFrame">
+            <Setter Property="BorderBrush" Value="{DynamicResource TileFocusBrush}" />
+        </Style>
+        <Style Selector="Button.coverCard:pressed /template/ Border#CardFrame">
+            <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+        </Style>
+    </UserControl.Styles>
+    <Grid Background="{DynamicResource LibraryCanvas}">
+        <Grid x:Name="Workspace" RowDefinitions="Auto,Auto,*">
+            <Grid x:Name="PageHeading" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Games" Classes="headline" /><TextBlock
+                        x:Name="GameCount"
+                        ToolTip.Tip="{Binding Count}"
+                        AutomationProperties.Name="{Binding Count}"
+                        Classes="metadata"
+                        VerticalAlignment="Center"
+                    />
+                </StackPanel>
+                <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                    <Button
+                        x:Name="SourceButton"
+                        Classes="quiet"
+                        Content="Sources"
+                        AutomationProperties.Name="Sources and folders"
+                        Click="OpenSources"
+                        IsVisible="{Binding CanViewSources}"
+                    />
+                    <Button
+                        x:Name="AddButton"
+                        Classes="secondary"
+                        AutomationProperties.Name="Add game"
+                        Click="OpenAdd"
+                        IsVisible="{Binding CanAdd}"
+                    >
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon
+                                Classes="action inline"
+                                Data="{DynamicResource ActionIconAdd}"
+                            /><TextBlock Classes="inline-action-label" Text="Add game" />
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+            </Grid>
+            <Grid
+                x:Name="Toolbar"
+                Grid.Row="1"
+                ColumnDefinitions="*,Auto"
+                RowDefinitions="Auto,Auto"
+                RowSpacing="0"
+                IsVisible="{Binding !Empty}"
+            >
+                <ListBox
+                    x:Name="States"
+                    Classes="scope"
+                    HorizontalAlignment="Left"
+                    ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                    ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                    VerticalAlignment="Center"
+                    SelectionChanged="FilterChanged"
+                    BorderThickness="0"
+                    Padding="0"
+                    SelectedIndex="0"
+                    AutomationProperties.Name="Library filter"
+                >
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <x:String>All</x:String><x:String>Installed</x:String><x:String>
+                        Online
+                    </x:String><x:String>Needs match</x:String>
+                </ListBox>
+                <Grid
+                    x:Name="Tools"
+                    Grid.Column="1"
+                    ColumnDefinitions="*,Auto,Auto"
+                    ColumnSpacing="8"
+                    VerticalAlignment="Center"
+                >
+                    <Grid x:Name="SearchBox" VerticalAlignment="Center">
+                        <TextBox
+                            x:Name="Search"
+                            Height="{DynamicResource ShelfSearchHeight}"
+                            MinHeight="0"
+                            Padding="32,0,32,0"
+                            VerticalContentAlignment="Center"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Search library"
+                            Text="{Binding Search,Mode=TwoWay}"
+                            TextChanged="SearchChanged"
+                        />
+                        <Border
+                            Classes="searchOutline"
+                            IsHitTestVisible="False"
+                            CornerRadius="{DynamicResource RowRadius}"
+                        />
+                        <PathIcon
+                            Classes="action inline"
+                            HorizontalAlignment="Left"
+                            Margin="8,0,0,0"
+                            Foreground="{DynamicResource SecondaryText}"
+                            Data="{DynamicResource ActionIconSearch}"
+                        />
+                        <Button
+                            x:Name="ClearQuery"
+                            Classes="quiet clear-search"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Stretch"
+                            AutomationProperties.Name="Clear search"
+                            ToolTip.Tip="Clear search"
+                            Click="ClearSearch"
+                            IsVisible="False"
+                        >
+                            <PathIcon
+                                Classes="action inline"
+                                Data="{DynamicResource ActionIconClear}"
+                            />
+                        </Button>
+                        <TextBlock
+                            x:Name="SearchHint"
+                            IsHitTestVisible="False"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Classes="caption"
+                            Margin="32,0,8,0"
+                            VerticalAlignment="Center"
+                            Text="Search titles and aliases"
+                            TextWrapping="NoWrap"
+                            TextTrimming="CharacterEllipsis"
+                        />
+                    </Grid>
+                    <Button
+                        x:Name="MoreFilters"
+                        Grid.Column="1"
+                        Classes="icon"
+                        AutomationProperties.Name="More filters"
+                        ToolTip.Tip="More filters"
+                    >
+                        <Grid>
+                            <PathIcon Classes="action" Data="{DynamicResource ActionIconFilter}" />
+                            <Ellipse
+                                Width="6"
+                                Height="6"
+                                Fill="{DynamicResource AccentBrush}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                IsVisible="{Binding HasExtraFilters}"
+                            />
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                                <StackPanel Spacing="8" MinWidth="200">
+                                    <TextBlock Classes="section" Text="Filters" />
+                                    <ComboBox
+                                        x:Name="Category"
+                                        ItemsSource="{Binding Categories}"
+                                        SelectedItem="{Binding Category,Mode=OneWay}"
+                                        PlaceholderText="Category"
+                                        SelectionChanged="ExtraFilterChanged"
+                                        MinWidth="110"
+                                    /><ComboBox
+                                        x:Name="Source"
+                                        ItemsSource="{Binding SourceNames}"
+                                        SelectedItem="{Binding SourceFilter,Mode=OneWay}"
+                                        DisplayMemberBinding="{Binding ., DataType=x:String, Converter={x:Static local:GameNames.Platform}}"
+                                        PlaceholderText="Metadata source"
+                                        SelectionChanged="ExtraFilterChanged"
+                                        MinWidth="128"
+                                    /><Button
+                                        Classes="quiet"
+                                        Content="Clear filters"
+                                        Click="ClearFilters"
+                                    />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button
+                        x:Name="ViewMode"
+                        Grid.Column="2"
+                        Classes="icon"
+                        Click="ChangeView"
+                        AutomationProperties.Name="{Binding ViewAction}"
+                        ToolTip.Tip="{Binding ViewAction}"
+                    >
+                        <Panel>
+                            <PathIcon
+                                Classes="action"
+                                IsVisible="{Binding !CompactList}"
+                                Data="{DynamicResource ActionIconList}"
+                            />
+                            <PathIcon
+                                Classes="action"
+                                IsVisible="{Binding CompactList}"
+                                Data="{DynamicResource ActionIconGrid}"
+                            />
+                        </Panel>
+                    </Button>
+                </Grid>
+            </Grid>
+            <Grid ClipToBounds="True" x:Name="ContentArea" Grid.Row="2" ColumnDefinitions="*,0">
+                <Grid x:Name="Library">
+                    <StackPanel
+                        x:Name="EmptyState"
+                        IsVisible="{Binding Empty}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxWidth="440"
+                        Spacing="16"
+                    >
+                        <TextBlock
+                            Text="Your game library is empty"
+                            Classes="headline"
+                            TextWrapping="Wrap"
+                        />
+                        <StackPanel Spacing="8">
+                            <Button
+                                Classes="accent"
+                                Content="Connect an account"
+                                Click="OpenSources"
+                                IsVisible="{Binding CanManage}"
+                            /><Button
+                                Classes="secondary"
+                                Content="Scan a folder"
+                                Click="EmptyScan"
+                                IsVisible="{Binding CanScan}"
+                            /><Button
+                                Classes="quiet"
+                                Content="Add a game manually"
+                                Click="OpenAdd"
+                                IsVisible="{Binding CanAdd}"
+                            />
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel
+                        IsVisible="{Binding NoMatches}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="10"
+                    >
+                        <TextBlock Text="No matching games" Classes="section" /><Button
+                            Classes="quiet"
+                            Content="Clear search and filters"
+                            Click="ClearFilters"
+                        />
+                    </StackPanel>
+                    <ScrollViewer
+                        x:Name="ShelfScroll"
+                        IsVisible="{Binding ShowPosters}"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Visible"
+                    >
+                        <local:PosterShelf x:Name="PosterGrid">
+                            <ItemsRepeater
+                                x:Name="Shelf"
+                                ItemsSource="{Binding Shelf}"
+                                HorizontalAlignment="Stretch"
+                            >
+                                <ItemsRepeater.Layout>
+                                    <UniformGridLayout
+                                        MinItemWidth="{DynamicResource PosterMinWidth}"
+                                        MinColumnSpacing="{DynamicResource PosterColumnGap}"
+                                        MinRowSpacing="{DynamicResource PosterRowGap}"
+                                        ItemsStretch="Fill"
+                                        ItemsJustification="Start"
+                                    />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="local:GameCard">
+                                        <Button
+                                            Theme="{StaticResource CoverCardTheme}"
+                                            Classes="coverCard"
+                                            Classes.chosen="{Binding IsSelected}"
+                                            AutomationProperties.Name="{Binding Game.Title}"
+                                            Click="OpenGame"
+                                        >
+                                            <Grid RowDefinitions="Auto,Auto,Auto">
+                                                <Panel>
+                                                    <local:GamePoster
+                                                        Title="{Binding Game.Title}"
+                                                        Identity="{Binding Game.Id}"
+                                                        Url="{Binding Game.Cover}"
+                                                    />
+                                                    <Panel
+                                                        IsVisible="{Binding HasStatus}"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8"
+                                                    >
+                                                        <Border
+                                                            Background="{DynamicResource SurfaceBrush}"
+                                                            BorderBrush="{DynamicResource DividerBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="{DynamicResource RowRadius}"
+                                                            Opacity="0.94"
+                                                        />
+                                                        <TextBlock
+                                                            Text="{Binding Status}"
+                                                            Foreground="{DynamicResource PrimaryText}"
+                                                            Classes="label"
+                                                            Margin="7,3"
+                                                        />
+                                                    </Panel>
+                                                </Panel>
+                                                <TextBlock
+                                                    Grid.Row="1"
+                                                    Text="{Binding Game.Title}"
+                                                    Classes="item-title"
+                                                    Height="{DynamicResource PosterTitleHeight}"
+                                                    VerticalAlignment="Top"
+                                                    Margin="0,8,0,2"
+                                                    MaxLines="2"
+                                                    TextWrapping="Wrap"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip.Tip="{Binding Game.Title}"
+                                                />
+                                                <TextBlock
+                                                    Grid.Row="2"
+                                                    Text="{Binding Caption}"
+                                                    Classes="metadata"
+                                                    Height="{DynamicResource MetadataLineHeight}"
+                                                    MaxLines="1"
+                                                    TextWrapping="NoWrap"
+                                                    TextTrimming="CharacterEllipsis"
+                                                />
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </local:PosterShelf>
+                    </ScrollViewer>
+                    <ScrollViewer
+                        x:Name="ListScroll"
+                        IsVisible="{Binding ShowRows}"
+                        HorizontalScrollBarVisibility="Disabled"
+                    >
+                        <ItemsRepeater x:Name="Rows" ItemsSource="{Binding Shelf}">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="local:GameCard">
+                                    <Button
+                                        Theme="{StaticResource CoverCardTheme}"
+                                        Classes="coverCard"
+                                        Classes.chosen="{Binding IsSelected}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch"
+                                        AutomationProperties.Name="{Binding Game.Title}"
+                                        Click="OpenGame"
+                                    >
+                                        <Grid
+                                            ColumnDefinitions="46,*,Auto"
+                                            ColumnSpacing="12"
+                                            Margin="2,4"
+                                        >
+                                            <local:GamePoster
+                                                Title="{Binding Game.Title}"
+                                                Identity="{Binding Game.Id}"
+                                                Url="{Binding Game.Cover}"
+                                            /><StackPanel
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Spacing="3"
+                                            >
+                                                <TextBlock
+                                                    Classes="item-title"
+                                                    Text="{Binding Game.Title}"
+                                                    TextWrapping="Wrap"
+                                                /><TextBlock
+                                                    Classes="metadata"
+                                                    Text="{Binding Caption}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                />
+                                            </StackPanel><TextBlock
+                                                Grid.Column="2"
+                                                Classes="metadata"
+                                                VerticalAlignment="Center"
+                                                Text="{Binding Status}"
+                                            />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </ScrollViewer>
+                </Grid>
+                <Border
+                    x:Name="InspectHost"
+                    Grid.Column="1"
+                    Background="{DynamicResource InspectorSurface}"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="1,0,0,0"
+                    IsVisible="{Binding InDetail}"
+                >
+                    <local:GameInspector x:Name="Inspector" />
+                </Border>
+            </Grid>
+        </Grid>
+        <local:GameSourcesPanel
+            x:Name="SourcesPanel"
+            IsVisible="{Binding InSources}"
+            Background="{DynamicResource LibraryCanvas}"
+        />
+        <local:GameWorkshop
+            x:Name="Workshop"
+            IsVisible="{Binding NeedsSheet}"
+            Background="{DynamicResource SurfaceBrush}"
+        />
+        <Grid
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Margin="16"
+            IsVisible="{Binding HasNotice}"
+        >
+            <Border
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource RowRadius}"
+                Padding="16,8"
+            >
+                <TextBlock
+                    Text="{Binding Status}"
+                    Classes="caption"
+                    TextWrapping="Wrap"
+                    AutomationProperties.LiveSetting="Polite"
+                />
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

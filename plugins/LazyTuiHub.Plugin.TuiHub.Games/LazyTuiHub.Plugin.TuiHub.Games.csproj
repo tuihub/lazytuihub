@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PluginId>lazytuihub.plugin.tuihub.games</PluginId>
+    <Title>Game Library</Title>
+    <PluginVersion>1.0.0</PluginVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PluginEntryPoint Include="Server" Type="$(RootNamespace).GamesPlugin" />
+    <PluginEntryPoint Include="ClientGui" Type="$(RootNamespace).Desktop.GameDesktopPlugin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk.Avalonia/LazyTuiHub.Sdk.Avalonia.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
+    <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="12.0.0" />
+  </ItemGroup>
+</Project>

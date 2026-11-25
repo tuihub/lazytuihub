@@ -3,6 +3,7 @@ using System.Text.Json;
 using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Interaction;
+using LazyTuiHub.Sdk;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,7 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
     private readonly Dictionary<string, CapabilityGroup> capabilities = new(StringComparer.Ordinal);
     private readonly IReadOnlyCollection<string> hostGroups;
     public IEnumerable<CapabilityGroup> Capabilities => capabilities.Values;
-    private readonly PluginAssemblies assemblies = new();
+    private readonly PluginAssemblies assemblies;
     private readonly Dictionary<string, PluginView> observations = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PluginRegistration> configured = new(StringComparer.Ordinal);
     private readonly HashSet<string> active = new(StringComparer.Ordinal);
@@ -30,6 +31,10 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
     public DaoRegistry Daos { get; } = new();
     public RetentionRuntime Retention { get; }
     private readonly string directory;
+    private readonly FrontendKind frontend;
+    private readonly Dictionary<string, (PluginEntryPointKind Kind, PluginServices Registration)[]> frontends = new(
+        StringComparer.Ordinal
+    );
     public WorkflowRuntime Workflows { get; }
     public string? DiscoveryError { get; private set; }
 
@@ -38,9 +43,11 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
         IConfiguration configuration,
         string directory,
         ResourceAccess? resourceAccess = null,
-        IReadOnlyCollection<string>? hostGroups = null
+        IReadOnlyCollection<string>? hostGroups = null,
+        FrontendKind frontend = FrontendKind.None
     )
     {
+        this.frontend = frontend;
         this.hostGroups = hostGroups ?? [];
         this.configuration = configuration;
         this.directory = Path.GetFullPath(directory);
@@ -50,33 +57,50 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
         storage = new(database);
         access = resourceAccess ?? new(singleAccount: true);
         Workflows = new(database, RetainedOwner, access);
+        assemblies = new();
     }
 
-    public void Configure(IServiceCollection services)
+    public void Configure(IServiceCollection services) => Configure(services, ReadManifest());
+
+    internal void Configure(IServiceCollection services, IReadOnlyList<PluginSpec> specs)
     {
         services.AddSingleton(access);
         services.AddSingleton<IPluginAvailability>(this);
         services.AddSingleton<IRetentionCleanup>(Retention);
-        var specs = ReadManifest();
         foreach (var spec in specs)
-            catalog.Observe(spec);
+            catalog.Observe(spec, File.Exists(Path.Combine(directory, spec.Assembly)));
+        assemblies.Discover(directory, specs);
         var records = catalog.Read();
         foreach (var record in records)
             observations.Add(record.Spec.Id, new(record, "missing", "inactive", "No current entry declaration."));
-        var pending = specs.ToDictionary(spec => spec.Id, StringComparer.Ordinal);
-        while (pending.Count > 0)
+        var candidates = new List<PluginSpec>();
+        PluginSpec? maintenance = null;
+        foreach (var spec in specs)
         {
-            var ready = pending.Values.FirstOrDefault(spec =>
-                !(spec.Requires ?? []).Any(dep => pending.ContainsKey(dep.Id))
-            );
-            if (ready is null)
-            {
-                foreach (var spec in pending.Values)
-                    Observe(spec.Id, "unknown", Blocked, "Plugin dependency cycle.");
-                break;
-            }
-            pending.Remove(ready.Id);
-            ConfigurePlugin(ready, services);
+            var path = Path.Combine(directory, spec.Assembly);
+            if (!File.Exists(path))
+                Observe(spec.Id, "missing", "inactive", $"Missing assembly: {path}");
+            else if (observations[spec.Id].Saved.Enabled || spec.Required)
+                candidates.Add(spec);
+            else if (IsMaintenanceTarget(spec.Id))
+                maintenance = spec;
+            else
+                Observe(spec.Id, Present, "disabled", null);
+        }
+        PluginLoadPlan.Configure(
+            candidates,
+            spec => ConfigurePlugin(spec, services),
+            (spec, reason) => Observe(spec.Id, Present, Blocked, reason)
+        );
+        if (maintenance is not null)
+        {
+            var problems = maintenance
+                .Problems(id => configured.ContainsKey(id) ? observations[id].Saved.Spec : null)
+                .ToArray();
+            if (problems.Length > 0)
+                Observe(maintenance.Id, Present, Blocked, string.Join(Environment.NewLine, problems));
+            else
+                ConfigurePlugin(maintenance, services);
         }
     }
 
@@ -97,37 +121,12 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
         }
     }
 
-    private void ConfigurePlugin(PluginSpec spec, IServiceCollection services)
+    private bool ConfigurePlugin(PluginSpec spec, IServiceCollection services)
     {
         var record = observations[spec.Id].Saved;
-        var path = Path.GetFullPath(Path.Combine(directory, spec.Assembly));
-        if (!File.Exists(path))
-        {
-            Observe(spec.Id, "missing", "inactive", $"Missing assembly: {path}");
-            return;
-        }
-        if (!record.Enabled && !spec.Required && !IsMaintenanceTarget(spec.Id))
-        {
-            Observe(spec.Id, Present, "disabled", null);
-            return;
-        }
-        if (spec.Version is not null && !NuGet.Versioning.NuGetVersion.TryParse(spec.Version, out _))
-        {
-            Observe(spec.Id, Present, Blocked, $"Invalid declared version '{spec.Version}'.");
-            return;
-        }
-        var problems = (spec.Requires ?? [])
-            .Select(dep => dep.Problem(configured.ContainsKey(dep.Id) ? observations[dep.Id].Saved.Spec : null))
-            .OfType<string>()
-            .ToArray();
-        if (problems.Length > 0)
-        {
-            Observe(spec.Id, Present, Blocked, string.Join(Environment.NewLine, problems));
-            return;
-        }
+        var path = Path.Combine(directory, spec.Assembly);
         try
         {
-            var entry = assemblies.Load(path, spec.EntryType);
             var registration = new PluginRegistration(
                 spec.Id,
                 record.Settings,
@@ -136,17 +135,27 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
                 workspace,
                 Daos
             );
-            entry.Configure(registration);
+            if (spec.EntryPoints.Server is { } server)
+                assemblies.Load<IApplicationPlugin>(path, server).Configure(registration);
+            var entries = FrontendEntryPoints.Load(assemblies, directory, spec, frontend, false).ToArray();
+            foreach (var (_, entry) in entries)
+            {
+                foreach (var service in entry.Services)
+                    registration.Services.Add(service);
+            }
+            frontends.Add(spec.Id, entries);
             _ = registration.Daos.Requirements.ToDictionary(requirement => requirement.Name, StringComparer.Ordinal);
             catalog.Contributions(registration);
             foreach (var service in registration.Services)
                 services.Add(service);
             configured.Add(spec.Id, registration);
             Observe(spec.Id, Present, "configured", null);
+            return true;
         }
         catch (Exception error)
         {
             Observe(spec.Id, "load-failed", "failed", error.GetBaseException().Message);
+            return false;
         }
     }
 
@@ -157,15 +166,7 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
         var pending = configured.Keys.ToHashSet(StringComparer.Ordinal);
         while (pending.Count > 0)
         {
-            var progressed = false;
-            foreach (var id in pending.ToArray())
-            {
-                if (!TryActivate(id, services, routes, pending))
-                    continue;
-                pending.Remove(id);
-                progressed = true;
-            }
-            if (progressed)
+            if (ActivateReady(services, routes, pending))
                 continue;
             foreach (var id in pending)
                 Observe(
@@ -177,9 +178,8 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
                         configured[id]
                             .Daos.Problems()
                             .Concat(
-                                (observations[id].Saved.Spec.Requires ?? [])
-                                    .Select(dependency => dependency.Id)
-                                    .Where(dependency => !active.Contains(dependency))
+                                observations[id]
+                                    .Saved.Spec.RequiredIds.Where(dependency => !active.Contains(dependency))
                                     .Select(dependency => $"Required plugin '{dependency}' is not active.")
                             )
                     )
@@ -193,6 +193,19 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
         }
     }
 
+    private bool ActivateReady(IServiceProvider services, IEndpointRouteBuilder? routes, HashSet<string> pending)
+    {
+        var progressed = false;
+        foreach (var id in pending.ToArray())
+        {
+            if (!TryActivate(id, services, routes, pending))
+                continue;
+            pending.Remove(id);
+            progressed = true;
+        }
+        return progressed;
+    }
+
     private bool TryActivate(
         string id,
         IServiceProvider services,
@@ -201,7 +214,7 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
     )
     {
         var registration = configured[id];
-        var dependencies = (observations[id].Saved.Spec.Requires ?? []).Select(dep => dep.Id).ToArray();
+        var dependencies = observations[id].Saved.Spec.RequiredIds.ToArray();
         if (dependencies.Any(pending.Contains))
             return false;
         var missing = dependencies.Where(dependency => !active.Contains(dependency)).ToArray();
@@ -236,15 +249,19 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
     {
         var id = registration.Id;
         var nodes = new NodeRegistry();
-        registration.RegisterNodes?.Invoke(nodes, services);
+        registration.RegisterNodes?.Invoke(nodes.Registration, services);
         var endpoints = routes is null ? null : new PluginEndpoints(routes);
         if (endpoints is not null)
             registration.MapEndpoints?.Invoke(endpoints);
-        ValidateContributions(registration);
-        var groups = registration.Capabilities.Values.Select(create => create(services)).ToArray();
+        var contributions = registration
+            .Capabilities.Concat(frontends[id].SelectMany(entry => entry.Registration.Capabilities))
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        ValidateContributions(registration, contributions.Keys);
+        var groups = contributions.Values.Select(create => create(services)).ToArray();
         Workflows.Register(id, nodes);
         Retention.Observe(registration);
         catalog.Declare(id, Declaration(registration, nodes));
+        catalog.RecordFrontends(observations[id].Saved.Spec, frontends[id]);
         endpoints?.Commit();
         Daos.Publish(id, registration.DaoServices);
         foreach (var group in groups)
@@ -253,14 +270,14 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
         Observe(id, Present, "active", null);
     }
 
-    private void ValidateContributions(PluginRegistration registration)
+    private void ValidateContributions(PluginRegistration registration, IEnumerable<string> commands)
     {
         _ = registration.Tasks.ToDictionary(task => task.Id, StringComparer.Ordinal);
         _ = registration.Pages.ToDictionary(page => page.Id, StringComparer.Ordinal);
         Daos.Validate(registration.DaoServices);
         var duplicate = capabilities
             .Keys.Concat(hostGroups)
-            .Intersect(registration.Capabilities.Keys, StringComparer.Ordinal)
+            .Intersect(commands, StringComparer.Ordinal)
             .FirstOrDefault();
         if (duplicate is not null)
             throw new InvalidOperationException($"Command already registered: {duplicate}.");
@@ -304,6 +321,15 @@ public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
                     : new PluginView(record, "missing", "inactive", "No current implementation.")
             )
             .ToArray();
+
+    public IEnumerable<(string Owner, DeclaredPage Page)> ActivePages =>
+        active
+            .Order(StringComparer.Ordinal)
+            .SelectMany(id =>
+                configured[id]
+                    .Pages.Concat(frontends[id].SelectMany(entry => entry.Registration.Pages))
+                    .Select(page => (id, page))
+            );
 
     public bool IsActive(string id) => active.Contains(id);
 

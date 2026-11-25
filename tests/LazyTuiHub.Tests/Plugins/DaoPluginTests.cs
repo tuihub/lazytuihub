@@ -84,14 +84,13 @@ public sealed class DaoPluginTests
                     ? spec with
                     {
                         Assembly = typeof(NativeOnlyStoragePlugin).Assembly.Location,
-                        EntryType = typeof(NativeOnlyStoragePlugin).FullName!,
+                        EntryPoints = new(typeof(NativeOnlyStoragePlugin).FullName!),
                     }
                     : spec
             )
             .ToArray();
-        await workspace.SelectPluginsAsync(manifest);
         using var http = new HttpClient();
-        await using var app = PluginTestHost.Create(workspace.Database, http, workspace.Plugins);
+        await using var app = PluginTestHost.Create(workspace.Database, http, workspace.Plugins, specs: manifest);
         var runtime = app.Services.GetRequiredService<PluginRuntime>();
         var rss = runtime.List().Single(view => view.Saved.Spec.Id == "lazytuihub.plugin.tuihub.rss");
         Assert.Equal("blocked", rss.Activation);

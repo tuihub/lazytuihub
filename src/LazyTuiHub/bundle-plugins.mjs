@@ -11,33 +11,36 @@ async function lines(name) {
     return text.trim().split(/\r?\n/).filter(Boolean);
 }
 
+const payload = (await lines('payload')).map(line => line.split('|'));
+const assemblies = new Map(payload.filter(([, , , id]) => id)
+    .map(([project, source, , id]) => [path.normalize(project), {id, assembly: path.basename(source)}]));
+
 for (const line of await lines('selection')) {
     const [project, required] = line.split('|');
-    const folder = path.dirname(project);
-    const owner = path.basename(folder) === 'runtime' ? path.dirname(folder) : folder;
-    const manifest = path.join(owner, 'plugin.json');
-    const plugin = JSON.parse(await readFile(manifest, 'utf8'));
-    if (typeof plugin.id !== 'string' || !/^lazytuihub\.plugin\.(?:[a-z0-9]+(?:-[a-z0-9]+)*\.)+[a-z0-9]+(?:-[a-z0-9]+)*$/.test(plugin.id)) {
-        throw new Error(`Invalid plugin ID in ${manifest}: ${plugin.id}`);
-    }
+    const plugin = assemblies.get(path.normalize(project));
+    if (!plugin) throw new Error(`Missing plugin identity or entry assembly for ${project}`);
     if ([...plugins.values()].some(entry => entry.id === plugin.id)) throw new Error(`Duplicate plugin ID: ${plugin.id}`);
-    plugin.assembly = path.posix.join(plugin.id, plugin.assembly);
-    plugin.required = required === 'true';
-    plugins.set(path.normalize(project), plugin);
-    files.set(path.posix.join(plugin.id, 'plugin.json'), manifest);
+    plugins.set(path.normalize(project), {...plugin, required: required === 'true'});
 }
 
-const entries = new Set(Array.from(plugins.values(), plugin => path.posix.basename(plugin.assembly)));
+const entries = new Set(Array.from(plugins.values(), plugin => plugin.assembly));
 const shared = new Set((await lines('shared')).map(file => path.normalize(file)));
-for (const line of await lines('payload')) {
-    const [project, source, relative] = line.split('|');
+for (const [project, source, relative] of payload) {
     const plugin = plugins.get(path.normalize(project));
     const target = path.normalize(relative || path.basename(source));
-    if (target !== path.posix.basename(plugin.assembly) && (shared.has(target) || entries.has(target))) continue;
+    if (target.endsWith('.pdb')) continue;
+    if (target !== plugin.assembly && (shared.has(target) || entries.has(target))) continue;
     files.set(path.join(plugin.id, target), source);
 }
 
-const json = JSON.stringify(Array.from(plugins.values(), ({id, required}) => ({id, required})), null, 2) + '\n';
+for (const {id, assembly} of plugins.values()) {
+    const members = [...files.keys()].filter(file => file.startsWith(id + path.sep));
+    const entry = path.join(id, assembly);
+    const deps = path.join(id, path.basename(assembly, '.dll') + '.deps.json');
+    if (members.every(file => file === entry || file === deps)) files.delete(deps);
+}
+
+const json = JSON.stringify(Array.from(plugins.values(), ({id, assembly, required}) => ({id, assembly, required})), null, 2) + '\n';
 const previous = await readFile(index, 'utf8').catch(error => {
     if (error.code !== 'ENOENT') throw error;
 });

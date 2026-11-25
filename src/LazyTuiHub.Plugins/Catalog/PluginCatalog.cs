@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Sdk;
 
 namespace LazyTuiHub.Plugins;
 
@@ -16,6 +17,7 @@ internal sealed class PluginCatalog
         using var connection = database.Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
+            CREATE TABLE IF NOT EXISTS plugin_frontends (id TEXT NOT NULL, role TEXT NOT NULL, declaration TEXT NOT NULL, PRIMARY KEY(id, role));
             CREATE TABLE IF NOT EXISTS plugin_catalog (
                 id TEXT PRIMARY KEY NOT NULL,
                 specification TEXT NOT NULL,
@@ -46,19 +48,92 @@ internal sealed class PluginCatalog
                     )!
                 )
             );
-        return result;
+        reader.Close();
+        command.CommandText = "SELECT id, declaration FROM plugin_frontends ORDER BY id, role";
+        using var entries = command.ExecuteReader();
+        var contributions = new Dictionary<string, List<FrontendDeclaration>>(StringComparer.Ordinal);
+        while (entries.Read())
+        {
+            var id = entries.GetString(0);
+            if (!contributions.TryGetValue(id, out var list))
+            {
+                list = [];
+                contributions.Add(id, list);
+            }
+            list.Add(JsonSerializer.Deserialize<FrontendDeclaration>(entries.GetString(1), Json)!);
+        }
+        return result
+            .Select(record =>
+            {
+                if (!contributions.TryGetValue(record.Spec.Id, out var list))
+                    return record;
+                var backend = record.Declaration;
+                return record with
+                {
+                    Declaration = backend with
+                    {
+                        Pages = [.. backend.Pages, .. list.SelectMany(role => role.Pages)],
+                        Commands =
+                        [
+                            .. backend
+                                .Commands.Concat(list.SelectMany(role => role.Commands))
+                                .Distinct(StringComparer.Ordinal),
+                        ],
+                    },
+                };
+            })
+            .ToArray();
     }
 
-    public void Observe(PluginSpec spec)
+    private sealed record FrontendDeclaration(IReadOnlyList<DeclaredPage> Pages, IReadOnlyList<string> Commands);
+
+    public void RecordFrontends(
+        PluginSpec spec,
+        IEnumerable<(PluginEntryPointKind Kind, PluginServices Registration)> entries
+    )
+    {
+        using var connection = database.Open();
+        using var tx = connection.BeginTransaction();
+        using var command = connection.CreateCommand();
+        command.Transaction = tx;
+        command.Parameters.AddWithValue(IdParameter, spec.Id);
+        command.CommandText = """
+            DELETE FROM plugin_frontends WHERE id = $id AND
+                ((role = 'Client' AND $client IS NULL) OR (role = 'ClientGui' AND $gui IS NULL) OR (role = 'ClientCli' AND $cli IS NULL))
+            """;
+        command.Parameters.AddWithValue("$client", (object?)spec.EntryPoints.Client ?? DBNull.Value);
+        command.Parameters.AddWithValue("$gui", (object?)spec.EntryPoints.ClientGui ?? DBNull.Value);
+        command.Parameters.AddWithValue("$cli", (object?)spec.EntryPoints.ClientCli ?? DBNull.Value);
+        command.ExecuteNonQuery();
+        command.Parameters.Clear();
+        command.Parameters.AddWithValue(IdParameter, spec.Id);
+        command.CommandText =
+            "INSERT OR REPLACE INTO plugin_frontends(id,role,declaration) VALUES($id,$role,$declaration)";
+        var roleParameter = command.Parameters.Add("$role", Microsoft.Data.Sqlite.SqliteType.Text);
+        var declaration = command.Parameters.Add("$declaration", Microsoft.Data.Sqlite.SqliteType.Text);
+        foreach (var (role, registration) in entries)
+        {
+            roleParameter.Value = role.ToString();
+            declaration.Value = JsonSerializer.Serialize(
+                new FrontendDeclaration([.. registration.Pages], [.. registration.Capabilities.Keys]),
+                Json
+            );
+            command.ExecuteNonQuery();
+        }
+        tx.Commit();
+    }
+
+    public void Observe(PluginSpec spec, bool present)
     {
         using var connection = database.Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT INTO plugin_catalog(id, specification, enabled, settings, declaration)
             VALUES ($id, $spec, 1, '{}', $empty)
-            ON CONFLICT(id) DO UPDATE SET specification = excluded.specification
+            ON CONFLICT(id) DO UPDATE SET specification = excluded.specification WHERE $present
             """;
         command.Parameters.AddWithValue(IdParameter, spec.Id);
+        command.Parameters.AddWithValue("$present", present);
         command.Parameters.AddWithValue("$spec", JsonSerializer.Serialize(spec, Json));
         command.Parameters.AddWithValue("$empty", JsonSerializer.Serialize(PluginDeclaration.Empty, Json));
         command.ExecuteNonQuery();

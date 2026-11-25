@@ -1,0 +1,38 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Plugin.TuiHub.Games.Desktop"
+    x:ClassModifier="internal"
+    x:Class="LazyTuiHub.Plugin.TuiHub.Games.Desktop.GamePoster"
+    x:Name="Poster"
+    x:DataType="local:GamePoster"
+    IsHitTestVisible="False"
+    AutomationProperties.AccessibilityView="Raw"
+>
+    <Border CornerRadius="{DynamicResource RowRadius}" ClipToBounds="True">
+        <Panel>
+            <Panel Background="{DynamicResource PageBackground}">
+                <Border x:Name="Paper" Background="{DynamicResource AccentBrush}" />
+                <Viewbox
+                    Margin="12"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MaxWidth="65"
+                    MaxHeight="68"
+                    StretchDirection="DownOnly"
+                    Stretch="Uniform"
+                >
+                    <TextBlock
+                        x:Name="Monogram"
+                        FontSize="64"
+                        FontFamily="Georgia, Cambria, serif"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource SecondaryText}"
+                        Opacity="0.75"
+                    />
+                </Viewbox>
+            </Panel>
+            <local:GameArtwork Url="{Binding Url, ElementName=Poster}" Stretch="UniformToFill" />
+        </Panel>
+    </Border>
+</UserControl>

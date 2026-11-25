@@ -1,7 +1,7 @@
 <UserControl
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:LazyTuiHub.Desktop"
+    xmlns:sdk="clr-namespace:LazyTuiHub.Sdk.Avalonia;assembly=LazyTuiHub.Sdk.Avalonia"
     xmlns:plugins="clr-namespace:LazyTuiHub.Plugins;assembly=LazyTuiHub.Plugins"
     x:Class="LazyTuiHub.Desktop.PluginsPage"
 >
@@ -10,8 +10,8 @@
             <TextBlock Text="Plugins" Classes="title" />
             <TextBlock x:Name="PluginCount" Classes="caption" />
         </StackPanel>
-        <local:AdaptivePane x:Name="Pane" Grid.Row="1" BackLabel="Back to plugins">
-            <local:AdaptivePane.Master>
+        <sdk:AdaptivePane x:Name="Pane" Grid.Row="1" BackLabel="Back to plugins">
+            <sdk:AdaptivePane.Master>
                 <ListBox
                     x:Name="Plugins"
                     Classes="collection"
@@ -41,8 +41,8 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-            </local:AdaptivePane.Master>
-            <local:AdaptivePane.Detail>
+            </sdk:AdaptivePane.Master>
+            <sdk:AdaptivePane.Detail>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="28" Spacing="24" MaxWidth="760">
                         <StackPanel Spacing="8">
@@ -107,8 +107,8 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-            </local:AdaptivePane.Detail>
-        </local:AdaptivePane>
+            </sdk:AdaptivePane.Detail>
+        </sdk:AdaptivePane>
         <TextBlock Grid.Row="2" x:Name="Status" Classes="metadata" Margin="20,8" />
     </Grid>
 </UserControl>

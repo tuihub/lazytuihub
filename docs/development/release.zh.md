@@ -14,6 +14,6 @@ mise -E production run release
 | --- | --- |
 | Windows、Linux 宿主 | 运行 `host/` 内的可执行文件。使用 `--desktop` 打开阅读器，使用 `--cli` 执行本地命令。保留同目录的 `plugins/`。 |
 | macOS 宿主 | 打开 `LazyTuiHub.app` 进入阅读器。运行 `LazyTuiHub.app/Contents/MacOS/LazyTuiHub --cli` 执行本地命令。发布命令在本地组装应用包，Developer ID 签名和公证属于后续分发步骤。 |
-| 远程 CLI | 运行 `cli/` 内的可执行文件，传入 `--endpoint https://SERVER`。业务插件由远程宿主提供。 |
+| 远程 CLI | 运行 `cli/` 内的可执行文件，传入 `--endpoint https://SERVER`。保留同级 plugins/ 目录。CLI 加载Client 和 ClientCli 入口，远程宿主运行后端。 |
 
 维护者更新 SDK 补丁并重新发布，用户随产品更新获得运行时安全修复。详见[交付决策](../../.agents/notes/2026-11-24-dotnet-delivery.zh.md)和 [Windows 7 前置依赖](../../.agents/notes/2026-11-23-mvp-win7-cli.zh.md)。

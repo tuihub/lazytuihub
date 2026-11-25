@@ -5,7 +5,7 @@ namespace LazyTuiHub.Framework;
 public static class PacketOperation
 {
     public static void RegisterRepeatable<TInput, TOutput>(
-        this NodeRegistry registry,
+        this NodeRegistration registry,
         NodeDescriptor descriptor,
         Func<TInput, JsonElement, CancellationToken, Task<TOutput>> execute
     )
@@ -19,7 +19,7 @@ public static class PacketOperation
         );
 
     public static void RegisterOwned<TInput, TOutput>(
-        this NodeRegistry registry,
+        this NodeRegistration registry,
         NodeDescriptor descriptor,
         Func<DataPacket<TInput>, JsonElement, CancellationToken, Task<DataPacket<TOutput>>> execute
     )
@@ -32,7 +32,7 @@ public static class PacketOperation
     }
 
     private static void Register<TInput, TOutput>(
-        NodeRegistry registry,
+        NodeRegistration registry,
         NodeDescriptor descriptor,
         Func<DataPacket<TInput>, JsonElement, CancellationToken, Task<DataPacket<TOutput>>> execute,
         PacketExecutionMode mode

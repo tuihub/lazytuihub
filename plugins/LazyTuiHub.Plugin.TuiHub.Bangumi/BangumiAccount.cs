@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 
-namespace LazyTuiHub.Bangumi;
+namespace LazyTuiHub.Plugin.TuiHub.Bangumi;
 
 internal sealed class BangumiAccount : GameAccountProvider
 {

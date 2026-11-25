@@ -33,20 +33,32 @@ public static partial class PluginManifest
             }
             try
             {
-                using var manifest = File.OpenRead(Path.Combine(directory, id, "plugin.json"));
-                var spec = JsonSerializer.Deserialize<PluginSpec>(manifest, PipelineStore.JsonOptions);
+                var selection = group.First();
                 if (
-                    spec is null
-                    || !string.Equals(spec.Id, id, StringComparison.Ordinal)
-                    || string.IsNullOrEmpty(spec.Assembly)
-                    || string.IsNullOrEmpty(spec.EntryType)
+                    string.IsNullOrWhiteSpace(selection.Assembly)
+                    || !string.Equals(
+                        Path.GetFileName(selection.Assembly),
+                        selection.Assembly,
+                        StringComparison.Ordinal
+                    )
                 )
-                    throw new JsonException("The manifest must declare the selected ID, entry assembly and type.");
-                if (spec.Requires?.FirstOrDefault(dependency => !IdPattern().IsMatch(dependency.Id)) is { } invalid)
-                    throw new JsonException($"Invalid required plugin ID '{invalid.Id}'.");
-                specs.Add(spec with { Assembly = Path.Combine(id, spec.Assembly), Required = group.First().Required });
+                    throw new JsonException("The selection must name the plugin DLL.");
+                var assembly = Path.Combine(id, selection.Assembly);
+                var path = Path.Combine(directory, assembly);
+                if (!File.Exists(path))
+                {
+                    specs.Add(new(id, id, assembly, new(), selection.Required));
+                    continue;
+                }
+                var spec = EmbeddedManifest.Read(path);
+                if (!string.Equals(spec.Id, id, StringComparison.Ordinal) || spec.EntryPoints is null)
+                    throw new JsonException("The embedded manifest must declare the selected ID and its entry points.");
+                if (spec.Relations.FirstOrDefault(dependency => !IdPattern().IsMatch(dependency.Id)) is { } invalid)
+                    throw new JsonException($"Invalid related plugin ID '{invalid.Id}'.");
+                specs.Add(spec with { Assembly = assembly, Required = group.First().Required });
             }
-            catch (Exception error) when (error is IOException or JsonException)
+            catch (Exception error)
+                when (error is IOException or JsonException or BadImageFormatException or OverflowException)
             {
                 report($"Cannot load manifest for '{id}': {error.Message}");
             }

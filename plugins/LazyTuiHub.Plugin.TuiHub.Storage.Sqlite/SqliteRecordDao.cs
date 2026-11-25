@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using LazyTuiHub.Dao;
 
-namespace LazyTuiHub.Storage.Sqlite;
+namespace LazyTuiHub.Plugin.TuiHub.Storage.Sqlite;
 
 [SuppressMessage(
     "Security",

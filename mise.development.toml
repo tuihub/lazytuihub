@@ -45,7 +45,7 @@ run = "node tests/win7/lab.mjs"
 [tasks."demo:rss"]
 description = "Run the RSS MVP with a local feed, SQLite, HTTP, and a cross-business branch"
 wait_for = ["check:analyzers", "test", "demo:api", "demo:workflow"]
-run = "dotnet run --project src/LazyTuiHub -- --rss-demo"
+run = "dotnet run --project tests/RssDemo"
 
 [tasks."demo:workflow"]
 description = "Run local streaming and synchronized inputs with live configuration and cancellation"

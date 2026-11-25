@@ -1,16 +1,12 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Target Name="GetPluginPayload" DependsOnTargets="ResolveReferences;AssignTargetPaths" Returns="@(_Payload)">
-    <ItemGroup>
-      <_Payload Include="$(TargetPath);$(ProjectDepsFilePath)" />
-      <_Payload Include="@(ReferenceCopyLocalPaths)">
-        <PayloadPath>%(ReferenceCopyLocalPaths.DestinationSubDirectory)%(ReferenceCopyLocalPaths.Filename)%(ReferenceCopyLocalPaths.Extension)</PayloadPath>
-      </_Payload>
-      <_PluginContent Include="@(ContentWithTargetPath);@(_NoneWithTargetPath)" />
-      <_Payload Include="@(_PluginContent)" Condition="'%(_PluginContent.CopyToOutputDirectory)' != '' and '%(_PluginContent.CopyToOutputDirectory)' != 'Never'">
-        <PayloadPath>%(_PluginContent.TargetPath)</PayloadPath>
-      </_Payload>
-      <_Payload Update="@(_Payload)" PluginProject="$(MSBuildProjectFullPath)" />
-    </ItemGroup>
-  </Target>
+  <Import Project="../src/LazyTuiHub.Sdk/build/LazyTuiHub.Sdk.targets" />
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**;tests/**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LazyTuiHub.Tests" />
+    <Compile Remove="**/bin/**;**/obj/**;tests/**" />
+    <AvaloniaXaml Remove="**/bin/**;**/obj/**;tests/**" />
+  </ItemGroup>
 </Project>

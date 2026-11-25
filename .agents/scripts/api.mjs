@@ -12,7 +12,7 @@ const mode = process.argv[2];
 
 try {
     if (!['lint', 'generate', 'check'].includes(mode)) throw new Error('Use lint, generate, or check.');
-    const roots = ['src/LazyTuiHub.Api/Protos', ...await Array.fromAsync(glob('plugins/*/contracts/Protos', {cwd: root}))];
+    const roots = ['src/LazyTuiHub.Api/Protos', ...await Array.fromAsync(glob('plugins/*/Api/Protos', {cwd: root}))];
     const sources = [];
     for (const directory of roots) {
         for await (const file of glob('**/*.proto', {cwd: path.join(root, directory)})) {
@@ -47,7 +47,7 @@ async function generate(files, include, sources) {
         ]);
         const {clients, ...settings} = JSON.parse(await readFile(path.join(root, '.agents/api/nswag.json'), 'utf8'));
         const endpoints = clients.map(client => ({...client, directory: 'src/LazyTuiHub.Client'}));
-        for await (const settingsFile of glob('plugins/*/client/http-client.json', {cwd: root})) {
+        for await (const settingsFile of glob('plugins/*/Frontend/http-client.json', {cwd: root})) {
             const client = JSON.parse(await readFile(path.join(root, settingsFile), 'utf8'));
             endpoints.push({...client, directory: path.dirname(settingsFile)});
         }

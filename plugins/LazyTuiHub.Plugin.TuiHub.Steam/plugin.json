@@ -1,9 +1,0 @@
-{
-  "id": "lazytuihub.plugin.tuihub.steam",
-  "name": "Steam",
-  "assembly": "LazyTuiHub.Plugin.TuiHub.Steam.dll",
-  "entryType": "LazyTuiHub.Steam.SteamPlugin",
-  "requires": [
-    "lazytuihub.plugin.tuihub.games"
-  ]
-}

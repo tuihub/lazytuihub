@@ -14,6 +14,6 @@ Pass a .NET runtime identifier to target another OS or architecture, for example
 | --- | --- |
 | Windows and Linux host | Run the executable in `host/` with `--desktop` for the reader or `--cli` for local commands. Keep the adjacent `plugins/` directory. |
 | macOS host | Open `LazyTuiHub.app` for the reader. Run `LazyTuiHub.app/Contents/MacOS/LazyTuiHub --cli` for local commands. The release task assembles the bundle locally. Developer ID signing and notarization are separate distribution steps. |
-| Remote CLI | Run the executable in `cli/` with `--endpoint https://SERVER`. The remote host provides business plugins. |
+| Remote CLI | Run the executable in `cli/` with `--endpoint https://SERVER`. Keep its adjacent plugins/ directory. The CLI loads the Client and ClientCli entry points. The remote host runs the backend. |
 
 A runtime security update reaches users when the maintainer republishes the packages with the updated SDK. See the [delivery decision](../../.agents/notes/2026-11-24-dotnet-delivery.en.md) and the [Windows 7 prerequisites](../../.agents/notes/2026-11-23-mvp-win7-cli.en.md).

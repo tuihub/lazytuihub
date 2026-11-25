@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PluginId>lazytuihub.plugin.tuihub.rss</PluginId>
+    <Title>RSS Sources</Title>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <PluginProtoRoot>Api/Protos</PluginProtoRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <PluginEntryPoint Include="Server" Type="$(RootNamespace).RssPlugin" />
+    <PluginEntryPoint Include="Client" Type="$(RootNamespace).RssClient" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj" PluginAlias="Articles" />
+    <PluginProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Core/LazyTuiHub.Plugin.TuiHub.Core.csproj" PluginAlias="Core" />
+  </ItemGroup>
+  <Import Project="../../src/LazyTuiHub.Api/ProtoContracts.props" />
+</Project>

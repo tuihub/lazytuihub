@@ -1,6 +1,6 @@
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 
-namespace LazyTuiHub.Vndb;
+namespace LazyTuiHub.Plugin.TuiHub.Vndb;
 
 internal sealed class VndbAccount : GameAccountProvider
 {

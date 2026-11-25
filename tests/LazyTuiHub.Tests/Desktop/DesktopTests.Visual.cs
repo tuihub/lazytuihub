@@ -8,7 +8,8 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
+using LazyTuiHub.Sdk.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -40,9 +41,13 @@ public sealed partial class DesktopTests
                         configure: services =>
                         {
                             services.AddSingleton<DesktopSession>();
+                            services.AddSingleton<RunDesktopOperation>(provider =>
+                                provider.GetRequiredService<DesktopSession>().RunAsync
+                            );
                             services.AddSingleton(settings);
                             services.AddSingleton<DesktopAppearance>();
-                        }
+                        },
+                        frontend: LazyTuiHub.Plugins.FrontendKind.Gui
                     );
                     var library = host.Services.GetRequiredService<GameLibrary>();
                     if (library.Shelf().Count == 0)

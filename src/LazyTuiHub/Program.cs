@@ -34,11 +34,6 @@ public static class Program
             await WorkflowDemo.RunAsync();
             return;
         }
-        if (args.Contains("--rss-demo", StringComparer.Ordinal))
-        {
-            await RssDemo.RunAsync();
-            return;
-        }
         var cli = args.Contains("--cli", StringComparer.Ordinal);
         if (cli)
         {

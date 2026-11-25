@@ -8,9 +8,13 @@ using LazyTuiHub.Client;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Interaction;
+using LazyTuiHub.Plugin.TuiHub.Articles.Frontend;
+using LazyTuiHub.Plugin.TuiHub.Rss.Frontend;
+using LazyTuiHub.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace LazyTuiHub.Tests;
@@ -63,12 +67,16 @@ public sealed class AccessTests
         var endpoint = new Uri(primary.Urls.Single());
         using (var remote = new RemoteWorkspace(endpoint.AbsoluteUri, null, null, TrustedFixture(certificate)))
         {
-            var actions = remote.Catalog.Get("access").Actions;
+            var remoteServices = new ServiceCollection();
+            remote.Configure(remoteServices, workspace.Plugins, FrontendKind.Cli, Assert.Fail);
+            using var provider = remoteServices.BuildServiceProvider();
+            var feeds = provider.GetRequiredService<FeedOperations>();
+            var actions = provider.GetRequiredService<LazyTuiHub.Interaction.CapabilityCatalog>().Get("access").Actions;
             var output = new InteractionOutput(_ => { }, _ => { });
             await actions.Single(a => a.Name == "login").InvokeAsync(_ => Admin, _ => password, output, Token);
-            Assert.Empty((await remote.Feeds.Feeds(Token)).Feeds);
+            Assert.Empty((await feeds.Feeds(Token)).Feeds);
             await actions.Single(a => a.Name == "logout").InvokeAsync(_ => null, _ => string.Empty, output, Token);
-            await RssStatusAsync(HttpStatusCode.Unauthorized, () => remote.Feeds.Feeds(Token));
+            await RssStatusAsync(HttpStatusCode.Unauthorized, () => feeds.Feeds(Token));
         }
         using var admin = Client(endpoint, certificate);
         using var reader = Client(endpoint, certificate);
@@ -203,7 +211,7 @@ public sealed class AccessTests
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         var app = builder.Build();
-        app.MapGet("/feed", () => Results.Text(RssDemo.FeedXml, "application/rss+xml"));
+        app.MapGet("/feed", () => Results.Text(RssFixture.FeedXml, "application/rss+xml"));
         return app;
     }
 

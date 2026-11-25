@@ -48,7 +48,7 @@ public sealed class DaoTests
         scope.Requirements.Add(new("details", DaoMode.Unified, DaoContracts.Records));
         var now = new DateTimeOffset(2026, 11, 17, 0, 0, 0, TimeSpan.Zero);
         var clock = new ManualClock(now);
-        var details = new LazyTuiHub.Rss.RssDetails(scope, TimeSpan.FromMinutes(1), clock);
+        var details = new LazyTuiHub.Plugin.TuiHub.Rss.RssDetails(scope, TimeSpan.FromMinutes(1), clock);
         details.Capture(new(new("https://example.com/feed"), [1, 2, 3], new("rss.feed", "example")));
         var saved = Assert.Single(details.Read());
         Assert.Equal(now.AddMinutes(1), saved.ExpiresAt);

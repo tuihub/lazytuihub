@@ -4,8 +4,8 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
-using LazyTuiHub.Games;
 using LazyTuiHub.Interaction;
+using LazyTuiHub.Plugin.TuiHub.Games;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -88,7 +88,7 @@ public sealed partial class DesktopTests
                 window.Show();
                 Assert.IsType<OperationsPage>(window.FindControl<ContentControl>("PageContent")!.Content);
                 var reader = window.Navigation.Single(p => p.Title == "Reader");
-                Assert.IsType<LazyTuiHub.Articles.Desktop.ReaderPage>(reader.Create());
+                Assert.IsType<LazyTuiHub.Plugin.TuiHub.Articles.Desktop.ReaderPage>(reader.Create());
                 Assert.DoesNotContain(host.Services.GetRequiredService<CapabilityCatalog>().Groups, g =>
                     g.Name == "games"
                 );

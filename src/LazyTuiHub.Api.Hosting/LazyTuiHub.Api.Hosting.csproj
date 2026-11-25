@@ -3,8 +3,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../LazyTuiHub.PluginSdk/LazyTuiHub.PluginSdk.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
+    <PackageReference Include="Grpc.AspNetCore.Server" Version="2.85.0" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>

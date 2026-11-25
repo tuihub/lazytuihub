@@ -1,0 +1,9 @@
+{
+  "namespace": "LazyTuiHub.Plugin.TuiHub.Rss.Frontend",
+  "service": "RssService",
+  "className": "RssHttpClient",
+  "exceptionClass": "RssApiException",
+  "additionalNamespaceUsages": [
+    "LazyTuiHub.Api.Rss.V1"
+  ]
+}

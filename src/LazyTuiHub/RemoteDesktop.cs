@@ -1,61 +1,27 @@
-using System.Text.Json;
 using LazyTuiHub.Client;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk.Avalonia;
 
 namespace LazyTuiHub;
 
-internal static partial class RemoteDesktop
+internal static class RemoteDesktop
 {
-    public static void Configure(HostApplicationBuilder builder, string endpoint)
+    public static void Configure(HostApplicationBuilder builder, RemoteWorkspace remote, FrontendKind frontend)
     {
         var config = builder.Configuration;
-        builder.Services.AddSingleton(_ => new RemoteWorkspace(
-            endpoint,
-            config["Access:Session"],
-            config["Access:Account"]
-        ));
-        builder.Services.AddSingleton(s => s.GetRequiredService<RemoteWorkspace>().Catalog);
-        builder.Services.AddSingleton(s => s.GetRequiredService<RemoteWorkspace>().Session);
-        builder.Services.AddSingleton<PluginAssemblies>();
-        builder.Services.AddSingleton<IEnumerable<RemotePage>>(services =>
-            LoadPages(services, config["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins"))
+        builder.Services.AddSingleton(_ => remote);
+        var pages = remote.Configure(
+            builder.Services,
+            config["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
+            frontend,
+            Console.Error.WriteLine
         );
+        foreach (var (owner, page) in pages)
+            builder.Services.AddSingleton(
+                new RemotePage(page.Title, page.IconResource ?? "ActionIconBook", services =>
+                    DesktopPages.Resolve(services, owner, page.Id)
+                )
+            );
     }
-
-    private static List<RemotePage> LoadPages(IServiceProvider services, string folder)
-    {
-        var pages = new List<RemotePage>();
-        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(RemoteDesktop));
-        try
-        {
-            var specs = PluginManifest.Read(folder, message => LogInvalid(logger, message));
-            foreach (var spec in specs.Where(s => s.RemotePage))
-            {
-                try
-                {
-                    var entry = services
-                        .GetRequiredService<PluginAssemblies>()
-                        .Load(Path.Combine(folder, spec.Assembly), spec.EntryType);
-                    if (entry is IRemotePageProvider provider)
-                        pages.Add(provider.RemotePage(services.GetRequiredService<RemoteWorkspace>()));
-                }
-                catch (Exception error)
-                {
-                    LogMissing(logger, spec.Id, error);
-                }
-            }
-        }
-        catch (Exception error) when (error is IOException or JsonException)
-        {
-            LogMissing(logger, "plugins.json", error);
-        }
-        return pages;
-    }
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load remote presentation {Plugin}.")]
-    private static partial void LogMissing(ILogger logger, string plugin, Exception error);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "{Problem}")]
-    private static partial void LogInvalid(ILogger logger, string problem);
 }

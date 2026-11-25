@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Interaction;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -73,16 +74,11 @@ public sealed partial class ShellWindow : Window
         var access = host.Services.GetRequiredService<ResourceAccess>();
         return
         [
-            .. plugins
-                .List()
-                .Where(plugin => string.Equals(plugin.Activation, "active", StringComparison.Ordinal))
-                .SelectMany(plugin =>
-                    plugin.Saved.Declaration.Pages.Select(page => new NavigationPage(
-                        page.Title,
-                        () => DesktopPages.Resolve(host.Services, plugin.Saved.Spec.Id, page.Id),
-                        NavigationIcon(page.IconResource)
-                    ))
-                ),
+            .. plugins.ActivePages.Select(item => new NavigationPage(
+                item.Page.Title,
+                () => DesktopPages.Resolve(host.Services, item.Owner, item.Page.Id),
+                NavigationIcon(item.Page.IconResource)
+            )),
             .. access.Allows(ResourceUri.SystemControl("operations"), AccessMode.Write) ? ManagementPages() : [],
         ];
     }

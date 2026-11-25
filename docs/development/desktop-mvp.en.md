@@ -52,11 +52,12 @@ Resizing keeps the existing views, selection, draft input, and loaded data. It d
 | Component | Responsibility |
 | - | - |
 | [Application host](../../src/LazyTuiHub/) | Shared service/plugin composition; a generic host for desktop mode and a web host for HTTP/CLI mode. |
+| [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/) | Page registration, workspace refresh, adaptive panes, motion and host-tracked GUI operations. |
 | [Desktop](../../src/LazyTuiHub.Desktop/) | Avalonia application/window, page composition, workflow/plugin inspectors, UI operation tracking, and shutdown. |
-| [Article reader plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | Reader controls and state; IArticleApi for reading and optional IRssApi for subscriptions. |
+| [Article reader plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | Reader controls and state; IArticleApi for reading and optional IRssApi for subscriptions. |
 | [Plugin framework](../../src/LazyTuiHub.Plugins/) | Plain page declarations, owner identity, retained metadata, dependency activation, and cold-start enablement. |
 
-The desktop host starts the same available background tasks without starting an HTTP listener. Business and DAO code do not reference Avalonia. The desktop plugin is built as a distribution artifact and loaded dynamically; the host has no runtime reference to its implementation assembly. `AddDesktopPage` contributes a plain page declaration and a keyed Avalonia control factory. Only active plugins contribute navigation entries; factories run on the UI thread when a page is first opened. The default shared assembly context preserves contract and Avalonia type identity.
+The desktop host starts the same available background tasks without starting an HTTP listener. Business and DAO code do not reference Avalonia. The host loads the ClientGui entry point from the same DLL as the business plugin. Its page implementation stays internal. `AddDesktopPage` contributes a plain page declaration and a keyed Avalonia control factory. Only active plugins contribute navigation entries; factories run on the UI thread when a page is first opened. The default shared assembly context preserves contract and Avalonia type identity.
 
 Reader actions run service work away from the UI thread and serialize operations within the page. Errors remain visible; an error is not converted into an empty successful result. Closing the main window cancels and awaits tracked UI operations, then stops hosted tasks before disposing services. Cancellation does not undo completed database changes or provide durable workflow suspension.
 

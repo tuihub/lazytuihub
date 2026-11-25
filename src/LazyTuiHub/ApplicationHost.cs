@@ -7,6 +7,7 @@ using LazyTuiHub.Api;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Execution;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk.Avalonia;
 
 namespace LazyTuiHub;
 
@@ -69,17 +70,28 @@ public static class ApplicationHost
     {
         var builder = Host.CreateApplicationBuilder(args);
         var remote = builder.Configuration["endpoint"];
+        var frontend = desktop ? FrontendKind.Gui : FrontendKind.Cli;
         var plugins = remote is null
-            ? HostComposition.Configure(builder.Services, builder.Configuration, interactive: true)
+            ? HostComposition.Configure(builder.Services, builder.Configuration, frontend)
             : null;
-        if (remote is not null)
-            RemoteDesktop.Configure(builder, remote);
+        LazyTuiHub.Client.RemoteWorkspace? connection = null;
         IHost? host = null;
         try
         {
+            if (remote is not null)
+            {
+                connection = new(
+                    remote,
+                    builder.Configuration["Access:Session"],
+                    builder.Configuration["Access:Account"]
+                );
+                RemoteDesktop.Configure(builder, connection, frontend);
+            }
             if (desktop)
                 ConfigureDesktop(builder, remote is null);
             host = builder.Build();
+            if (connection is not null)
+                _ = host.Services.GetRequiredService<LazyTuiHub.Client.RemoteWorkspace>();
             plugins?.Activate(host.Services);
             return host;
         }
@@ -88,7 +100,10 @@ public static class ApplicationHost
             if (host is not null)
                 host.Dispose();
             else
+            {
                 plugins?.Dispose();
+                connection?.Dispose();
+            }
             throw;
         }
     }
@@ -96,6 +111,9 @@ public static class ApplicationHost
     private static void ConfigureDesktop(HostApplicationBuilder builder, bool local)
     {
         builder.Services.AddSingleton<DesktopSession>();
+        builder.Services.AddSingleton<RunDesktopOperation>(provider =>
+            provider.GetRequiredService<DesktopSession>().RunAsync
+        );
         builder.Services.AddSingleton(
             new AppearanceSettings(
                 builder.Configuration["desktop-settings"]

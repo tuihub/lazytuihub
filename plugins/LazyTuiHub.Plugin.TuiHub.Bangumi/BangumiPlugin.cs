@@ -1,11 +1,11 @@
-using LazyTuiHub.Games;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Plugin.TuiHub.Games;
+using LazyTuiHub.Sdk;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LazyTuiHub.Bangumi;
+namespace LazyTuiHub.Plugin.TuiHub.Bangumi;
 
-public sealed class BangumiPlugin() : SqliteGameProvider("bangumi")
+internal sealed class BangumiPlugin() : SqliteGameProvider("bangumi")
 {
     public override void Configure(PluginRegistration registration)
     {

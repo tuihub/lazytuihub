@@ -1,6 +1,0 @@
-{
-  "id": "lazytuihub.plugin.tuihub.articles",
-  "name": "Article Library",
-  "assembly": "LazyTuiHub.Plugin.TuiHub.Articles.dll",
-  "entryType": "LazyTuiHub.Articles.ArticlePlugin"
-}

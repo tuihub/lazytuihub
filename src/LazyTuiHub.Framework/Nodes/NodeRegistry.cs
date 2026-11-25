@@ -6,6 +6,10 @@ public sealed class NodeRegistry
 {
     private readonly Dictionary<string, RegisteredNode> nodes = new(StringComparer.Ordinal);
 
+    public NodeRegistry() => Registration = new(nodes);
+
+    public NodeRegistration Registration { get; }
+
     public IEnumerable<NodeDescriptor> Descriptors => nodes.Values.Select(node => node.Descriptor);
 
     public AccountResourceAccess? DataAccess(string operation) =>
@@ -13,27 +17,6 @@ public sealed class NodeRegistry
 
     public IEnumerable<string> PacketOperations(PacketExecutionMode mode) =>
         nodes.Values.Where(node => node.Mode == mode).Select(node => node.Descriptor.Type);
-
-    public void Register(NodeDescriptor descriptor, Func<NodeContext, CancellationToken, Task> run) =>
-        Register(descriptor, run, null);
-
-    internal void Register(
-        NodeDescriptor descriptor,
-        Func<NodeContext, CancellationToken, Task> run,
-        Func<byte[], JsonElement, CancellationToken, Task<byte[]>>? invokePacket,
-        PacketExecutionMode? mode = null
-    )
-    {
-        _ = descriptor.Inputs.ToDictionary(port => port.Name, StringComparer.Ordinal);
-        _ = descriptor.Outputs.ToDictionary(port => port.Name, StringComparer.Ordinal);
-        var snapshot = descriptor with
-        {
-            Inputs = Array.AsReadOnly(descriptor.Inputs.ToArray()),
-            Outputs = Array.AsReadOnly(descriptor.Outputs.ToArray()),
-        };
-        if (!nodes.TryAdd(descriptor.Type, new(snapshot, run, invokePacket, mode)))
-            throw new ArgumentException($"Node type already registered: {descriptor.Type}.", nameof(descriptor));
-    }
 
     public Task<byte[]> InvokePacketAsync(
         string operation,

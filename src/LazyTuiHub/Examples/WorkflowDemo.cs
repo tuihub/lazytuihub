@@ -25,7 +25,7 @@ public static class WorkflowDemo
         using var stopping = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var state = new DemoState(stopping);
         var registry = new NodeRegistry();
-        registry.Register(
+        registry.Registration.Register(
             new(
                 SourceName,
                 "demo",
@@ -38,7 +38,7 @@ public static class WorkflowDemo
             ),
             state.ProduceAsync
         );
-        registry.Register(
+        registry.Registration.Register(
             new(
                 ProcessName,
                 "demo",
@@ -51,7 +51,7 @@ public static class WorkflowDemo
             ),
             state.ProcessAsync
         );
-        StreamNodes.Sink<int>(registry, "sink", "demo", (packet, _, _) => state.CollectAsync(packet));
+        StreamNodes.Sink<int>(registry.Registration, "sink", "demo", (packet, _, _) => state.CollectAsync(packet));
         var runner = new PipelineRunner(registry);
         var plan = await runner.CreatePlanAsync(
             new(

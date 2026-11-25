@@ -9,7 +9,6 @@ namespace LazyTuiHub.Desktop;
 public sealed partial class DesktopApp : Application
 {
     private readonly IHost? host;
-    internal bool ReduceMotion { get; set; }
     public Styles DesignStyles { get; } = [];
 
     public DesktopApp() { }

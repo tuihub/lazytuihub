@@ -80,7 +80,7 @@ OAuth 也适用于同一产品。浏览器授权码与 PKCE 可让密码只进�
 
 插件向自己的 DAO 传入可信账户 ID 和获准的目标对象或集合。单对象的查找和更新按这两个条件定位数据，列表与全文检索先应用可见范围再分页。对象 ID 和游标在相应的账户及查询范围内解析。框架返回授权决定或范围，插件决定如何应用到查询、索引和写入，DAO 提供者可为相同存储后端提供复用工具。[DAO 与业务存储边界](2026-11-17-mvp-storage-dao.zh.md)
 
-共享 SQLite 时，订阅 URL 和幂等请求 ID 在账户内唯一。RSS 和文章插件在读写与文章全文检索中应用账户和 URI 可见范围。订阅、文章、抓取明细和数据关联都带有账户归属。当前工作流定义仍是安装级共享元数据。用户工作流和持久运行记录随协调方案推进。[订阅存储](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/RssStore.cs) · [文章存储](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/ArticleStore.cs)
+共享 SQLite 时，订阅 URL 和幂等请求 ID 在账户内唯一。RSS 和文章插件在读写与文章全文检索中应用账户和 URI 可见范围。订阅、文章、抓取明细和数据关联都带有账户归属。当前工作流定义仍是安装级共享元数据。用户工作流和持久运行记录随协调方案推进。[订阅存储](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Backend/RssStore.cs) · [文章存储](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Backend/ArticleStore.cs)
 
 ## 实现范围与剩余验收
 

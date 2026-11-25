@@ -1,12 +1,13 @@
 <Project>
   <PropertyGroup>
+    <PluginProtoRoot Condition="'$(PluginProtoRoot)' == ''">Protos</PluginProtoRoot>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Google.Api.CommonProtos" Version="2.17.0" GeneratePathProperty="true" />
     <PackageReference Include="Grpc.Core.Api" Version="2.85.0" />
     <PackageReference Include="Grpc.Tools" Version="2.85.0" PrivateAssets="all" />
-    <Protobuf Include="Protos/**/*.proto" ProtoRoot="Protos" GrpcServices="Server"
+    <Protobuf Include="$(PluginProtoRoot)/**/*.proto" ProtoRoot="$(PluginProtoRoot)" GrpcServices="Server"
               AdditionalImportDirs="$(PkgGoogle_Api_CommonProtos)/content/protos" />
   </ItemGroup>
 </Project>

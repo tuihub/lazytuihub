@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <StandalonePluginBundle>true</StandalonePluginBundle>
     <OutputType>Exe</OutputType>
     <PublishSelfContained>true</PublishSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -9,4 +10,9 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.15" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.15" />
   </ItemGroup>
+  <ItemGroup>
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
+  </ItemGroup>
+  <Import Project="../LazyTuiHub/BundlePlugins.targets" />
 </Project>

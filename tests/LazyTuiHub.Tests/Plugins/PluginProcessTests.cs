@@ -7,6 +7,7 @@ using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Plugin.TuiHub.Rss.Api;
 using LazyTuiHub.Plugins;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -25,7 +26,7 @@ public sealed class PluginProcessTests
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         await using var fixture = builder.Build();
-        fixture.MapGet("/feed", () => Results.Text(RssDemo.FeedXml, "application/rss+xml"));
+        fixture.MapGet("/feed", () => Results.Text(RssFixture.FeedXml, "application/rss+xml"));
         await fixture.StartAsync(TestContext.Current.CancellationToken);
         try
         {
@@ -237,10 +238,6 @@ public sealed class PluginProcessTests
     {
         using var workspace = new PluginWorkspace();
         var manifest = workspace.ReadPlugins();
-        manifest = manifest
-            .Select(spec => spec with { Assembly = Path.Combine(AppContext.BaseDirectory, "plugins", spec.Assembly) })
-            .ToArray();
-        await workspace.SelectPluginsAsync(manifest);
         string[] args = ["--demo", "true", "--database", workspace.Database, "--plugin-directory", workspace.Plugins];
         await using (var initial = ApplicationHost.Create(args))
             initial.Services.GetRequiredService<PluginRuntime>().SetEnabled("lazytuihub.plugin.tuihub.rss", false);
@@ -264,10 +261,12 @@ public sealed class PluginProcessTests
                 await disabled.StopAsync(CancellationToken.None);
             }
         }
-        manifest = manifest
-            .Select(spec => spec.Id == "lazytuihub.plugin.tuihub.core" ? spec with { Assembly = "absent.dll" } : spec)
-            .ToArray();
-        await workspace.SelectPluginsAsync(manifest);
+        File.Delete(
+            Path.Combine(
+                workspace.Plugins,
+                manifest.Single(spec => spec.Id == "lazytuihub.plugin.tuihub.core").Assembly
+            )
+        );
         await using var minimal = ApplicationHost.Create(args);
         await minimal.StartAsync(TestContext.Current.CancellationToken);
         try

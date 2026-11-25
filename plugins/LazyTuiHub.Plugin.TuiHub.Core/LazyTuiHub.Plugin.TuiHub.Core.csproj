@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PluginId>lazytuihub.plugin.tuihub.core</PluginId>
+    <Title>Core</Title>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+  <ItemGroup>
+    <PluginEntryPoint Include="Server" Type="$(RootNamespace).CoreLibraryPlugin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
+  </ItemGroup>
+</Project>

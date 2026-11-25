@@ -21,4 +21,9 @@
     <EditorConfigFiles Include="$(MSBuildThisFileDirectory).agents/lint/product.globalconfig" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory).agents/lint/SonarLint.xml" />
   </ItemGroup>
+  <Target Name="GetHostProvidedAssemblies" DependsOnTargets="ResolveReferences" Returns="@(_HostProvided)">
+    <ItemGroup>
+      <_HostProvided Include="$(TargetPath);@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
 </Project>

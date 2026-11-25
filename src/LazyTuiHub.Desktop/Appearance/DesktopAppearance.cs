@@ -80,7 +80,7 @@ public sealed partial class DesktopAppearance
 
     private void ApplyColor(DesktopApp app)
     {
-        app.ReduceMotion = Preferences.ReduceMotion;
+        app.Resources["ReduceMotion"] = Preferences.ReduceMotion;
         app.RequestedThemeVariant = Preferences.Color switch
         {
             ColorMode.Light => ThemeVariant.Light,

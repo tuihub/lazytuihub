@@ -16,29 +16,44 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具
 | - | - |
 | [Framework](../../src/LazyTuiHub.Framework/) | 通用数据关联、节点／端口注册、计划、异步交付、同步输入对齐、扇出、反压与取消。 |
 | [节点库](../../src/LazyTuiHub.Nodes/) | 公共端口类型及源节点、转换节点和消费节点的编写工具。 |
-| [插件 SDK](../../src/LazyTuiHub.PluginSdk/) | 注册、工作流调用、可选插件状态查询及生命周期 hook。 |
+| [插件 SDK](../../src/LazyTuiHub.Sdk/) | 注册、工作流调用、可选插件状态查询及生命周期 hook。 |
+| [LazyTuiHub.Sdk.Avalonia](../../src/LazyTuiHub.Sdk.Avalonia/) | 注册页面、刷新工作区、使用自适应面板与动效，并将界面操作交给宿主跟踪。 |
 | [插件装配](../../src/LazyTuiHub.Plugins/) | 可信 DLL 装配、声明及意图保留、工作流管理、任务与 hook 调用。 |
 | [DAO 工具包](../../src/LazyTuiHub.Dao/) | 不依赖数据库驱动的契约、访问需求／能力及命名空间表目标。 |
 | [SQLite 提供者](../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/) | 必要存储插件，提供通用 JSON 记录／TTL、SQLite FTS5、原生连接及委托清理。 |
-| [核心插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/) | 发行清单要求的问候功能及内置节点注册。 |
-| [RSS 插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/) | 订阅、定时抓取、抓取明细和 RSS／Atom 解析。 |
-| [文章插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
+| [核心插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/Backend/) | 发行清单要求的问候功能及内置节点注册。 |
+| [RSS 插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/Backend/) | 订阅、定时抓取、抓取明细和 RSS／Atom 解析。 |
+| [文章插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Backend/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
 | [游戏库与资料来源](../../.agents/notes/2026-11-23-mvp-games.zh.md) | 管理个人游戏、分类和游玩时段，通过 Steam、Bangumi、VNDB 工作流检索和导入资料。 |
 | [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
 | [CLI](../../src/LazyTuiHub.Cli/) | 阅读文章和管理订阅。在本机运行 `mise run run:cli -- --command articles --action list`，传入 `--endpoint https://SERVER` 可访问远程账户。独立发布包只需安装在客户端。[Win7 CLI 实测](../../.agents/notes/2026-11-23-mvp-win7-cli.zh.md) |
-| [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
+| [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Gui/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
 
 PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。各业务插件通过 BusinessStorage 写自己的表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
 
 rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.parse、articles.store 和 articles.output。其他模块可以在解析后分支，不必修改运行器。阅读及其他直接 RSS 操作目前也经过工作流，让工作流成为可选能力仍待后续实现。本地和 HTTP 调用共享 IRssApi 订阅契约和 IArticleApi 文章契约；字段、路由、分页、去重及错误见[生成的 API 参考](../api/index.md)。
 
-接入新的文章来源时，让节点输出 [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/ArticleDraft.cs)，并连接 articles.store。来源资源名与来源内的条目 ID 共同标识文章。例如 notebooks/a 和 notebooks/b 可以各自使用条目 ID 1。同一来源再次提交该条目时会更新内容、保留文章名称和已读状态。若数据包附有已登记的来源引用，入库会同时登记来源与文章的关联。
+接入新的文章来源时，让节点输出 [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/Api/ArticleDraft.cs)，并连接 articles.store。来源资源名与来源内的条目 ID 共同标识文章。例如 notebooks/a 和 notebooks/b 可以各自使用条目 ID 1。同一来源再次提交该条目时会更新内容、保留文章名称和已读状态。若数据包附有已登记的来源引用，入库会同时登记来源与文章的关联。
 
-每个随包交付的插件在 plugin.json 中声明小写的 `lazytuihub.plugin.<发布者>.<插件名>` ID。包名和源码根目录建议采用相应的 PascalCase 写法，例如 [LazyTuiHub.Plugin.TuiHub.Steam](../../plugins/LazyTuiHub.Plugin.TuiHub.Steam/)。将项目加入[宿主工程](../../src/LazyTuiHub/LazyTuiHub.csproj)的 BundledPlugin 列表即可随包交付。构建收集入口程序集、依赖及标记为输出的资源，冷启动时加载器按发行索引逐项读取已安装的 `plugins/<id>/plugin.json`。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md)说明版本约束和迁入独立仓库的方式。
+在独立仓库中使用 NuGet 开发插件时，直接引用 `LazyTuiHub.Sdk`。该包提供注册契约，并自动导入从项目声明生成嵌入清单的构建目标。需要在 ClientGui 入口注册页面时，再引用 `LazyTuiHub.Sdk.Avalonia`。将 Avalonia 类型放在 GUI 入口和视图中，同一 DLL 的其他入口即可在 CLI 和服务端使用。
+
+每个插件根目录只有一个项目，默认按包含发布者的完整插件 ID 取点分 PascalCase 项目名。.NET SDK 默认将项目名用于 AssemblyName 和 RootNamespace。插件自有类型使用该根命名空间，例如游戏插件公开 LazyTuiHub.Plugin.TuiHub.Games.GameEntry。项目通过 `$(RootNamespace)` 引用入口类型。插件作者在[项目文件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj)中声明 PluginId、Title、可选的 PluginVersion 及 PluginEntryPoint。Server 注册服务端业务，Client 注册客户端共用操作，ClientGui 和 ClientCli 各自注册界面交互。宿主通过 BundledPlugin 选择发行成员，构建生成 DLL 内的清单和发行索引。代码通过注册上下文的 Id 或生成的 PluginProject.Id 获取身份。NuGet 包名可通过 PackageId 单独修改。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md)
+
+报表插件可以引用文章库，并在游戏库可用时显示统计。文章项目改名或迁出后，可调整引用路径；修改其 PluginId 后重新构建，报表会取得新 ID。改用 NuGet 包时，把 PluginRelation 放在 PackageReference 上，构建从包中读取目标身份。只在运行时使用对方时，可用 PluginReference 直接引用其稳定 ID。
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="../Articles/Articles.csproj" PluginRelation="Requires" />
+  <PluginReference Include="lazytuihub.plugin.tuihub.games"
+                   PluginRelation="CompatibleWith" PluginVersionRange="[1.0.0,2.0.0)" />
+</ItemGroup>
+```
+
+宿主先调用文章插件的入口，再调用报表插件的入口。即使游戏插件也声明了对报表插件的兼容范围，两者仍可按任意顺序启动。报表插件在用户打开游戏统计时再获取游戏能力。游戏插件缺席或停用时，报表仍可启动。若启用的游戏插件版本为 2.0.0，宿主会阻止报表插件启动，并报告所需范围及实际版本。
 
 ## 端口与执行计划
 
-NodeRegistry.Register 接收具名、有类型的输入／输出声明和一个异步执行函数，每类端口可以为任意数量，包括零。连线记录 source、sourcePort、target、targetPort，数据类型与交付方式必须严格一致，object 不作为接收任意类型的端口。输出可以未连接，每个已声明输入需要生产者。
+NodeRegistration.Register 接收具名、有类型的输入／输出声明和一个异步执行函数，每类端口可以为任意数量，包括零。连线记录 source、sourcePort、target、targetPort，数据类型与交付方式必须严格一致，object 不作为接收任意类型的端口。输出可以未连接，每个已声明输入需要生产者。
 
 计划器合并插件节点必需的资源和工作流节点在 `requires` 数组里追加的需求，再与各实例独立登记的资源匹配。例如，`articles.store` 要求 `workspace.primary`，摘要工作流可以要求 `compute.batch`。图中只需填写逻辑节点、设置、需求和连线。计划列出每一步的需求、候选实例和无法读取清单的对端。运行已保存的定义时重新生成计划。保存时会保留缺少能力的定义并返回诊断。
 

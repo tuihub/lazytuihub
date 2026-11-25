@@ -1,12 +1,12 @@
 using System.Net;
 using System.Text.Json;
-using LazyTuiHub.Games;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Plugin.TuiHub.Games;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LazyTuiHub.Steam;
+namespace LazyTuiHub.Plugin.TuiHub.Steam;
 
-public sealed class SteamPlugin() : GameProviderPlugin("steam")
+internal sealed class SteamPlugin() : GameProviderPlugin("steam")
 {
     private const string Store = "https://store.steampowered.com";
 

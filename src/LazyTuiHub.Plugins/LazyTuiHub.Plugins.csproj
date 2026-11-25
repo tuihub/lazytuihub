@@ -3,7 +3,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../LazyTuiHub.PluginSdk/LazyTuiHub.PluginSdk.csproj" />
+    <InternalsVisibleTo Include="LazyTuiHub.Tests" />
+    <ProjectReference Include="../LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="NuGet.Versioning" Version="7.0.0" />
   </ItemGroup>

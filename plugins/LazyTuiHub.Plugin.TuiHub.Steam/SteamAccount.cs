@@ -1,8 +1,8 @@
 using System.Globalization;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 using Microsoft.Extensions.Configuration;
 
-namespace LazyTuiHub.Steam;
+namespace LazyTuiHub.Plugin.TuiHub.Steam;
 
 internal sealed class SteamAccount(IConfiguration config) : GameAccountProvider
 {

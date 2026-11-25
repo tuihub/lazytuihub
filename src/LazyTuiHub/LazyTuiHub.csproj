@@ -12,20 +12,17 @@
     <ProjectReference Include="../LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
     <ProjectReference Include="../LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
     <ProjectReference Include="../LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
-    <PackageReference Include="Grpc.AspNetCore.Server" Version="2.85.0" />
     <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="10.0.15" />
   </ItemGroup>
   <ItemGroup>
-    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/LazyTuiHub.Plugin.TuiHub.Core.csproj" Required="true" />
-    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
-    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Core/LazyTuiHub.Plugin.TuiHub.Core.csproj" Required="true" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
     <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite.csproj" Required="true" />
-    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/LazyTuiHub.Plugin.TuiHub.Articles.Desktop.csproj" />
-    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/runtime/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
     <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Steam/LazyTuiHub.Plugin.TuiHub.Steam.csproj" />
     <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Bangumi/LazyTuiHub.Plugin.TuiHub.Bangumi.csproj" />
     <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Vndb/LazyTuiHub.Plugin.TuiHub.Vndb.csproj" />
-    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/desktop/LazyTuiHub.Plugin.TuiHub.Games.Desktop.csproj" />
   </ItemGroup>
   <Import Project="BundlePlugins.targets" />
 </Project>

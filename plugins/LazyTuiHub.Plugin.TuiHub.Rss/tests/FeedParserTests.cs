@@ -1,7 +1,7 @@
 using System.Text;
 using System.Xml;
 using LazyTuiHub.Framework;
-using LazyTuiHub.Rss;
+using LazyTuiHub.Plugin.TuiHub.Rss;
 using Xunit;
 
 namespace LazyTuiHub.Tests;

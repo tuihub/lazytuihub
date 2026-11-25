@@ -1,12 +1,12 @@
 using System.Globalization;
-using LazyTuiHub.Games;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Plugin.TuiHub.Games;
+using LazyTuiHub.Sdk;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LazyTuiHub.Vndb;
+namespace LazyTuiHub.Plugin.TuiHub.Vndb;
 
-public sealed class VndbPlugin() : SqliteGameProvider("vndb")
+internal sealed class VndbPlugin() : SqliteGameProvider("vndb")
 {
     public override void Configure(PluginRegistration registration)
     {

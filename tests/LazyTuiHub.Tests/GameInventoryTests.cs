@@ -1,5 +1,5 @@
 using LazyTuiHub.Framework;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

@@ -1,10 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PluginId>lazytuihub.plugin.tuihub.vndb</PluginId>
+    <Title>VNDB</Title>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Games/sdk/LazyTuiHub.Plugin.TuiHub.Games.Sdk.csproj" />
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PluginEntryPoint Include="Server" Type="$(RootNamespace).VndbPlugin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Plugin.TuiHub.Games/LazyTuiHub.Plugin.TuiHub.Games.csproj"
+                      PluginRelation="Requires" PluginVersionRange="[1.0.0,2.0.0)" />
   </ItemGroup>
 </Project>

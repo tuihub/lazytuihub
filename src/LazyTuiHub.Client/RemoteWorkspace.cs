@@ -1,5 +1,8 @@
 using System.Net.Http.Headers;
 using LazyTuiHub.Interaction;
+using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Client;
 
@@ -8,9 +11,7 @@ public sealed class RemoteWorkspace : IDisposable
     private readonly HttpClient http;
     private readonly SessionHandler handler;
     public ClientSession Session { get; }
-    public ArticleOperations Articles { get; }
-    public FeedOperations Feeds { get; }
-    public CapabilityCatalog Catalog { get; }
+    private readonly PluginAssemblies assemblies;
 
     public RemoteWorkspace(string endpoint, string? session, string? account, HttpClientHandler? transport = null)
     {
@@ -28,17 +29,26 @@ public sealed class RemoteWorkspace : IDisposable
         http = new HttpClient(handler, disposeHandler: false) { BaseAddress = address };
         if (!string.IsNullOrEmpty(account))
             http.DefaultRequestHeaders.Add("X-LazyTuiHub-Account", account);
-        Articles = new(new ArticleHttpClient(http));
-        Feeds = new(new RssHttpClient(http));
-        Catalog = new([
-            CapabilityGroup.For("access", () => new Sessions(http, Session)),
-            CapabilityGroup.For("articles", () => Articles),
-            CapabilityGroup.For("rss", () => Feeds),
-        ]);
+        assemblies = new();
+    }
+
+    public IReadOnlyList<(string Owner, DeclaredPage Page)> Configure(
+        IServiceCollection services,
+        string directory,
+        FrontendKind frontend,
+        Action<string> report
+    )
+    {
+        services.AddSingleton(http);
+        services.AddSingleton(Session);
+        services.AddSingleton(CapabilityGroup.For("access", () => new Sessions(http, Session)));
+        services.AddSingleton(provider => new CapabilityCatalog(provider.GetServices<CapabilityGroup>()));
+        return FrontendEntryPoints.ConfigureRemote(assemblies, directory, frontend, services, ["access"], report);
     }
 
     public void Dispose()
     {
+        assemblies.Dispose();
         http.Dispose();
         handler.Dispose();
     }

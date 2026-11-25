@@ -1,0 +1,9 @@
+{
+  "namespace": "LazyTuiHub.Plugin.TuiHub.Articles.Frontend",
+  "service": "ArticleService",
+  "className": "ArticleHttpClient",
+  "exceptionClass": "ArticleApiException",
+  "additionalNamespaceUsages": [
+    "LazyTuiHub.Api.Articles.V1"
+  ]
+}

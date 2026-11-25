@@ -1,11 +1,11 @@
 using System.Globalization;
 using LazyTuiHub.Dao;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LazyTuiHub.Storage.Sqlite;
+namespace LazyTuiHub.Plugin.TuiHub.Storage.Sqlite;
 
-public sealed class SqliteStoragePlugin : IApplicationPlugin
+internal sealed class SqliteStoragePlugin : IApplicationPlugin
 {
     private static readonly TimeSpan DefaultCleanupInterval = TimeSpan.FromMinutes(1);
 

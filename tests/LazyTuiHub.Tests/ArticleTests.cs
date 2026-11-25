@@ -1,10 +1,11 @@
 using Grpc.Core;
-using LazyTuiHub.Api;
-using LazyTuiHub.Api.Articles;
-using LazyTuiHub.Articles;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Nodes;
+using LazyTuiHub.Plugin.TuiHub.Articles;
+using LazyTuiHub.Plugin.TuiHub.Articles.Api;
+using LazyTuiHub.Plugin.TuiHub.Rss.Api;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -23,7 +24,7 @@ public sealed class ArticleTests
         var workflows = app.Services.GetRequiredService<WorkflowRuntime>();
         var api = app.Services.GetRequiredService<IArticleApi>();
         var token = TestContext.Current.CancellationToken;
-        StreamNodes.Source<ArticleDraft>(workflows.Registry, "notes.emit", "notes", (context, _) =>
+        StreamNodes.Source<ArticleDraft>(workflows.Registry.Registration, "notes.emit", "notes", (context, _) =>
             new[] { new DataPacket<ArticleDraft>((ArticleDraft)context.Run.Input!) }.ToAsyncEnumerable()
         );
         workflows.Save(
@@ -72,7 +73,7 @@ public sealed class ArticleTests
         Assert.Contains("articles.store", error.Status.Detail);
         Assert.Equal(feed, await rss.GetFeedAsync(new() { Name = feed.Name }, token));
         var workflows = app.Services.GetRequiredService<WorkflowRuntime>();
-        StreamNodes.Source<HttpDocument>(workflows.Registry, "fixture.feed", "fixture", (_, _) =>
+        StreamNodes.Source<HttpDocument>(workflows.Registry.Registration, "fixture.feed", "fixture", (_, _) =>
             new[]
             {
                 new DataPacket<HttpDocument>(
@@ -84,7 +85,7 @@ public sealed class ArticleTests
                 ),
             }.ToAsyncEnumerable()
         );
-        StreamNodes.RegisterOutput<ArticleDraft>(workflows.Registry, "fixture.drafts", "fixture");
+        StreamNodes.RegisterOutput<ArticleDraft>(workflows.Registry.Registration, "fixture.drafts", "fixture");
         workflows.Save(
             new(
                 "fixture.parse",

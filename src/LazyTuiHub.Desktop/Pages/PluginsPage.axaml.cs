@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk.Avalonia;
 using Microsoft.Extensions.Logging;
 
 namespace LazyTuiHub.Desktop;

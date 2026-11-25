@@ -1,9 +1,0 @@
-{
-  "id": "lazytuihub.plugin.tuihub.vndb",
-  "name": "VNDB",
-  "assembly": "LazyTuiHub.Plugin.TuiHub.Vndb.dll",
-  "entryType": "LazyTuiHub.Vndb.VndbPlugin",
-  "requires": [
-    "lazytuihub.plugin.tuihub.games"
-  ]
-}

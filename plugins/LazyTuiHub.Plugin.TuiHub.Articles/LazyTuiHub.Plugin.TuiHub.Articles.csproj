@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PluginId>lazytuihub.plugin.tuihub.articles</PluginId>
+    <Title>Article Library</Title>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+    <PluginProtoRoot>Api/Protos</PluginProtoRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <PluginEntryPoint Include="Server" Type="$(RootNamespace).ArticlePlugin" />
+    <PluginEntryPoint Include="Client" Type="$(RootNamespace).ArticlesClient" />
+    <PluginEntryPoint Include="ClientGui" Type="$(RootNamespace).Desktop.ArticleDesktopPlugin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk.Avalonia/LazyTuiHub.Sdk.Avalonia.csproj" />
+    <ProjectReference Include="../../src/LazyTuiHub.Sdk/LazyTuiHub.Sdk.csproj" />
+  </ItemGroup>
+  <Import Project="../../src/LazyTuiHub.Api/ProtoContracts.props" />
+</Project>

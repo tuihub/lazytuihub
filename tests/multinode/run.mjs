@@ -16,6 +16,10 @@ const platform = process.env.TEST_APP_PLATFORM || process.env.DOCKER_DEFAULT_PLA
 const [os, arch] = platform.split('/');
 const rid = os + '-' + (arch === 'amd64' ? 'x64' : arch);
 publishHost(rid, publish.path);
+const distribution = JSON.parse(await readFile(path.join(publish.path, 'plugins/plugins.json'), 'utf8'));
+const workerCore = distribution.find(plugin => plugin.id === 'lazytuihub.plugin.tuihub.core');
+assert.ok(workerCore, 'The worker fixture requires the distributed core plugin.');
+await writeFile(path.join(publish.path, 'worker-plugins.json'), JSON.stringify([workerCore]));
 const {runtimeOptions} = JSON.parse(await readFile(path.join(publish.path, 'LazyTuiHub.runtimeconfig.json'), 'utf8'));
 const runtime = runtimeOptions.includedFrameworks.find(framework => framework.name === 'Microsoft.NETCore.App');
 const env = {...process.env, TEST_APP_PLATFORM: platform, DOTNET_RUNTIME_TAG: runtime.version.split('.').slice(0, 2).join('.'), TEST_PUBLISH_DIR: publish.path,

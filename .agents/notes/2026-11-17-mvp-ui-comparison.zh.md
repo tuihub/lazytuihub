@@ -44,7 +44,7 @@ Cupertino 版本现显式导出隐式样式；先前只加载资源，未实际�
 
 首轮产品实现已将 Avalonia 12.1.6 纳入主解决方案。[桌面指南](../../docs/development/desktop-mvp.zh.md) 提供命令与范围。`mise run run:desktop` 在单进程内启动 .NET 通用宿主和 Avalonia 窗口，既有 CLI／Web 入口继续可用。共用装配提供相同的插件运行时、服务、SQLite 工作区、数据保护密钥和后台任务。桌面激活不映射 HTTP 端点，也不启动监听；服务工作移出 UI 线程，阅读器通过 IArticleApi 阅读，通过 IRssApi 管理订阅。
 
-LazyTuiHub.Desktop 负责应用外壳、按需装配页面、主题切换和工作流／插件检查器。桌面阅读器作为 `lazytuihub.plugin.tuihub.articles.desktop` 独立动态加载，依赖 `lazytuihub.plugin.tuihub.articles`，启用 RSS 时提供订阅操作；它负责阅读控件与状态，引用共用 API 契约，不引用 RSS 实现类型。业务服务、工作流执行、DAO 访问和插件元数据继续独立于 Avalonia。宿主将 UI DLL 作为发行产物构建，不在运行时引用其实现程序集。
+LazyTuiHub.Desktop 负责外壳、主题切换、工作流与插件检查器。文章插件通过同一 DLL 的 ClientGui 入口提供阅读器。阅读器使用文章契约，RSS 插件可注册订阅来源。宿主按页面声明创建视图。后端、DAO 和工作流可在无界面宿主中独立运行。
 
 PluginRegistration 现接受普通 DeclaredPage 身份／标题记录。框架将页面及所属插件写入元数据，包括激活前的声明，使关闭、缺失和依赖阻塞的插件仍可诊断。AddDesktopPage 同时添加声明和带键的控件工厂；外壳只在 UI 线程调用已激活插件的工厂。视图首次导航时创建，在当前窗口内缓存。工厂创建新的控件实例，插件自己的模型在窗口替换时保留状态。共享程序集基线维持 Avalonia 与契约类型身份。这是暂定的页面扩展边界，尚未形成通用导航或插件依赖平台。
 

@@ -6,7 +6,7 @@ using Avalonia.Input.Raw;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using LazyTuiHub.Desktop;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 using Xunit;
 
 namespace LazyTuiHub.Tests;

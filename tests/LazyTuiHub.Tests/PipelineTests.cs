@@ -21,7 +21,7 @@ public sealed class PipelineTests
         var slow = new List<Payload>();
         var produced = 0;
         var registry = new NodeRegistry();
-        StreamNodes.Source<Payload>(registry, "source", "first-business", (_, _) => payloads
+        StreamNodes.Source<Payload>(registry.Registration, "source", "first-business", (_, _) => payloads
                 .Select(payload =>
                 {
                     if (Interlocked.Increment(ref produced) == 3)
@@ -29,13 +29,13 @@ public sealed class PipelineTests
                     return new DataPacket<Payload>(payload);
                 })
                 .ToAsyncEnumerable());
-        StreamNodes.Sink<Payload>(registry, "slow", "second-business", async (packet, _, token) =>
+        StreamNodes.Sink<Payload>(registry.Registration, "slow", "second-business", async (packet, _, token) =>
         {
             entered.TrySetResult();
             await release.Task.WaitAsync(token);
             slow.Add(packet.Value);
         });
-        StreamNodes.Sink<Payload>(registry, "fast", "third-business", (packet, _, _) =>
+        StreamNodes.Sink<Payload>(registry.Registration, "fast", "third-business", (packet, _, _) =>
         {
             fast.Add(packet.Value);
             return ValueTask.CompletedTask;
@@ -77,13 +77,13 @@ public sealed class PipelineTests
     {
         using var stopping = new CancellationTokenSource(DeadlockGuard);
         var registry = new NodeRegistry();
-        StreamNodes.Source<string>(registry, "source", "test", (_, _) =>
+        StreamNodes.Source<string>(registry.Registration, "source", "test", (_, _) =>
             Enumerable.Repeat(new DataPacket<string>("item"), 100).ToAsyncEnumerable()
         );
-        StreamNodes.Sink<string>(registry, "fail", "test", (_, _, _) =>
+        StreamNodes.Sink<string>(registry.Registration, "fail", "test", (_, _, _) =>
             ValueTask.FromException(new InvalidOperationException("broken node"))
         );
-        StreamNodes.Sink<string>(registry, "blocked", "test", async (_, _, token) =>
+        StreamNodes.Sink<string>(registry.Registration, "blocked", "test", async (_, _, token) =>
             await Task.Delay(Timeout.Infinite, token)
         );
         var definition = new PipelineDefinition(
@@ -113,11 +113,11 @@ public sealed class PipelineTests
         var received = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var values = new List<string>();
         var registry = new NodeRegistry();
-        StreamNodes.Source<string>(registry, "first", "test", (_, _) =>
+        StreamNodes.Source<string>(registry.Registration, "first", "test", (_, _) =>
             new[] { new DataPacket<string>("first") }.ToAsyncEnumerable()
         );
-        StreamNodes.Source<string>(registry, "second", "test", (_, token) => Delayed(token));
-        StreamNodes.Sink<string>(registry, "sink", "test", (packet, _, _) =>
+        StreamNodes.Source<string>(registry.Registration, "second", "test", (_, token) => Delayed(token));
+        StreamNodes.Sink<string>(registry.Registration, "sink", "test", (packet, _, _) =>
         {
             values.Add(packet.Value);
             received.TrySetResult();
@@ -148,16 +148,16 @@ public sealed class PipelineTests
     {
         var started = false;
         var registry = new NodeRegistry();
-        StreamNodes.Source<string>(registry, "source", "test", (_, _) =>
+        StreamNodes.Source<string>(registry.Registration, "source", "test", (_, _) =>
         {
             started = true;
             return new[] { new DataPacket<string>("text") }.ToAsyncEnumerable();
         });
-        StreamNodes.Transform<string, string>(registry, "pass", "test", (packet, _, _) =>
+        StreamNodes.Transform<string, string>(registry.Registration, "pass", "test", (packet, _, _) =>
             new[] { packet }.ToAsyncEnumerable()
         );
-        StreamNodes.Sink<Uri>(registry, "uri", "test", (_, _, _) => ValueTask.CompletedTask);
-        StreamNodes.Sink<string>(registry, "sink", "test", (_, _, _) => ValueTask.CompletedTask);
+        StreamNodes.Sink<Uri>(registry.Registration, "uri", "test", (_, _, _) => ValueTask.CompletedTask);
+        StreamNodes.Sink<string>(registry.Registration, "sink", "test", (_, _, _) => ValueTask.CompletedTask);
         var runner = new PipelineRunner(registry);
         await Assert.ThrowsAsync<ArgumentException>(() =>
             runner.RunAsync(
@@ -201,8 +201,8 @@ public sealed class PipelineTests
         var reference = new DataReference("example.payload", "42");
         DataPacket? captured = null;
         var registry = new NodeRegistry();
-        StreamNodes.RegisterOutput<Payload>(registry, "capture", "tests");
-        StreamNodes.Source<Payload>(registry, "source", "business", (_, _) =>
+        StreamNodes.RegisterOutput<Payload>(registry.Registration, "capture", "tests");
+        StreamNodes.Source<Payload>(registry.Registration, "source", "business", (_, _) =>
             new[] { new DataPacket<Payload>(payload, reference) }.ToAsyncEnumerable()
         );
         var runner = new PipelineRunner(registry);

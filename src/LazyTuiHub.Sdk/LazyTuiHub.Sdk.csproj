@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Interaction/LazyTuiHub.Interaction.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Remove="build/**/*.cs" />
+    <None Include="build/**/*.cs" Pack="true" PackagePath="build/%(Filename)%(Extension)" />
+    <None Update="build/*.targets" Pack="true" PackagePath="build/%(Filename)%(Extension)" />
+    <InternalsVisibleTo Include="LazyTuiHub.Plugins" />
+  </ItemGroup>
+</Project>

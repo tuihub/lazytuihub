@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
     <ProjectReference Include="../LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Sdk.Avalonia/LazyTuiHub.Sdk.Avalonia.csproj" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
     <PackageReference Include="Devolutions.AvaloniaTheme.MacOS" Version="2026.11.5" />

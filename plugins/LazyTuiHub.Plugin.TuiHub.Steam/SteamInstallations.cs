@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using LazyTuiHub.Games;
+using LazyTuiHub.Plugin.TuiHub.Games;
 
-namespace LazyTuiHub.Steam;
+namespace LazyTuiHub.Plugin.TuiHub.Steam;
 
 internal sealed partial class SteamInstallations : IInstallationScanner
 {

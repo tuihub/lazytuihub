@@ -7,14 +7,14 @@ public static class StreamNodes
     public const string Input = "input";
     public const string Output = "output";
 
-    public static void RegisterOutput<T>(NodeRegistry registry, string type, string module)
+    public static void RegisterOutput<T>(NodeRegistration registry, string type, string module)
         where T : notnull =>
         Sink<T>(registry, type, module, (packet, context, token) =>
             context.Run.Output?.Invoke(packet, token) ?? ValueTask.CompletedTask
         );
 
     public static void Source<T>(
-        NodeRegistry registry,
+        NodeRegistration registry,
         string type,
         string module,
         Func<NodeContext, CancellationToken, IAsyncEnumerable<DataPacket<T>>> run,
@@ -31,7 +31,7 @@ public static class StreamNodes
         );
 
     public static void Transform<TInput, TOutput>(
-        NodeRegistry registry,
+        NodeRegistration registry,
         string type,
         string module,
         Func<DataPacket<TInput>, NodeContext, CancellationToken, IAsyncEnumerable<DataPacket<TOutput>>> run
@@ -52,7 +52,7 @@ public static class StreamNodes
         );
 
     public static void Sink<T>(
-        NodeRegistry registry,
+        NodeRegistration registry,
         string type,
         string module,
         Func<DataPacket<T>, NodeContext, CancellationToken, ValueTask> run

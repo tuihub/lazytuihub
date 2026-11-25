@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
+  </ItemGroup>
+</Project>

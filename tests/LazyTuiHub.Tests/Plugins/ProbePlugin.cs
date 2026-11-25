@@ -1,5 +1,5 @@
 using LazyTuiHub.Framework;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LazyTuiHub.Tests;

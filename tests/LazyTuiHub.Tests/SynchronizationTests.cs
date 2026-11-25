@@ -15,7 +15,7 @@ public sealed class SynchronizationTests
     {
         var groups = new List<(string Key, int Left, int Right)>();
         var registry = new NodeRegistry();
-        registry.Register(
+        registry.Registration.Register(
             new("source", "test", [], [PortDescriptor.Sync<int>("a"), PortDescriptor.Sync<int>("b")]),
             async (context, token) =>
             {
@@ -27,7 +27,7 @@ public sealed class SynchronizationTests
                 await context.WriteAsync("b", 4, token, messageKey: "x");
             }
         );
-        registry.Register(
+        registry.Registration.Register(
             new("sink", "test", [PortDescriptor.Sync<int>("left"), PortDescriptor.Sync<int>("right")], []),
             async (context, _) =>
             {
@@ -50,14 +50,19 @@ public sealed class SynchronizationTests
         stopping.CancelAfter(TimeSpan.FromSeconds(30));
         var seen = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var registry = new NodeRegistry();
-        registry.Register(new("source", "test", [], [PortDescriptor.Sync<int>("a")]), async (context, token) =>
-        {
-            await context.WriteAsync("a", 1, token, messageKey: "missing");
-            await seen.Task.WaitAsync(token);
-            await Task.Delay(Timeout.InfiniteTimeSpan, token);
-        });
-        registry.Register(new("empty", "test", [], [PortDescriptor.Sync<int>("b")]), (_, _) => Task.CompletedTask);
-        registry.Register(
+        registry.Registration.Register(
+            new("source", "test", [], [PortDescriptor.Sync<int>("a")]),
+            async (context, token) =>
+            {
+                await context.WriteAsync("a", 1, token, messageKey: "missing");
+                await seen.Task.WaitAsync(token);
+                await Task.Delay(Timeout.InfiniteTimeSpan, token);
+            }
+        );
+        registry.Registration.Register(new("empty", "test", [], [PortDescriptor.Sync<int>("b")]), (_, _) =>
+            Task.CompletedTask
+        );
+        registry.Registration.Register(
             new("sink", "test", [PortDescriptor.Sync<int>("left"), PortDescriptor.Sync<int>("right")], []),
             async (context, _) =>
             {
@@ -95,7 +100,7 @@ public sealed class SynchronizationTests
     {
         using var stopping = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var registry = new NodeRegistry();
-        registry.Register(
+        registry.Registration.Register(
             new("source", "test", [], [PortDescriptor.Sync<int>("a"), PortDescriptor.Sync<int>("b")]),
             async (context, token) =>
             {
@@ -103,7 +108,7 @@ public sealed class SynchronizationTests
                 await Task.Delay(Timeout.InfiniteTimeSpan, token);
             }
         );
-        registry.Register(
+        registry.Registration.Register(
             new("sink", "test", [PortDescriptor.Sync<int>("left"), PortDescriptor.Sync<int>("right")], []),
             async (context, _) =>
             {
@@ -128,16 +133,16 @@ public sealed class SynchronizationTests
     public void PlanningRequiresMatchingPortTypesModesAndNames()
     {
         var registry = new NodeRegistry();
-        registry.Register(new("source", "test", [], [PortDescriptor.Stream<string>("text")]), (_, _) =>
+        registry.Registration.Register(new("source", "test", [], [PortDescriptor.Stream<string>("text")]), (_, _) =>
             Task.CompletedTask
         );
-        registry.Register(new("wide", "test", [PortDescriptor.Stream<object>("input")], []), (_, _) =>
+        registry.Registration.Register(new("wide", "test", [PortDescriptor.Stream<object>("input")], []), (_, _) =>
             Task.CompletedTask
         );
-        registry.Register(new("sync", "test", [PortDescriptor.Sync<string>("input")], []), (_, _) =>
+        registry.Registration.Register(new("sync", "test", [PortDescriptor.Sync<string>("input")], []), (_, _) =>
             Task.CompletedTask
         );
-        registry.Register(new("exact", "test", [PortDescriptor.Stream<string>("input")], []), (_, _) =>
+        registry.Registration.Register(new("exact", "test", [PortDescriptor.Stream<string>("input")], []), (_, _) =>
             Task.CompletedTask
         );
         var planner = new PipelinePlanner(registry, ExecutionTopology.Standalone.LocalInventory);
@@ -163,12 +168,17 @@ public sealed class SynchronizationTests
         using var stopping = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         stopping.CancelAfter(TimeSpan.FromSeconds(30));
         var registry = new NodeRegistry();
-        registry.Register(new("source", "test", [], [PortDescriptor.Stream<int>("output")]), async (context, token) =>
-        {
-            for (var value = 0; value < 10; value++)
-                await context.WriteAsync("output", value, token);
-        });
-        registry.Register(new("sink", "test", [PortDescriptor.Stream<int>("input")], []), (_, _) => Task.CompletedTask);
+        registry.Registration.Register(
+            new("source", "test", [], [PortDescriptor.Stream<int>("output")]),
+            async (context, token) =>
+            {
+                for (var value = 0; value < 10; value++)
+                    await context.WriteAsync("output", value, token);
+            }
+        );
+        registry.Registration.Register(new("sink", "test", [PortDescriptor.Stream<int>("input")], []), (_, _) =>
+            Task.CompletedTask
+        );
         var error = await Assert.ThrowsAsync<PipelineExecutionException>(() =>
             new PipelineRunner(registry).RunAsync(
                 new PipelineDefinition(

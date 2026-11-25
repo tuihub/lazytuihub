@@ -1,5 +1,6 @@
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +16,9 @@ internal static class PluginTestHost
         string? directory = null,
         Dictionary<string, string?>? configuration = null,
         ResourceAccess? access = null,
-        Action<IServiceCollection>? configure = null
+        Action<IServiceCollection>? configure = null,
+        IReadOnlyList<PluginSpec>? specs = null,
+        FrontendKind frontend = FrontendKind.None
     )
     {
         var builder = WebApplication.CreateBuilder();
@@ -29,9 +32,13 @@ internal static class PluginTestHost
             new SqliteDatabase(database),
             builder.Configuration,
             directory ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
-            access
+            access,
+            frontend: frontend
         );
-        plugins.Configure(builder.Services);
+        if (specs is null)
+            plugins.Configure(builder.Services);
+        else
+            plugins.Configure(builder.Services, specs);
         builder.Services.AddSingleton(_ => plugins);
         builder.Services.AddSingleton(plugins.Workflows);
         builder.Services.AddSingleton(plugins.Retention);

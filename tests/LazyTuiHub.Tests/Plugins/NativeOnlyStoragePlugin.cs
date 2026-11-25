@@ -1,5 +1,5 @@
 using LazyTuiHub.Dao;
-using LazyTuiHub.Plugins;
+using LazyTuiHub.Sdk;
 
 namespace LazyTuiHub.Tests;
 

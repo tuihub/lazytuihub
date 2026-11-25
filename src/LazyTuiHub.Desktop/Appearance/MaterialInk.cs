@@ -5,6 +5,7 @@ using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using LazyTuiHub.Sdk.Avalonia;
 
 namespace LazyTuiHub.Desktop;
 

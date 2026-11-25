@@ -1,0 +1,68 @@
+<Project>
+  <PropertyGroup Condition="'$(PluginVersion)' != ''">
+    <Version>$(PluginVersion)</Version>
+    <PackageVersion>$(PluginVersion)</PackageVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PluginId)' != ''">
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackPluginIdentity</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+  <Target Name="PackPluginIdentity">
+    <PropertyGroup>
+      <_PackageIdentity>$(IntermediateOutputPath)$(PackageId).props</_PackageIdentity>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_PackageIdentity)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="&lt;Project&gt;&lt;ItemGroup&gt;&lt;LazyTuiHubPackageIdentity Include=&quot;$(PackageId)&quot; PluginId=&quot;$(PluginId)&quot; /&gt;&lt;/ItemGroup&gt;&lt;/Project&gt;" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(_PackageIdentity)" PackagePath="build/$(PackageId).props" />
+      <FileWrites Include="$(_PackageIdentity)" />
+    </ItemGroup>
+  </Target>
+  <UsingTask TaskName="GeneratePluginDeclaration" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <Task>
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)GeneratePluginDeclaration.cs" />
+    </Task>
+  </UsingTask>
+
+  <Target Name="GetPluginIdentity" Returns="@(_DeclaredIdentity)">
+    <ItemGroup>
+      <_DeclaredIdentity Include="$(MSBuildProjectFullPath)" PluginId="$(PluginId)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PreparePluginDeclaration" BeforeTargets="PrepareResourceNames;CoreCompile" Condition="'$(PluginId)@(PluginEntryPoint)' != ''">
+    <PropertyGroup>
+      <_PluginOutput>$(IntermediateOutputPath)plugin/</_PluginOutput>
+    </PropertyGroup>
+    <ItemGroup>
+      <_DeclaredProject Include="@(ProjectReference)" Condition="'%(ProjectReference.PluginRelation)%(ProjectReference.PluginAlias)' != ''" />
+      <_DeclaredProject Include="@(PluginProjectReference)" />
+      <_DeclaredPackage Include="@(PackageReference)" Condition="'%(PackageReference.PluginRelation)%(PackageReference.PluginAlias)' != ''" />
+    </ItemGroup>
+    <MSBuild Projects="@(_DeclaredProject)" Targets="GetPluginIdentity" BuildInParallel="$(BuildInParallel)">
+      <Output TaskParameter="TargetOutputs" ItemName="_RelatedIdentity" />
+    </MSBuild>
+    <GeneratePluginDeclaration Id="$(PluginId)" DisplayName="$(Title)" PluginVersion="$(PluginVersion)"
+                               RootNamespace="$(RootNamespace)" Entries="@(PluginEntryPoint)" Projects="@(_DeclaredProject)"
+                               Identities="@(_RelatedIdentity)" Packages="@(_DeclaredPackage)" PackageIdentities="@(LazyTuiHubPackageIdentity)"
+                               References="@(PluginReference)" OutputDirectory="$(_PluginOutput)" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(_PluginOutput)plugin.json" LogicalName="LazyTuiHub.plugin.json" Type="Non-Resx" WithCulture="false" />
+      <Compile Include="$(_PluginOutput)PluginProject.g.cs" />
+      <FileWrites Include="$(_PluginOutput)plugin.json;$(_PluginOutput)PluginProject.g.cs" />
+    </ItemGroup>
+  </Target>
+  <Target Name="GetPluginPayload" DependsOnTargets="ResolveReferences;AssignTargetPaths" Returns="@(_Payload)">
+    <ItemGroup>
+      <_Payload Include="$(TargetPath)" PluginId="$(PluginId)" />
+      <_Payload Include="$(ProjectDepsFilePath)" />
+      <_Payload Include="@(ReferenceCopyLocalPaths)">
+        <PayloadPath>%(ReferenceCopyLocalPaths.DestinationSubDirectory)%(ReferenceCopyLocalPaths.Filename)%(ReferenceCopyLocalPaths.Extension)</PayloadPath>
+      </_Payload>
+      <_PluginContent Include="@(ContentWithTargetPath);@(_NoneWithTargetPath)" />
+      <_Payload Include="@(_PluginContent)" Condition="'%(_PluginContent.CopyToOutputDirectory)' != '' and '%(_PluginContent.CopyToOutputDirectory)' != 'Never'">
+        <PayloadPath>%(_PluginContent.TargetPath)</PayloadPath>
+      </_Payload>
+      <_Payload Update="@(_Payload)" PluginProject="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+  </Target>
+</Project>
