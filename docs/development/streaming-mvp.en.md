@@ -15,23 +15,26 @@ The [desktop MVP guide](desktop-mvp.en.md) covers the runnable Avalonia UI, real
 | Part | Responsibility |
 | - | - |
 | [Framework](../../src/LazyTuiHub.Framework/) | Generic data relationships, node/port registration, planning, asynchronous delivery, synchronized-input alignment, fan-out, backpressure, and cancellation. |
-| [Node library](../../src/LazyTuiHub.Nodes/) | Timer, HTTP fetch, typed output consumers, and helpers for common source/transform/sink patterns; uses ordinary core registration. |
+| [Node library](../../src/LazyTuiHub.Nodes/) | Common port types and helpers for source, transform and sink nodes. |
+| [Plugin SDK](../../src/LazyTuiHub.PluginSdk/) | Registration, workflow calls, optional capability lookup and lifecycle hooks. |
 | [Plugins](../../src/LazyTuiHub.Plugins/) | Trusted DLL composition, retained declarations/intent, workflow management, and task/hook invocation. |
 | [DAO toolkit](../../src/LazyTuiHub.Dao/) | Backend-neutral contracts, access requirements/capabilities, and namespaced table targets. |
-| [SQLite provider](../../src/LazyTuiHub.Storage.Sqlite/) | Required storage plugin supplying common JSON records/TTL, SQLite FTS5, native connections, and delegated cleanup. |
-| [Core plugin](../../src/LazyTuiHub.CorePlugin/) | Required distribution plugin for greetings and built-in node registration. |
-| [RSS plugin](../../src/LazyTuiHub.Rss/) | Subscriptions, scheduled fetching, fetch observations, and RSS/Atom parsing. |
-| [Articles](../../src/LazyTuiHub.Articles/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
+| [SQLite provider](../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/) | Required storage plugin supplying common JSON records/TTL, SQLite FTS5, native connections, and delegated cleanup. |
+| [Core plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/) | Required distribution plugin for greetings and built-in node registration. |
+| [RSS plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/) | Subscriptions, scheduled fetching, fetch observations, and RSS/Atom parsing. |
+| [Articles](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/) | Article ingestion from any source, storage, FTS5 search, read state and reading API. |
 | [Game library and providers](../../.agents/notes/2026-11-23-mvp-games.en.md) | Personal games, categories and sessions, with Steam, Bangumi and VNDB lookup and import workflows. |
 | [Host](../../src/LazyTuiHub/) | Startup, plugin/workflow/DAO CLI, desktop/web composition, shared DI infrastructure, and lifecycle. |
 | [CLI](../../src/LazyTuiHub.Cli/) | User-facing reader and subscription commands. Run `mise run run:cli -- --command articles --action list` locally or pass `--endpoint https://SERVER` for a remote account. The standalone publish runs without the server, database or GUI. [Win7 CLI evaluation](../../.agents/notes/2026-11-23-mvp-win7-cli.en.md) |
-| [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
+| [Desktop](../../src/LazyTuiHub.Desktop/) / [Article UI](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | Avalonia shell and diagnostics / reader using IArticleApi and optional RSS subscription controls. |
 
 PipelineDefinition represents processing relationships; DataReference and DataRelation identify persistent data and its associations. Each business plugin writes its own tables through BusinessStorage and returns data identities/relationship intent; the framework applies metadata and commits business rows, FTS updates, and metadata in one workspace transaction. BusinessStorage requires the workspace connection source explicitly; another store cannot join that transaction implicitly. Plugins must not modify framework tables. This is an ownership contract within a fully trusted process, without database permission isolation. These identities are separate from synchronized-input keys and do not implement a distributed object store.
 
 The rss.ingest graph connects builtin.timer, rss.feed-requests, builtin.http-fetch, rss.parse, articles.store, and articles.output. Another module may branch from parsing output without changing the runner. Reading and other direct RSS operations currently also use workflows; making workflows optional remains further work. Local and HTTP callers use IRssApi for subscriptions and IArticleApi for articles; fields, routes, pagination, deduplication, and errors are described in the [generated API reference](../api/index.md).
 
-To connect another source, emit [ArticleDraft](../../src/LazyTuiHub.Api/Articles/ArticleDraft.cs) and connect the output to articles.store. The source resource name and its entry ID identify the article together. For example, notebooks/a and notebooks/b can both use entry ID 1. Repeating an entry updates its content and preserves its article name and read state. A packet carrying a registered origin reference also records the relationship in the same transaction.
+To connect another source, emit [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/ArticleDraft.cs) and connect the output to articles.store. The source resource name and its entry ID identify the article together. For example, notebooks/a and notebooks/b can both use entry ID 1. Repeating an entry updates its content and preserves its article name and read state. A packet carrying a registered origin reference also records the relationship in the same transaction.
+
+A bundled plugin declares its lowercase `lazytuihub.plugin.<publisher>.<name>` ID in plugin.json. Prefer the corresponding PascalCase package and source root, for example [LazyTuiHub.Plugin.TuiHub.Steam](../../plugins/LazyTuiHub.Plugin.TuiHub.Steam/). Add the project to BundledPlugin in the [host project](../../src/LazyTuiHub/LazyTuiHub.csproj) to include it in the distribution. The build collects the entry assembly, dependencies and content marked for output. At cold startup the loader reads the distribution’s selection and the installed `plugins/<id>/plugin.json` for each selected ID. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) describes version constraints and extracting a plugin into another repository.
 
 ## Ports and execution plans
 
@@ -41,7 +44,7 @@ The planner combines each node descriptor's required resource with any extra res
 
 ## Running across instances
 
-Use `mise run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration.
+Use `mise run test:multinode` with a running Docker engine and Compose. It publishes the host, runs the scenarios on isolated networks, writes observations to `.local/multinode/result.json`, and removes the containers, networks, and test volume. The [Compose fixture](../../tests/multinode/compose.yaml) shows the complete configuration. Set `TEST_APP_PLATFORM=linux/amd64` when the cached .NET image is AMD64 on an ARM64 engine. This selects the RID and platform for the application nodes only.
 
 | Setting | Purpose |
 | --- | --- |
@@ -108,20 +111,20 @@ mise run run -- --database .local/account/workspace.db --command access --action
 mise run run -- --database .local/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
 ```
 
-The terminal hides the password prompt input. Supply the session token from the response through `Access__Session` for administration on the primary, local CLI, or the desktop app. Remote requests use the Bearer token in the `Authorization` header and select the user's own account by default. To access a shared resource, select its account with `X-LazyTuiHub-Account`. To share a subscription, set `--uri` to `lazytuihub://rss/accounts/ACCOUNT_ID/feeds/FEED_ID` and grant `read`. Revoke a grant using `--action revoke` with the same URI and username. Revoke a remote session with `--action logout` and the same HTTPS endpoint.
+The terminal hides the password prompt input. Supply the session token from the response through `Access__Session` for administration on the primary, local CLI, or the desktop app. Remote requests use the Bearer token in the `Authorization` header and select the user's own account by default. To access a shared resource, select its account with `X-LazyTuiHub-Account`. To share a subscription, set `--uri` to `lazytuihub://lazytuihub.plugin.tuihub.rss/accounts/ACCOUNT_ID/feeds/FEED_ID` and grant `read`. Revoke a grant using `--action revoke` with the same URI and username. Revoke a remote session with `--action logout` and the same HTTPS endpoint.
 
 In account mode, the coordinator selects a fetcher using both its advertised resources and the user's write access to its job endpoint. Use the configured instance ID for `--device`. A standalone instance uses `local`. Article writes follow the workspace binding and require write access to the article collection. Workers in this workflow also use `Access__Enabled=true`. [Account and URI authorization Note](../../.agents/notes/2026-11-19-mvp-account-identity.en.md) · [Session API](../api/operations/SessionService_AuthenticateUser.md)
 
 ## Cold-start plugins
 
-The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish stage core, rss, articles, articles.desktop, and storage.sqlite entry DLLs with their dependency descriptions. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
+The host loads an explicit manifest at plugins/plugins.json under its application output; --plugin-directory DIR selects another directory. Build and publish place each selected entry DLL and its dependencies in `plugins/<id>/`. Plugins share the host dependency baseline and default assembly context. Additional plugin dependencies must be deployed with the plugin; this prototype has no private dependency versions, native-deployment system, hot reload, or sandbox. The [plugin Note](../../.agents/notes/2026-11-17-mvp-plugins.en.md) records the boundary and research.
 
 ```sh
 mise run run -- --database .local/rss/workspace.db --command plugins --action list
-mise run run -- --database .local/rss/workspace.db --command plugins --action inspect --plugin rss
-mise run run -- --database .local/rss/workspace.db --command plugins --action disable --plugin rss
-mise run run -- --database .local/rss/workspace.db --command plugins --action enable --plugin rss
-mise run run -- --database .local/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
+mise run run -- --database .local/rss/workspace.db --command plugins --action inspect --plugin lazytuihub.plugin.tuihub.rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action disable --plugin lazytuihub.plugin.tuihub.rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action enable --plugin lazytuihub.plugin.tuihub.rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action configure --plugin lazytuihub.plugin.tuihub.rss --file ./rss-settings.json
 ```
 
 Changes apply on restart. list separates saved enablement, file availability, activation, and task eligibility; inspect includes retained node/port/data-type and DAO declarations plus opaque settings. RSS settings may contain {"refreshInterval":"00:05:00","detailRetention":"7.00:00:00"}; unknown fields survive. detailRetention is optional and defaults to null (permanent). A positive duration sets expiry on new fetch observations; changing it leaves existing rows unchanged. The interval initializes new default graphs and controls retry delay; edit an existing timer node's settings to change its cadence. Stored graphs take precedence over new defaults.
@@ -148,8 +151,8 @@ mise run run -- --database .local/rss/workspace.db --command rss --action detail
 mise run run -- --database .local/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
 mise run run -- --database .local/rss/workspace.db --command dao --action list
 mise run run -- --database .local/rss/workspace.db --command dao --action clean
-mise run run -- --database .local/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
-mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command dao --action pause --owner lazytuihub.plugin.tuihub.rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner lazytuihub.plugin.tuihub.rss --table fetch_details
 ```
 
 Common cleanup only visits explicitly persisted PluginRegistration.Retentions delegations; using a template alone does not authorize cleanup. RSS delegates its fetch_details table. The storage plugin cleans once at HTTP server startup and then every minute by default; its cleanupInterval setting changes scheduling, not expiry. CLI mode starts no background tasks. Each delegated table uses a single DELETE of expired records without a work budget or batching promise. Target errors are retained independently with the last attempt and deletion count.

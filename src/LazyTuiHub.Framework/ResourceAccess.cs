@@ -1,13 +1,18 @@
 namespace LazyTuiHub.Framework;
 
-public sealed class ResourceAccess(bool singleAccount, AccessPrincipal? localPrincipal = null)
+public sealed class ResourceAccess(
+    bool singleAccount,
+    AccessPrincipal? localPrincipal = null,
+    Func<AccessPrincipal?>? sessionPrincipal = null
+)
 {
     public const string LocalAccount = "local";
     private readonly AsyncLocal<AccessPrincipal?> active = new();
 
     public string Account => singleAccount ? LocalAccount : Principal.Account;
     public bool IsSingleAccount => singleAccount;
-    private AccessPrincipal Principal => active.Value ?? localPrincipal ?? throw new AccessRequiredException();
+    private AccessPrincipal Principal =>
+        active.Value ?? localPrincipal ?? sessionPrincipal?.Invoke() ?? throw new AccessRequiredException();
 
     public IDisposable Enter(AccessPrincipal principal)
     {

@@ -19,7 +19,7 @@ public sealed class DaoTests
         var registry = app.Services.GetRequiredService<PluginRuntime>().Daos;
         var records = registry.Resolve<IRecordDao>(new("details", DaoMode.Unified, DaoContracts.Records));
         var now = new DateTimeOffset(2026, 11, 17, 0, 0, 0, TimeSpan.Zero);
-        var first = new DaoTable("rss", "details");
+        var first = new DaoTable("lazytuihub.plugin.tuihub.rss", "details");
         var other = new DaoTable("another-business", "details");
         records.CreateTable(first);
         records.CreateTable(other);
@@ -71,7 +71,7 @@ public sealed class DaoTests
         DaoTable[] targets =
         [
             new("RSS", "test_records"),
-            new("rss", "test_records"),
+            new("lazytuihub.plugin.tuihub.rss", "test_records"),
             new("a_b", "c"),
             new("a", "b_c"),
             new("世界", "x\"; DROP TABLE pipelines; --"),
@@ -83,7 +83,7 @@ public sealed class DaoTests
             records.Put(target, "' OR 1=1 --", target);
             Assert.Equal(target, Assert.Single(records.Read<DaoTable>(target, DateTimeOffset.UtcNow)).Value);
         }
-        Assert.Throws<SqliteException>(() => records.CreateTable(new("rss", "feeds")));
+        Assert.Throws<SqliteException>(() => records.CreateTable(new("lazytuihub.plugin.tuihub.rss", "feeds")));
         Assert.NotEmpty(app.Services.GetRequiredService<WorkflowRuntime>().List());
     }
 
@@ -149,8 +149,8 @@ public sealed class DaoTests
         using var workspace = new PluginWorkspace();
         using var http = new HttpClient();
         var now = new DateTimeOffset(2026, 11, 17, 0, 0, 0, TimeSpan.Zero);
-        var delegated = new DaoTable("rss", "fetch_details");
-        var privateTable = new DaoTable("rss", "private_details");
+        var delegated = new DaoTable("lazytuihub.plugin.tuihub.rss", "fetch_details");
+        var privateTable = new DaoTable("lazytuihub.plugin.tuihub.rss", "private_details");
         await using (var app = PluginTestHost.Create(workspace.Database, http))
         {
             var runtime = app.Services.GetRequiredService<PluginRuntime>();
@@ -159,7 +159,7 @@ public sealed class DaoTests
             records.Put(privateTable, "keep-private", true, now);
             records.Put(delegated, "expired", true, now);
             records.Put(delegated, "keep", true);
-            runtime.Retention.SetEnabled("rss", delegated, false);
+            runtime.Retention.SetEnabled("lazytuihub.plugin.tuihub.rss", delegated, false);
             runtime.Retention.Clean(now, TestContext.Current.CancellationToken);
             Assert.Equal(2, records.Read<bool>(delegated, now, includeExpired: true).Count);
         }
@@ -167,17 +167,20 @@ public sealed class DaoTests
         var manager = restarted.Services.GetRequiredService<PluginRuntime>();
         Assert.Equal("paused", Assert.Single(manager.Retention.List()).State);
         var tools = manager.Daos.Resolve<IRecordDao>(new("records", DaoMode.Unified, DaoContracts.Records));
-        manager.Retention.SetEnabled("rss", delegated, true);
+        manager.Retention.SetEnabled("lazytuihub.plugin.tuihub.rss", delegated, true);
         var result = Assert.Single(manager.Retention.Clean(now, TestContext.Current.CancellationToken));
         Assert.Equal(1, result.Saved.LastDeleted);
         Assert.Null(result.Saved.LastError);
         Assert.Single(tools.Read<bool>(delegated, now, includeExpired: true));
         Assert.Single(tools.Read<bool>(privateTable, now, includeExpired: true));
-        manager.SetEnabled("rss", false);
+        manager.SetEnabled("lazytuihub.plugin.tuihub.rss", false);
         tools.Put(delegated, "expires-while-disabled", true, now);
         await using var disabled = PluginTestHost.Create(workspace.Database, http);
         var inactiveOwner = disabled.Services.GetRequiredService<PluginRuntime>();
-        Assert.Equal("disabled", inactiveOwner.List().Single(view => view.Saved.Spec.Id == "rss").Activation);
+        Assert.Equal(
+            "disabled",
+            inactiveOwner.List().Single(view => view.Saved.Spec.Id == "lazytuihub.plugin.tuihub.rss").Activation
+        );
         Assert.Equal(
             1,
             Assert.Single(inactiveOwner.Retention.Clean(now, TestContext.Current.CancellationToken)).Saved.LastDeleted

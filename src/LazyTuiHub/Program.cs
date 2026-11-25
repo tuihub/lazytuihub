@@ -41,25 +41,39 @@ public static class Program
         }
         var cli = args.Contains("--cli", StringComparer.Ordinal);
         if (cli)
-            args = args.Where(value => !string.Equals(value, "--cli", StringComparison.Ordinal)).ToArray();
+        {
+            try
+            {
+                args = ConsoleArguments.Parse(
+                    args.Where(value => !string.Equals(value, "--cli", StringComparison.Ordinal)).ToArray()
+                );
+            }
+            catch (ArgumentException error)
+            {
+                await Console.Error.WriteLineAsync(error.Message);
+                Environment.ExitCode = 1;
+                return;
+            }
+        }
         using var options = new ConfigurationManager();
         options.AddEnvironmentVariables().AddCommandLine(args);
         if (options["endpoint"] is not null && (cli || options["command"] is not null))
         {
-            Environment.ExitCode = await RemoteConsole.RunAsync(options, CancellationToken.None);
+            Environment.ExitCode = await CapabilityConsole.UntilCancelledAsync(token =>
+                RemoteConsole.RunAsync(options, token)
+            );
             return;
         }
-        if (cli && options["command"] is null)
+        if (cli || options["command"] is not null)
         {
-            Console.WriteLine(RemoteConsole.Help);
-            Console.WriteLine("Local: --command plugins|workflow|dao|games|rss|articles|access --action help");
+            Environment.ExitCode = await CapabilityConsole.UntilCancelledAsync(token =>
+                CommandRunner.RunAsync(args, token)
+            );
             return;
         }
         await using var app = ApplicationHost.Create(args);
         if (app.Configuration.GetValue<bool>("demo"))
             await GreetingDemo.RunAsync(app);
-        else if (app.Configuration["command"] is { } command)
-            await CommandRunner.RunAsync(app, command);
         else
             await app.RunAsync();
     }

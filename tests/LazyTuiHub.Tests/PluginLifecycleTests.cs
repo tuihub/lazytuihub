@@ -1,4 +1,3 @@
-using System.Text.Json;
 using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 using Microsoft.Data.Sqlite;
@@ -10,20 +9,68 @@ namespace LazyTuiHub.Tests;
 public sealed class PluginLifecycleTests
 {
     [Fact]
+    public async Task ManifestIdentitySeparatesPublishersAndRequiresCanonicalSpelling()
+    {
+        using var workspace = new PluginWorkspace();
+        var steam = workspace.ReadPlugins().Single(p => p.Id == "lazytuihub.plugin.tuihub.steam");
+        var other = steam with { Id = "lazytuihub.plugin.other.steam" };
+        await workspace.SelectPluginsAsync([
+            steam,
+            other,
+            steam with
+            {
+                Id = "steam",
+            },
+            other with
+            {
+                Id = "lazytuihub.plugin.Other.tools",
+            },
+        ]);
+        var diagnostics = new List<string>();
+        var loaded = PluginManifest.Read(workspace.Plugins, diagnostics.Add);
+        Assert.Equal([steam.Id, other.Id], loaded.Select(spec => spec.Id));
+        Assert.Equal(["Invalid plugin ID 'steam'.", "Invalid plugin ID 'lazytuihub.plugin.Other.tools'."], diagnostics);
+    }
+
+    [Theory]
+    [InlineData("[1.0.0]", "1.0.0", true)]
+    [InlineData("[1.0.0,2.0.0)", "1.5.0", true)]
+    [InlineData("[1.0.0,2.0.0)", "2.0.0", false)]
+    [InlineData("1.*", "2.0.0", false)]
+    [InlineData("[1.0.0]", null, false)]
+    [InlineData("invalid-range", "1.0.0", false)]
+    public async Task ProviderActivationUsesDeclaredVersions(string range, string? installed, bool accepted)
+    {
+        using var workspace = new PluginWorkspace();
+        var manifest = workspace.ReadPlugins().ToDictionary(p => p.Id, StringComparer.Ordinal);
+        await workspace.WriteManifestAsync(manifest["lazytuihub.plugin.tuihub.games"] with { Version = installed });
+        await workspace.WriteManifestAsync(
+            manifest["lazytuihub.plugin.tuihub.steam"] with
+            {
+                Requires = [new("lazytuihub.plugin.tuihub.games", range)],
+            }
+        );
+        using var http = new HttpClient();
+        await using var app = PluginTestHost.Create(workspace.Database, http, workspace.Plugins);
+        var plugins = app.Services.GetRequiredService<PluginRuntime>().List();
+        var steam = plugins.Single(p => p.Saved.Spec.Id == "lazytuihub.plugin.tuihub.steam");
+        Assert.Equal(accepted ? "active" : "blocked", steam.Activation);
+        if (!accepted)
+            Assert.Contains(range, steam.Reason);
+        Assert.Equal("active", plugins.Single(p => p.Saved.Spec.Id == "lazytuihub.plugin.tuihub.bangumi").Activation);
+    }
+
+    [Fact]
     public async Task HooksAreExplicitAndDisabledMaintenanceDoesNotActivateCapabilities()
     {
         using var workspace = new PluginWorkspace();
         var spec = new PluginSpec(
-            "probe",
+            "lazytuihub.plugin.tests.probe",
             "Probe",
             typeof(ProbePlugin).Assembly.Location,
             typeof(ProbePlugin).FullName!
         );
-        await File.WriteAllTextAsync(
-            Path.Combine(workspace.Plugins, "plugins.json"),
-            JsonSerializer.Serialize(new[] { spec }, PipelineStore.JsonOptions),
-            TestContext.Current.CancellationToken
-        );
+        await workspace.SelectPluginsAsync(new[] { spec });
         using var http = new HttpClient();
         await using (var app = PluginTestHost.Create(workspace.Database, http, workspace.Plugins))
         {
@@ -31,10 +78,15 @@ public sealed class PluginLifecycleTests
             var state = app.Services.GetRequiredService<ProbeState>();
             Assert.Equal(0, state.Cleanups);
             Assert.Equal(0, state.Uninstalls);
-            await runtime.InvokeHookAsync("probe", "cleanup", app.Services, TestContext.Current.CancellationToken);
+            await runtime.InvokeHookAsync(
+                "lazytuihub.plugin.tests.probe",
+                "cleanup",
+                app.Services,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(1, state.Cleanups);
             Assert.Equal("active", Assert.Single(runtime.List()).Activation);
-            runtime.SetEnabled("probe", false);
+            runtime.SetEnabled("lazytuihub.plugin.tests.probe", false);
             Assert.Single(runtime.Workflows.Registry.Descriptors);
             using var service = new PluginTaskService(runtime, app.Services);
             await service.StartAsync(TestContext.Current.CancellationToken);
@@ -56,7 +108,12 @@ public sealed class PluginLifecycleTests
                 Assert.Single(await runtime.TasksAsync(TestContext.Current.CancellationToken)).State
             );
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                runtime.InvokeHookAsync("probe", "cleanup", disabled.Services, TestContext.Current.CancellationToken)
+                runtime.InvokeHookAsync(
+                    "lazytuihub.plugin.tests.probe",
+                    "cleanup",
+                    disabled.Services,
+                    TestContext.Current.CancellationToken
+                )
             );
         }
         await using var maintenance = PluginTestHost.Create(
@@ -67,7 +124,7 @@ public sealed class PluginLifecycleTests
             {
                 ["command"] = "plugins",
                 ["action"] = "uninstall",
-                ["plugin"] = "probe",
+                ["plugin"] = "lazytuihub.plugin.tests.probe",
             }
         );
         var manager = maintenance.Services.GetRequiredService<PluginRuntime>();
@@ -81,7 +138,7 @@ public sealed class PluginLifecycleTests
         Assert.Equal(0, maintainedState.Cleanups);
         Assert.Equal(0, maintainedState.Uninstalls);
         await manager.InvokeHookAsync(
-            "probe",
+            "lazytuihub.plugin.tests.probe",
             "uninstall",
             maintenance.Services,
             TestContext.Current.CancellationToken
@@ -94,7 +151,7 @@ public sealed class PluginLifecycleTests
     {
         using var workspace = new PluginWorkspace();
         var probe = new PluginSpec(
-            "probe",
+            "lazytuihub.plugin.tests.probe",
             "Probe",
             typeof(ProbePlugin).Assembly.Location,
             typeof(ProbePlugin).FullName!
@@ -103,40 +160,36 @@ public sealed class PluginLifecycleTests
         [
             probe with
             {
-                Id = "missing",
+                Id = "lazytuihub.plugin.tests.missing",
                 Assembly = "absent.dll",
             },
             probe with
             {
-                Id = "depends-missing",
-                Requires = ["missing"],
+                Id = "lazytuihub.plugin.tests.depends-missing",
+                Requires = [new("lazytuihub.plugin.tests.missing")],
             },
             probe with
             {
-                Id = "failed",
+                Id = "lazytuihub.plugin.tests.failed",
                 EntryType = typeof(FailedActivationPlugin).FullName!,
             },
             probe with
             {
-                Id = "depends-failed",
-                Requires = ["failed"],
+                Id = "lazytuihub.plugin.tests.depends-failed",
+                Requires = [new("lazytuihub.plugin.tests.failed")],
             },
             probe,
         ];
-        await File.WriteAllTextAsync(
-            Path.Combine(workspace.Plugins, "plugins.json"),
-            JsonSerializer.Serialize(manifest, PipelineStore.JsonOptions),
-            TestContext.Current.CancellationToken
-        );
+        await workspace.SelectPluginsAsync(manifest);
         using var http = new HttpClient();
         await using var app = PluginTestHost.Create(workspace.Database, http, workspace.Plugins);
         var runtime = app.Services.GetRequiredService<PluginRuntime>();
         var states = runtime.List().ToDictionary(view => view.Saved.Spec.Id, StringComparer.Ordinal);
-        Assert.Equal("active", states["probe"].Activation);
-        Assert.Equal("missing", states["missing"].Availability);
-        Assert.Equal("failed", states["failed"].Activation);
-        Assert.Equal("blocked", states["depends-missing"].Activation);
-        Assert.Equal("blocked", states["depends-failed"].Activation);
+        Assert.Equal("active", states["lazytuihub.plugin.tests.probe"].Activation);
+        Assert.Equal("missing", states["lazytuihub.plugin.tests.missing"].Availability);
+        Assert.Equal("failed", states["lazytuihub.plugin.tests.failed"].Activation);
+        Assert.Equal("blocked", states["lazytuihub.plugin.tests.depends-missing"].Activation);
+        Assert.Equal("blocked", states["lazytuihub.plugin.tests.depends-failed"].Activation);
         Assert.Equal("probe.node", Assert.Single(runtime.Workflows.Registry.Descriptors).Type);
     }
 

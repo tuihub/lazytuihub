@@ -258,5 +258,5 @@ description = "Exercise and capture installed and candidate Avalonia themes"
 run = "node .agents/prototypes/design-baselines/baseline.mjs render avalonia"
 
 [tasks."run:desktop"]
-description = "Run the Avalonia desktop application with the local workspace"
+description = "Run the desktop with a local workspace or an HTTPS endpoint"
 run = "dotnet run --project src/LazyTuiHub -- --desktop"

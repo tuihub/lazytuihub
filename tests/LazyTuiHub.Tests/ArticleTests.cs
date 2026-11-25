@@ -18,7 +18,7 @@ public sealed class ArticleTests
         using var workspace = new PluginWorkspace();
         using var http = new HttpClient();
         await using (var initial = PluginTestHost.Create(workspace.Database, http))
-            initial.Services.GetRequiredService<PluginRuntime>().SetEnabled("rss", false);
+            initial.Services.GetRequiredService<PluginRuntime>().SetEnabled("lazytuihub.plugin.tuihub.rss", false);
         await using var app = PluginTestHost.Create(workspace.Database, http);
         var workflows = app.Services.GetRequiredService<WorkflowRuntime>();
         var api = app.Services.GetRequiredService<IArticleApi>();
@@ -54,9 +54,14 @@ public sealed class ArticleTests
     {
         using var workspace = new PluginWorkspace();
         using var http = new HttpClient();
-        await using (var initial = PluginTestHost.Create(workspace.Database, http))
-            initial.Services.GetRequiredService<PluginRuntime>().SetEnabled("articles", false);
-        await using var app = PluginTestHost.Create(workspace.Database, http);
+        File.Delete(
+            Path.Combine(
+                workspace.Plugins,
+                "lazytuihub.plugin.tuihub.articles",
+                "LazyTuiHub.Plugin.TuiHub.Articles.dll"
+            )
+        );
+        await using var app = PluginTestHost.Create(workspace.Database, http, workspace.Plugins);
         var rss = app.Services.GetRequiredService<IRssApi>();
         var token = TestContext.Current.CancellationToken;
         var feed = await rss.CreateFeedAsync(new() { Feed = new() { Uri = "https://example.com/feed" } }, token);
@@ -66,5 +71,35 @@ public sealed class ArticleTests
         Assert.Equal(StatusCode.FailedPrecondition, error.StatusCode);
         Assert.Contains("articles.store", error.Status.Detail);
         Assert.Equal(feed, await rss.GetFeedAsync(new() { Name = feed.Name }, token));
+        var workflows = app.Services.GetRequiredService<WorkflowRuntime>();
+        StreamNodes.Source<HttpDocument>(workflows.Registry, "fixture.feed", "fixture", (_, _) =>
+            new[]
+            {
+                new DataPacket<HttpDocument>(
+                    new(
+                        new Uri(feed.Uri),
+                        "<rss><channel><item><guid>x</guid><title>Independent</title></item></channel></rss>"u8.ToArray(),
+                        new("rss.feed", feed.Name)
+                    )
+                ),
+            }.ToAsyncEnumerable()
+        );
+        StreamNodes.RegisterOutput<ArticleDraft>(workflows.Registry, "fixture.drafts", "fixture");
+        workflows.Save(
+            new(
+                "fixture.parse",
+                [
+                    PipelineNode.Create("source", "fixture.feed"),
+                    PipelineNode.Create("parse", "rss.parse"),
+                    PipelineNode.Create("drafts", "fixture.drafts"),
+                ],
+                [
+                    new("source", StreamNodes.Output, "parse", StreamNodes.Input),
+                    new("parse", StreamNodes.Output, "drafts", StreamNodes.Input),
+                ]
+            )
+        );
+        var drafts = await workflows.CollectAsync<ArticleDraft>("fixture.parse", cancellationToken: token);
+        Assert.Equal("Independent", Assert.Single(drafts).Title);
     }
 }

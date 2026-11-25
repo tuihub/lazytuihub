@@ -1,23 +1,54 @@
 <Solution>
-  <Project Path="src/LazyTuiHub/LazyTuiHub.csproj" />
-  <Project Path="src/LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
-  <Project Path="src/LazyTuiHub.Articles/LazyTuiHub.Articles.csproj" />
-  <Project Path="src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
-  <Project Path="src/LazyTuiHub.Cli/LazyTuiHub.Cli.csproj" />
-  <Project Path="src/LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
-  <Project Path="src/LazyTuiHub.Dao/LazyTuiHub.Dao.csproj" />
-  <Project Path="src/LazyTuiHub.Storage.Sqlite/LazyTuiHub.Storage.Sqlite.csproj" />
-  <Project Path="src/LazyTuiHub.Framework/LazyTuiHub.Framework.csproj" />
-  <Project Path="src/LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
-  <Project Path="src/LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
-  <Project Path="src/LazyTuiHub.CorePlugin/LazyTuiHub.CorePlugin.csproj" />
-  <Project Path="src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
-  <Project Path="src/LazyTuiHub.Games/LazyTuiHub.Games.csproj" />
-  <Project Path="src/LazyTuiHub.Steam/LazyTuiHub.Steam.csproj" />
-  <Project Path="src/LazyTuiHub.Bangumi/LazyTuiHub.Bangumi.csproj" />
-  <Project Path="src/LazyTuiHub.Vndb/LazyTuiHub.Vndb.csproj" />
-  <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
-  <Project Path="src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
-  <Project Path="src/LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" />
-  <Project Path="src/LazyTuiHub.Games.Desktop/LazyTuiHub.Games.Desktop.csproj" />
+  <Folder Name="/Framework/">
+    <Project Path="src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
+    <Project Path="src/LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
+    <Project Path="src/LazyTuiHub.Dao/LazyTuiHub.Dao.csproj" />
+    <Project Path="src/LazyTuiHub.Framework/LazyTuiHub.Framework.csproj" />
+    <Project Path="src/LazyTuiHub.Interaction/LazyTuiHub.Interaction.csproj" />
+    <Project Path="src/LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
+    <Project Path="src/LazyTuiHub.PluginSdk/LazyTuiHub.PluginSdk.csproj" />
+    <Project Path="src/LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
+  </Folder>
+  <Folder Name="/Frontends/">
+    <Project Path="src/LazyTuiHub.Cli/LazyTuiHub.Cli.csproj" />
+    <Project Path="src/LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
+    <Project Path="src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/Host/">
+    <Project Path="src/LazyTuiHub/LazyTuiHub.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Articles/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Articles/client/LazyTuiHub.Plugin.TuiHub.Articles.Client.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/LazyTuiHub.Plugin.TuiHub.Articles.Contracts.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/LazyTuiHub.Plugin.TuiHub.Articles.Desktop.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Bangumi/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Bangumi/LazyTuiHub.Plugin.TuiHub.Bangumi.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Core/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/LazyTuiHub.Plugin.TuiHub.Core.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Games/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Games/desktop/LazyTuiHub.Plugin.TuiHub.Games.Desktop.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Games/runtime/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Games/sdk/LazyTuiHub.Plugin.TuiHub.Games.Sdk.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Rss/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Rss/client/LazyTuiHub.Plugin.TuiHub.Rss.Client.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Rss/contracts/LazyTuiHub.Plugin.TuiHub.Rss.Contracts.csproj" />
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Steam/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Steam/LazyTuiHub.Plugin.TuiHub.Steam.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/LazyTuiHub.Plugin.TuiHub.Vndb/">
+    <Project Path="plugins/LazyTuiHub.Plugin.TuiHub.Vndb/LazyTuiHub.Plugin.TuiHub.Vndb.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/LazyTuiHub.Tests/LazyTuiHub.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,0 +1,9 @@
+{
+  "id": "lazytuihub.plugin.tuihub.bangumi",
+  "name": "Bangumi",
+  "assembly": "LazyTuiHub.Plugin.TuiHub.Bangumi.dll",
+  "entryType": "LazyTuiHub.Bangumi.BangumiPlugin",
+  "requires": [
+    "lazytuihub.plugin.tuihub.games"
+  ]
+}

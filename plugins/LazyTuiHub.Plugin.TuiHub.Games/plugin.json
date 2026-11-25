@@ -1,0 +1,7 @@
+{
+  "id": "lazytuihub.plugin.tuihub.games",
+  "name": "Game Library",
+  "assembly": "LazyTuiHub.Plugin.TuiHub.Games.dll",
+  "entryType": "LazyTuiHub.Games.GamesPlugin",
+  "version": "1.0.0"
+}

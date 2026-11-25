@@ -1,0 +1,27 @@
+<Project>
+  <ItemGroup>
+    <ProjectReference Include="@(BundledPlugin)" ReferenceOutputAssembly="false" Private="false" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+  </ItemGroup>
+  <Target Name="BundlePlugins" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolveReferences" Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="@(BundledPlugin)" Targets="GetPluginPayload" RemoveProperties="RuntimeIdentifier;SelfContained" BuildInParallel="$(BuildInParallel)">
+      <Output TaskParameter="TargetOutputs" ItemName="_PluginFiles" />
+    </MSBuild>
+    <PropertyGroup>
+      <_Bundle>$(IntermediateOutputPath)plugin-bundle</_Bundle>
+    </PropertyGroup>
+    <MakeDir Directories="$(_Bundle)" />
+    <WriteLinesToFile File="$(_Bundle)/selection" Lines="@(BundledPlugin->'%(FullPath)|%(Required)')" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_Bundle)/payload" Lines="@(_PluginFiles->'%(PluginProject)|%(FullPath)|%(PayloadPath)')" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_Bundle)/shared" Lines="@(ReferenceCopyLocalPaths->'%(DestinationSubDirectory)%(Filename)%(Extension)')" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <Exec Command="node &quot;$(MSBuildThisFileDirectory)bundle-plugins.mjs&quot; &quot;$(_Bundle)&quot;" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" ItemName="_PluginMapping" />
+    </Exec>
+    <ItemGroup>
+      <_BundleSource Include="@(_PluginMapping)">
+        <Source>$([System.String]::Copy('%(_PluginMapping.Identity)').Split('|')[0])</Source>
+        <Link>$([System.String]::Copy('%(_PluginMapping.Identity)').Split('|')[1])</Link>
+      </_BundleSource>
+      <Content Include="@(_BundleSource->'%(Source)')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+</Project>

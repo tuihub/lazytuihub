@@ -1,0 +1,6 @@
+{
+  "id": "lazytuihub.plugin.tuihub.storage.sqlite",
+  "name": "SQLite Storage",
+  "assembly": "LazyTuiHub.Plugin.TuiHub.Storage.Sqlite.dll",
+  "entryType": "LazyTuiHub.Storage.Sqlite.SqliteStoragePlugin"
+}

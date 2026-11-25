@@ -1,6 +1,7 @@
 using LazyTuiHub.Access;
 using LazyTuiHub.Execution;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Interaction;
 using LazyTuiHub.Plugins;
 using Microsoft.AspNetCore.DataProtection;
 
@@ -11,7 +12,7 @@ internal static class HostComposition
     public static PluginRuntime Configure(
         IServiceCollection services,
         IConfiguration configuration,
-        bool desktop = false
+        bool interactive = false
     )
     {
         var path = configuration["database"]
@@ -43,23 +44,33 @@ internal static class HostComposition
                 : null;
         if (authority is not null)
             services.AddSingleton(authority);
-        var principal =
-            desktop && authority is not null
-                ? authority.Authenticate(
-                    configuration["Access:Session"] ?? throw new AccessRequiredException(),
-                    configuration["Access:Account"]
-                )
-                : null;
+        AccessPrincipal? principal = null;
+        if (interactive && authority is not null)
+        {
+            var session = new ClientSession(configuration["Access:Session"]);
+            void SetPrincipal() =>
+                Volatile.Write(
+                    ref principal,
+                    session.Token is { } token ? authority.Authenticate(token, configuration["Access:Account"]) : null
+                );
+            SetPrincipal();
+            session.Changed += (_, _) => SetPrincipal();
+            services.AddSingleton(session);
+        }
         var plugins = new PluginRuntime(
             database,
             configuration,
             configuration["plugin-directory"] ?? Path.Combine(AppContext.BaseDirectory, "plugins"),
-            new ResourceAccess(singleAccount: !enabled, principal)
+            new ResourceAccess(singleAccount: !enabled, sessionPrincipal: () => Volatile.Read(ref principal)),
+            Operations.WorkspaceCapabilities.Groups
         );
         try
         {
             plugins.Configure(services);
             services.AddSingleton(_ => plugins);
+            services.AddTransient(Operations.WorkspaceCapabilities.Create);
+            services.AddTransient<PluginOperations>();
+            services.AddTransient<WorkflowOperations>();
             services.AddSingleton(plugins.Workflows);
             services.AddSingleton(plugins.Retention);
             services.AddSingleton<IWorkflowExecutor>(plugins.Workflows);

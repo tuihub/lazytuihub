@@ -7,45 +7,25 @@
   <ItemGroup>
     <ProjectReference Include="../LazyTuiHub.Cli/LazyTuiHub.Cli.csproj" />
     <ProjectReference Include="../LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
-    <ProjectReference Include="../LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Games.Desktop/LazyTuiHub.Games.Desktop.csproj" ReferenceOutputAssembly="false" Private="false" />
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
     <ProjectReference Include="../LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
     <ProjectReference Include="../LazyTuiHub.Client/LazyTuiHub.Client.csproj" />
     <ProjectReference Include="../LazyTuiHub.Plugins/LazyTuiHub.Plugins.csproj" />
     <ProjectReference Include="../LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
-    <ProjectReference Include="../LazyTuiHub.Storage.Sqlite/LazyTuiHub.Storage.Sqlite.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Articles/LazyTuiHub.Articles.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.CorePlugin/LazyTuiHub.CorePlugin.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Games/LazyTuiHub.Games.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Steam/LazyTuiHub.Steam.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Bangumi/LazyTuiHub.Bangumi.csproj" ReferenceOutputAssembly="false" Private="false" />
-    <ProjectReference Include="../LazyTuiHub.Vndb/LazyTuiHub.Vndb.csproj" ReferenceOutputAssembly="false" Private="false" />
     <PackageReference Include="Grpc.AspNetCore.Server" Version="2.85.0" />
     <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="10.0.15" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="../LazyTuiHub.Articles.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Articles.Desktop.dll" Link="plugins/articles-desktop/LazyTuiHub.Articles.Desktop.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Games.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.Desktop.dll" Link="plugins/games-desktop/LazyTuiHub.Games.Desktop.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Articles.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Articles.Desktop.deps.json" Link="plugins/articles-desktop/LazyTuiHub.Articles.Desktop.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Games.Desktop/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.Desktop.deps.json" Link="plugins/games-desktop/LazyTuiHub.Games.Desktop.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Games/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.dll" Link="plugins/games/LazyTuiHub.Games.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Games/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Games.deps.json" Link="plugins/games/LazyTuiHub.Games.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Steam/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Steam.dll" Link="plugins/steam/LazyTuiHub.Steam.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Steam/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Steam.deps.json" Link="plugins/steam/LazyTuiHub.Steam.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Bangumi/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Bangumi.dll" Link="plugins/bangumi/LazyTuiHub.Bangumi.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Bangumi/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Bangumi.deps.json" Link="plugins/bangumi/LazyTuiHub.Bangumi.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Vndb/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Vndb.dll" Link="plugins/vndb/LazyTuiHub.Vndb.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Vndb/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Vndb.deps.json" Link="plugins/vndb/LazyTuiHub.Vndb.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Update="plugins.json" Link="plugins/plugins.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Storage.Sqlite/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Storage.Sqlite.dll" Link="plugins/storage/LazyTuiHub.Storage.Sqlite.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Storage.Sqlite/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Storage.Sqlite.deps.json" Link="plugins/storage/LazyTuiHub.Storage.Sqlite.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.CorePlugin/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.CorePlugin.dll" Link="plugins/core/LazyTuiHub.CorePlugin.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.CorePlugin/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.CorePlugin.deps.json" Link="plugins/core/LazyTuiHub.CorePlugin.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Articles/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Articles.dll" Link="plugins/articles/LazyTuiHub.Articles.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Rss/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Rss.dll" Link="plugins/rss/LazyTuiHub.Rss.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Articles/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Articles.deps.json" Link="plugins/articles/LazyTuiHub.Articles.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../LazyTuiHub.Rss/bin/$(Configuration)/$(TargetFramework)/LazyTuiHub.Rss.deps.json" Link="plugins/rss/LazyTuiHub.Rss.deps.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/LazyTuiHub.Plugin.TuiHub.Core.csproj" Required="true" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite.csproj" Required="true" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/LazyTuiHub.Plugin.TuiHub.Articles.Desktop.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/runtime/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Steam/LazyTuiHub.Plugin.TuiHub.Steam.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Bangumi/LazyTuiHub.Plugin.TuiHub.Bangumi.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Vndb/LazyTuiHub.Plugin.TuiHub.Vndb.csproj" />
+    <BundledPlugin Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/desktop/LazyTuiHub.Plugin.TuiHub.Games.Desktop.csproj" />
   </ItemGroup>
+  <Import Project="BundlePlugins.targets" />
 </Project>

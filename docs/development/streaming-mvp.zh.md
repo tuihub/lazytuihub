@@ -15,23 +15,26 @@ MVP 用 RSS 阅读器和 SQLite 探索跨业务复用节点。运行器支持具
 | 部分 | 责任 |
 | - | - |
 | [Framework](../../src/LazyTuiHub.Framework/) | 通用数据关联、节点／端口注册、计划、异步交付、同步输入对齐、扇出、反压与取消。 |
-| [节点库](../../src/LazyTuiHub.Nodes/) | 定时器、HTTP fetch、有类型的输出消费者和常见源／转换／消费辅助，通过普通核心注册接入。 |
+| [节点库](../../src/LazyTuiHub.Nodes/) | 公共端口类型及源节点、转换节点和消费节点的编写工具。 |
+| [插件 SDK](../../src/LazyTuiHub.PluginSdk/) | 注册、工作流调用、可选插件状态查询及生命周期 hook。 |
 | [插件装配](../../src/LazyTuiHub.Plugins/) | 可信 DLL 装配、声明及意图保留、工作流管理、任务与 hook 调用。 |
 | [DAO 工具包](../../src/LazyTuiHub.Dao/) | 不依赖数据库驱动的契约、访问需求／能力及命名空间表目标。 |
-| [SQLite 提供者](../../src/LazyTuiHub.Storage.Sqlite/) | 必要存储插件，提供通用 JSON 记录／TTL、SQLite FTS5、原生连接及委托清理。 |
-| [核心插件](../../src/LazyTuiHub.CorePlugin/) | 发行清单要求的问候功能及内置节点注册。 |
-| [RSS 插件](../../src/LazyTuiHub.Rss/) | 订阅、定时抓取、抓取明细和 RSS／Atom 解析。 |
-| [文章插件](../../src/LazyTuiHub.Articles/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
+| [SQLite 提供者](../../plugins/LazyTuiHub.Plugin.TuiHub.Storage.Sqlite/) | 必要存储插件，提供通用 JSON 记录／TTL、SQLite FTS5、原生连接及委托清理。 |
+| [核心插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Core/runtime/) | 发行清单要求的问候功能及内置节点注册。 |
+| [RSS 插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/) | 订阅、定时抓取、抓取明细和 RSS／Atom 解析。 |
+| [文章插件](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/) | 各类来源的文章入库、全文索引、已读状态和阅读接口。 |
 | [游戏库与资料来源](../../.agents/notes/2026-11-23-mvp-games.zh.md) | 管理个人游戏、分类和游玩时段，通过 Steam、Bangumi、VNDB 工作流检索和导入资料。 |
 | [Host](../../src/LazyTuiHub/) | 启动、插件／工作流／DAO CLI、桌面／Web 装配、共享 DI 基础设施及生命周期。 |
 | [CLI](../../src/LazyTuiHub.Cli/) | 阅读文章和管理订阅。在本机运行 `mise run run:cli -- --command articles --action list`，传入 `--endpoint https://SERVER` 可访问远程账户。独立发布包只需安装在客户端。[Win7 CLI 实测](../../.agents/notes/2026-11-23-mvp-win7-cli.zh.md) |
-| [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../src/LazyTuiHub.Articles.Desktop/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
+| [桌面层](../../src/LazyTuiHub.Desktop/)／[文章阅读界面](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | Avalonia 外壳与诊断／文章阅读器及可选的 RSS 订阅操作。 |
 
 PipelineDefinition 表示处理关系；DataReference 与 DataRelation 表示持久数据身份及关联。各业务插件通过 BusinessStorage 写自己的表，返回数据身份和关联意图；框架登记元数据后，在同一工作区事务提交业务行、FTS 更新及元数据。BusinessStorage 要求显式传入工作区连接源，其他存储不能隐式加入这个事务。插件禁止修改框架表。这是完全可信进程内的所有权契约，没有数据库权限隔离。这些身份不同于同步输入 key，也不构成分布式对象存储。
 
 rss.ingest 连接 builtin.timer、rss.feed-requests、builtin.http-fetch、rss.parse、articles.store 和 articles.output。其他模块可以在解析后分支，不必修改运行器。阅读及其他直接 RSS 操作目前也经过工作流，让工作流成为可选能力仍待后续实现。本地和 HTTP 调用共享 IRssApi 订阅契约和 IArticleApi 文章契约；字段、路由、分页、去重及错误见[生成的 API 参考](../api/index.md)。
 
-接入新的文章来源时，让节点输出 [ArticleDraft](../../src/LazyTuiHub.Api/Articles/ArticleDraft.cs)，并连接 articles.store。来源资源名与来源内的条目 ID 共同标识文章。例如 notebooks/a 和 notebooks/b 可以各自使用条目 ID 1。同一来源再次提交该条目时会更新内容、保留文章名称和已读状态。若数据包附有已登记的来源引用，入库会同时登记来源与文章的关联。
+接入新的文章来源时，让节点输出 [ArticleDraft](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/contracts/ArticleDraft.cs)，并连接 articles.store。来源资源名与来源内的条目 ID 共同标识文章。例如 notebooks/a 和 notebooks/b 可以各自使用条目 ID 1。同一来源再次提交该条目时会更新内容、保留文章名称和已读状态。若数据包附有已登记的来源引用，入库会同时登记来源与文章的关联。
+
+每个随包交付的插件在 plugin.json 中声明小写的 `lazytuihub.plugin.<发布者>.<插件名>` ID。包名和源码根目录建议采用相应的 PascalCase 写法，例如 [LazyTuiHub.Plugin.TuiHub.Steam](../../plugins/LazyTuiHub.Plugin.TuiHub.Steam/)。将项目加入[宿主工程](../../src/LazyTuiHub/LazyTuiHub.csproj)的 BundledPlugin 列表即可随包交付。构建收集入口程序集、依赖及标记为输出的资源，冷启动时加载器按发行索引逐项读取已安装的 `plugins/<id>/plugin.json`。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md)说明版本约束和迁入独立仓库的方式。
 
 ## 端口与执行计划
 
@@ -41,7 +44,7 @@ NodeRegistry.Register 接收具名、有类型的输入／输出声明和一个�
 
 ## 跨实例运行
 
-准备 Docker 引擎和 Compose，运行 `mise run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。
+准备 Docker 引擎和 Compose，运行 `mise run test:multinode`。任务发布应用，在隔离网络中运行场景，将观测结果写入 `.local/multinode/result.json`，随后清理容器、网络及测试卷。[Compose 配置](../../tests/multinode/compose.yaml) 给出了完整示例。 ARM64 引擎若缓存了 AMD64 的 .NET 镜像，可设置 `TEST_APP_PLATFORM=linux/amd64`。这个选项同时选择应用节点的发布目标和容器架构。
 
 | 配置 | 用途 |
 | --- | --- |
@@ -108,20 +111,20 @@ mise run run -- --database .local/account/workspace.db --command access --action
 mise run run -- --database .local/account/workspace.db --command access --action grant --username reader --uri lazytuihub://core/devices/fetcher/jobs --mode write
 ```
 
-登录时终端隐藏密码。将结果中的会话令牌通过 `Access__Session` 传给主节点上运行的管理命令、本地 CLI 或桌面。远程请求在 `Authorization` 头中携带 Bearer 令牌，默认访问自己的账户。需要访问获分享的资源时，用 `X-LazyTuiHub-Account` 选择目标账户。分享订阅可将 `--uri` 设为 `lazytuihub://rss/accounts/ACCOUNT_ID/feeds/FEED_ID` 并授予 `read`。撤权将同一命令的 `--action` 改为 `revoke`，省略 `--mode`。远程会话用同一 HTTPS 地址执行 `--action logout` 撤销。
+登录时终端隐藏密码。将结果中的会话令牌通过 `Access__Session` 传给主节点上运行的管理命令、本地 CLI 或桌面。远程请求在 `Authorization` 头中携带 Bearer 令牌，默认访问自己的账户。需要访问获分享的资源时，用 `X-LazyTuiHub-Account` 选择目标账户。分享订阅可将 `--uri` 设为 `lazytuihub://lazytuihub.plugin.tuihub.rss/accounts/ACCOUNT_ID/feeds/FEED_ID` 并授予 `read`。撤权将同一命令的 `--action` 改为 `revoke`，省略 `--mode`。远程会话用同一 HTTPS 地址执行 `--action logout` 撤销。
 
 账户模式下，协调器根据资源清单和用户的设备任务入口写权限选择抓取端。`--device` 使用实例配置中的 ID，独立运行的实例使用 `local`。文章写入按工作区绑定路由，并检查文章集合的写权限。参与该工作流的工作节点也要设置 `Access__Enabled=true`。[账户与 URI 授权 Note](../../.agents/notes/2026-11-19-mvp-account-identity.zh.md) · [会话 API](../api/operations/SessionService_AuthenticateUser.md)
 
 ## 冷启动插件
 
-宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将 core、rss、articles、articles.desktop、storage.sqlite 入口 DLL 及依赖描述放入对应目录。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。
+宿主从应用输出目录的 plugins/plugins.json 加载显式清单，--plugin-directory DIR 可选其他目录。构建和发布将每个选定插件的入口 DLL 和依赖放入 `plugins/<id>/`。插件共享宿主依赖基线和默认程序集上下文；附加依赖需随插件部署，原型没有私有依赖版本、原生依赖部署系统、热更新或沙箱。[插件 Note](../../.agents/notes/2026-11-17-mvp-plugins.zh.md) 记录边界与调研。
 
 ```sh
 mise run run -- --database .local/rss/workspace.db --command plugins --action list
-mise run run -- --database .local/rss/workspace.db --command plugins --action inspect --plugin rss
-mise run run -- --database .local/rss/workspace.db --command plugins --action disable --plugin rss
-mise run run -- --database .local/rss/workspace.db --command plugins --action enable --plugin rss
-mise run run -- --database .local/rss/workspace.db --command plugins --action configure --plugin rss --file ./rss-settings.json
+mise run run -- --database .local/rss/workspace.db --command plugins --action inspect --plugin lazytuihub.plugin.tuihub.rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action disable --plugin lazytuihub.plugin.tuihub.rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action enable --plugin lazytuihub.plugin.tuihub.rss
+mise run run -- --database .local/rss/workspace.db --command plugins --action configure --plugin lazytuihub.plugin.tuihub.rss --file ./rss-settings.json
 ```
 
 修改在重启后生效。list 分别展示保存的启用意图、文件可用性、激活结果和任务资格；inspect 包含保留的节点／端口／数据类型及 DAO 声明和不透明配置。RSS 配置可写为 {"refreshInterval":"00:05:00","detailRetention":"7.00:00:00"}，未知字段保留。detailRetention 可省略，默认 null（长期保留）；正时长为新抓取观察记录设置到期时间，修改配置不改写已有记录。周期用于初始化新默认图及控制失败重试等待；已有定时器周期需修改图内节点参数，存储的图优先于新默认值。
@@ -148,8 +151,8 @@ mise run run -- --database .local/rss/workspace.db --command rss --action detail
 mise run run -- --database .local/rss/workspace.db --command rss --action keep-detail --key RECORD_KEY
 mise run run -- --database .local/rss/workspace.db --command dao --action list
 mise run run -- --database .local/rss/workspace.db --command dao --action clean
-mise run run -- --database .local/rss/workspace.db --command dao --action pause --owner rss --table fetch_details
-mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command dao --action pause --owner lazytuihub.plugin.tuihub.rss --table fetch_details
+mise run run -- --database .local/rss/workspace.db --command dao --action resume --owner lazytuihub.plugin.tuihub.rss --table fetch_details
 ```
 
 统一清理只处理 PluginRegistration.Retentions 显式持久委托的目标；使用模板本身不授权清理。RSS 委托 fetch_details 表。存储插件在 HTTP 服务启动时清理一次，随后默认每分钟执行；其 cleanupInterval 配置影响调度，不决定数据到期时间。CLI 模式不启动后台任务。每个目标通过单条 DELETE 删除到期记录，暂不承诺工作量预算或分批处理；逐目标独立保留最近尝试、删除数量及错误。

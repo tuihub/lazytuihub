@@ -26,7 +26,7 @@ test('reference pages retain authored examples and link recursive message schema
             },
         }}},
     };
-    const pages = await renderApiDocs(document, ['example.proto']);
+    const pages = await renderApiDocs(document, [{name: 'example.proto', path: 'plugin/Protos/example.proto'}]);
     assert.match(pages.get('index.md'), /operations\/GetWidget\.md/);
     assert.match(pages.get('index.md'), /Protos\/example\.proto/);
     const operation = pages.get('operations/GetWidget.md');

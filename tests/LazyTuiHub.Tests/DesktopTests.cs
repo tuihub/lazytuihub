@@ -99,7 +99,8 @@ public sealed partial class DesktopTests
                         tabs.SelectedIndex = 0;
                         Assert.Same(page, window.GetVisualDescendants().OfType<ReaderPage>().Single());
                         window = await SwitchDesignsAsync(host, window, token);
-                        host.Services.GetRequiredService<PluginRuntime>().SetEnabled("articles.desktop", false);
+                        host.Services.GetRequiredService<PluginRuntime>()
+                            .SetEnabled("lazytuihub.plugin.tuihub.articles.desktop", false);
                         Assert.Equal(
                             new[] { "Reader", "Games", "Workflows", "Plugins" },
                             window.Navigation.Select(item => item.Title)
@@ -113,7 +114,9 @@ public sealed partial class DesktopTests
                             disabled.Services.GetRequiredService<DesktopAppearance>().Preferences
                         );
                         var plugins = disabled.Services.GetRequiredService<PluginRuntime>();
-                        var record = plugins.List().Single(plugin => plugin.Saved.Spec.Id == "articles.desktop");
+                        var record = plugins
+                            .List()
+                            .Single(plugin => plugin.Saved.Spec.Id == "lazytuihub.plugin.tuihub.articles.desktop");
                         Assert.Equal("disabled", record.Activation);
                         Assert.Equal("Reader", Assert.Single(record.Saved.Declaration.Pages).Title);
                         var window = new ShellWindow(disabled);
@@ -129,17 +132,21 @@ public sealed partial class DesktopTests
                                     .GetArticleAsync(new() { Name = savedArticle }, token)
                             ).Read
                         );
-                        plugins.SetEnabled("articles.desktop", true);
+                        plugins.SetEnabled("lazytuihub.plugin.tuihub.articles.desktop", true);
                         await CloseAsync(window, token);
                     }
-                    var dll = Path.Combine(workspace.Plugins, "articles-desktop", "LazyTuiHub.Articles.Desktop.dll");
+                    var dll = Path.Combine(
+                        workspace.Plugins,
+                        "lazytuihub.plugin.tuihub.articles.desktop",
+                        "LazyTuiHub.Plugin.TuiHub.Articles.Desktop.dll"
+                    );
                     File.Move(dll, dll + ".absent");
                     using (var missing = CreateHost(workspace))
                     {
                         var record = missing
                             .Services.GetRequiredService<PluginRuntime>()
                             .List()
-                            .Single(plugin => plugin.Saved.Spec.Id == "articles.desktop");
+                            .Single(plugin => plugin.Saved.Spec.Id == "lazytuihub.plugin.tuihub.articles.desktop");
                         Assert.Equal("missing", record.Availability);
                         Assert.True(record.Saved.Enabled);
                         Assert.Single(record.Saved.Declaration.Pages);
@@ -149,19 +156,28 @@ public sealed partial class DesktopTests
                     using (var restored = CreateHost(workspace))
                     {
                         var page = Assert.IsType<ReaderPage>(
-                            DesktopPages.Resolve(restored.Services, "articles.desktop", "reader")
+                            DesktopPages.Resolve(
+                                restored.Services,
+                                "lazytuihub.plugin.tuihub.articles.desktop",
+                                "reader"
+                            )
                         );
                         await page.Model.LoadAsync();
                         await page.Model.SetFilterAsync("read = true");
                         Assert.Equal(savedArticle, Assert.Single(page.Model.Articles).Name);
-                        restored.Services.GetRequiredService<PluginRuntime>().SetEnabled("rss", false);
+                        restored
+                            .Services.GetRequiredService<PluginRuntime>()
+                            .SetEnabled("lazytuihub.plugin.tuihub.rss", false);
                     }
                     using (var businessMissing = CreateHost(workspace))
                     {
                         var plugins = businessMissing.Services.GetRequiredService<PluginRuntime>();
                         Assert.Equal(
                             "active",
-                            plugins.List().Single(plugin => plugin.Saved.Spec.Id == "articles.desktop").Activation
+                            plugins
+                                .List()
+                                .Single(plugin => plugin.Saved.Spec.Id == "lazytuihub.plugin.tuihub.articles.desktop")
+                                .Activation
                         );
                         var window = new ShellWindow(businessMissing);
                         window.Show();

@@ -7,6 +7,7 @@ using LazyTuiHub.Api.Rss.V1;
 using LazyTuiHub.Client;
 using LazyTuiHub.Examples;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Interaction;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -60,6 +61,15 @@ public sealed class AccessTests
         ]);
         await primary.StartAsync(Token);
         var endpoint = new Uri(primary.Urls.Single());
+        using (var remote = new RemoteWorkspace(endpoint.AbsoluteUri, null, null, TrustedFixture(certificate)))
+        {
+            var actions = remote.Catalog.Get("access").Actions;
+            var output = new InteractionOutput(_ => { }, _ => { });
+            await actions.Single(a => a.Name == "login").InvokeAsync(_ => Admin, _ => password, output, Token);
+            Assert.Empty((await remote.Feeds.Feeds(Token)).Feeds);
+            await actions.Single(a => a.Name == "logout").InvokeAsync(_ => null, _ => string.Empty, output, Token);
+            await RssStatusAsync(HttpStatusCode.Unauthorized, () => remote.Feeds.Feeds(Token));
+        }
         using var admin = Client(endpoint, certificate);
         using var reader = Client(endpoint, certificate);
         var adminSession = await AuthenticateUserAsync(admin, Admin, password);
@@ -107,7 +117,7 @@ public sealed class AccessTests
         reader.DefaultRequestHeaders.Add(AccountHeader, owner.Account);
         Assert.Empty((await rss.ListFeedsAsync(null, null, Token)).Feeds);
         await RssStatusAsync(HttpStatusCode.NotFound, () => rss.GetFeedAsync(feed.FeedId, Token));
-        var uri = ResourceUri.InAccount("rss", owner.Account, "feeds", feed.FeedId);
+        var uri = ResourceUri.InAccount("lazytuihub.plugin.tuihub.rss", owner.Account, "feeds", feed.FeedId);
         await AdminAsync(workspace, owner.Token, "grant", $"--username={Reader}", $"--uri={uri}", "--mode=read");
         Assert.Equal(name, (await rss.GetFeedAsync(feed.FeedId, Token)).Name);
         Assert.Single((await rss.ListFeedsAsync(1, null, Token)).Feeds);
@@ -208,14 +218,9 @@ public sealed class AccessTests
         return request.CreateSelfSigned(now.AddMinutes(-1), now.AddDays(1));
     }
 
+    private static HttpClientHandler TrustedFixture(X509Certificate2 certificate) =>
+        new() { ServerCertificateCustomValidationCallback = (_, remote, _, _) => certificate.Equals(remote) };
+
     private static HttpClient Client(Uri endpoint, X509Certificate2 certificate) =>
-        new(
-            new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (_, remote, _, _) => certificate.Equals(remote),
-            }
-        )
-        {
-            BaseAddress = endpoint,
-        };
+        new(TrustedFixture(certificate)) { BaseAddress = endpoint };
 }

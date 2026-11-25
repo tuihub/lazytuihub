@@ -60,6 +60,7 @@ public sealed partial class ShellWindow
         var rail = layout == NavigationLayout.MaterialRail;
         var fluent = appearance.EffectiveDesign == DesignSystem.Fluent;
         PlaceNavigation(bottom);
+        AppearanceTools.Orientation = bottom ? Orientation.Horizontal : Orientation.Vertical;
         CompactHeader.IsVisible = layout == NavigationLayout.Drawer || bottom;
         MenuButton.IsVisible = !bottom;
         PaneToggle.IsVisible = layout is NavigationLayout.FluentCompact or NavigationLayout.FluentExpanded;
@@ -114,7 +115,13 @@ public sealed partial class ShellWindow
 
     private void CloseNavigationOnEscape(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && HasOpenOverlay)
+        var shortcut = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
+        if (e.Key == Key.K && e.KeyModifiers == shortcut)
+        {
+            OpenOperations(this, e);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && HasOpenOverlay)
         {
             NavigationSplit.IsPaneOpen = false;
             (PaneToggle.IsVisible ? PaneToggle : MenuButton).Focus(NavigationMethod.Tab);

@@ -3,7 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Interaction;
 using LazyTuiHub.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +19,7 @@ public sealed partial class ShellWindow : Window
     private readonly DesktopSession session;
     private readonly DesktopAppearance appearance;
     private readonly Dictionary<NavigationPage, Control> views = [];
+    private readonly ClientSession? identity;
     private bool stopped;
     private bool closing;
     private bool replaced;
@@ -29,22 +32,25 @@ public sealed partial class ShellWindow : Window
         appearance = host.Services.GetRequiredService<DesktopAppearance>();
         appearance.Initialize((DesktopApp)Application.Current!);
         InitializeComponent();
-        var plugins = host.Services.GetRequiredService<PluginRuntime>();
-        var access = host.Services.GetRequiredService<ResourceAccess>();
-        Navigation =
-        [
-            .. plugins
-                .List()
-                .Where(plugin => string.Equals(plugin.Activation, "active", StringComparison.Ordinal))
-                .SelectMany(plugin =>
-                    plugin.Saved.Declaration.Pages.Select(page => new NavigationPage(
-                        page.Title,
-                        () => DesktopPages.Resolve(host.Services, plugin.Saved.Spec.Id, page.Id),
-                        NavigationIcon(page.IconResource)
-                    ))
-                ),
-            .. access.Allows(ResourceUri.SystemControl("operations"), AccessMode.Write) ? ManagementPages(plugins) : [],
-        ];
+        identity = host.Services.GetService<ClientSession>();
+        var plugins = host.Services.GetService<PluginRuntime>();
+        if (plugins is null)
+            Navigation =
+            [
+                .. host
+                    .Services.GetServices<RemotePage>()
+                    .Select(p => new NavigationPage(p.Title, () => p.Create(host.Services), NavigationIcon(p.Icon))),
+                new("Operations", Operations, NavigationIcon("ActionIconSearch")),
+            ];
+        else if (identity is { Token: null })
+            Navigation = [new("Sign in", Operations, NavigationIcon("ActionIconPlugin"))];
+        else
+            Navigation = LocalPages(plugins);
+        if (identity is not null)
+        {
+            identity.Changed += SessionChanged;
+            Closed += (_, _) => identity.Changed -= SessionChanged;
+        }
         if (OperatingSystem.IsMacOS())
             InstallViewMenu();
         Pages.ItemsSource = Navigation;
@@ -60,6 +66,72 @@ public sealed partial class ShellWindow : Window
         Pages.AddHandler(TappedEvent, InvokeDestination, handledEventsToo: true);
         Closing += WindowClosing;
         SizeChanged += (_, e) => UpdateNavigation(e.NewSize);
+    }
+
+    private IReadOnlyList<NavigationPage> LocalPages(PluginRuntime plugins)
+    {
+        var access = host.Services.GetRequiredService<ResourceAccess>();
+        return
+        [
+            .. plugins
+                .List()
+                .Where(plugin => string.Equals(plugin.Activation, "active", StringComparison.Ordinal))
+                .SelectMany(plugin =>
+                    plugin.Saved.Declaration.Pages.Select(page => new NavigationPage(
+                        page.Title,
+                        () => DesktopPages.Resolve(host.Services, plugin.Saved.Spec.Id, page.Id),
+                        NavigationIcon(page.IconResource)
+                    ))
+                ),
+            .. access.Allows(ResourceUri.SystemControl("operations"), AccessMode.Write) ? ManagementPages() : [],
+        ];
+    }
+
+    private void SessionChanged(object? sender, EventArgs e) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (replaced || closing)
+                return;
+            if (identity?.Token is null)
+                Close();
+            else
+                ReplaceWindow(0);
+        });
+
+    private OperationsPage Operations() => new(host.Services.GetRequiredService<CapabilityCatalog>(), session);
+
+    private async void OpenOperations(object? sender, RoutedEventArgs args)
+    {
+        var page = Operations();
+        var dialog = new Window
+        {
+            Title = "Operations",
+            Content = page,
+            Width = Math.Min(Width, 580),
+            Height = Math.Min(Height, 680),
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Background,
+        };
+        await dialog.ShowDialog(this);
+        if (closing || replaced || page.ExecutedGroups.Count == 0)
+            return;
+        foreach (var (destination, control) in views.ToArray())
+        {
+            if (control is not IWorkspaceView view)
+                continue;
+            try
+            {
+                await view.RefreshAsync(page.ExecutedGroups);
+            }
+            catch (Exception error)
+            {
+                views.Remove(destination);
+                if (Equals(Pages.SelectedItem, destination))
+                    PageContent.Content = PageFailure(destination, error);
+                else
+                    LogPageFailure(host.Services.GetRequiredService<ILogger<ShellWindow>>(), destination.Title, error);
+            }
+        }
     }
 
     private static Geometry? NavigationIcon(string? resource) =>
@@ -87,18 +159,22 @@ public sealed partial class ShellWindow : Window
         NativeMenu.SetMenu(this, new NativeMenu { Items = { new NativeMenuItem("View") { Menu = view } } });
     }
 
-    private NavigationPage[] ManagementPages(PluginRuntime plugins) =>
+    private NavigationPage[] ManagementPages() =>
         [
             new(
                 "Workflows",
-                () => new WorkflowPage(plugins.Workflows, host.Services.GetRequiredService<WorkflowPageState>()),
+                () =>
+                    new WorkflowPage(
+                        host.Services.GetRequiredService<WorkflowOperations>(),
+                        host.Services.GetRequiredService<WorkflowPageState>()
+                    ),
                 NavigationIcon("ActionIconWorkflow")
             ),
             new(
                 "Plugins",
                 () =>
                     new PluginsPage(
-                        plugins,
+                        host.Services.GetRequiredService<PluginOperations>(),
                         host.Services.GetRequiredService<PluginsPageState>(),
                         host.Services.GetRequiredService<ILogger<PluginsPage>>()
                     ),
@@ -128,19 +204,24 @@ public sealed partial class ShellWindow : Window
         }
         catch (Exception error)
         {
-            LogPageFailure(host.Services.GetRequiredService<ILogger<ShellWindow>>(), page.Title, error);
-            view = new TextBox
-            {
-                Text = error.GetBaseException().Message,
-                IsReadOnly = true,
-                AcceptsReturn = true,
-            };
+            return PageFailure(page, error);
         }
         views.Add(page, view);
         return view;
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Could not open page {Page}.")]
+    private TextBox PageFailure(NavigationPage page, Exception error)
+    {
+        LogPageFailure(host.Services.GetRequiredService<ILogger<ShellWindow>>(), page.Title, error);
+        return new TextBox
+        {
+            Text = error.GetBaseException().Message,
+            IsReadOnly = true,
+            AcceptsReturn = true,
+        };
+    }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Could not load page {Page}.")]
     private static partial void LogPageFailure(ILogger logger, string page, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Desktop shutdown failed.")]

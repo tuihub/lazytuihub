@@ -1,5 +1,5 @@
 {
-  "path": ["src"],
+  "path": ["src", "plugins"],
   "format": ["csharp"],
   "minTokens": 150,
   "minLines": 1,
@@ -7,6 +7,6 @@
   "mode": "weak",
   "ignoreIdentifiers": true,
   "ignoreLiterals": true,
-  "ignore": ["**/bin/**", "**/obj/**", "**/*.g.cs", "**/*.g.i.cs", "**/*.generated.cs", "**/*.designer.cs"],
+  "ignore": ["**/tests/**", "**/bin/**", "**/obj/**", "**/*.g.cs", "**/*.g.i.cs", "**/*.generated.cs", "**/*.designer.cs"],
   "reporters": ["console", "threshold"]
 }

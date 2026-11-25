@@ -201,7 +201,7 @@ public sealed class PipelineTests
         var reference = new DataReference("example.payload", "42");
         DataPacket? captured = null;
         var registry = new NodeRegistry();
-        BuiltInNodes.RegisterOutput<Payload>(registry, "capture");
+        StreamNodes.RegisterOutput<Payload>(registry, "capture", "tests");
         StreamNodes.Source<Payload>(registry, "source", "business", (_, _) =>
             new[] { new DataPacket<Payload>(payload, reference) }.ToAsyncEnumerable()
         );

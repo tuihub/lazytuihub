@@ -6,7 +6,6 @@ using LazyTuiHub.Access;
 using LazyTuiHub.Api;
 using LazyTuiHub.Desktop;
 using LazyTuiHub.Execution;
-using LazyTuiHub.Framework;
 using LazyTuiHub.Plugins;
 
 namespace LazyTuiHub;
@@ -57,38 +56,31 @@ public static class ApplicationHost
         }
     }
 
+    public static IHost CreateDesktop(string[] args) => CreateInteractive(args, true);
+
+    public static IHost CreateCli(string[] args) => CreateInteractive(args, false);
+
     [SuppressMessage(
         "Reliability",
         "CA2000:Dispose objects before losing scope",
         Justification = "The returned host owns the runtime; failed startup disposes it here."
     )]
-    public static IHost CreateDesktop(string[] args)
+    private static IHost CreateInteractive(string[] args, bool desktop)
     {
         var builder = Host.CreateApplicationBuilder(args);
-        var plugins = HostComposition.Configure(builder.Services, builder.Configuration, desktop: true);
+        var remote = builder.Configuration["endpoint"];
+        var plugins = remote is null
+            ? HostComposition.Configure(builder.Services, builder.Configuration, interactive: true)
+            : null;
+        if (remote is not null)
+            RemoteDesktop.Configure(builder, remote);
         IHost? host = null;
         try
         {
-            builder.Services.AddSingleton<DesktopSession>();
-            builder.Services.AddSingleton(
-                new AppearanceSettings(
-                    builder.Configuration["desktop-settings"]
-                        ?? Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                            "LazyTuiHub",
-                            "desktop.json"
-                        )
-                )
-            );
-            builder.Services.AddSingleton<DesktopAppearance>();
-            builder.Services.AddSingleton<WorkflowPageState>();
-            builder.Services.AddSingleton<PluginsPageState>();
-            if (
-                !builder.Configuration.GetValue<bool>("demo") && !builder.Configuration.GetValue<bool>("Access:Enabled")
-            )
-                builder.Services.AddHostedService<PluginTaskService>();
+            if (desktop)
+                ConfigureDesktop(builder, remote is null);
             host = builder.Build();
-            host.Services.GetRequiredService<PluginRuntime>().Activate(host.Services);
+            plugins?.Activate(host.Services);
             return host;
         }
         catch
@@ -96,19 +88,32 @@ public static class ApplicationHost
             if (host is not null)
                 host.Dispose();
             else
-                plugins.Dispose();
+                plugins?.Dispose();
             throw;
         }
     }
 
-    internal static IDisposable? EnterLocal(IServiceProvider services, IConfiguration configuration)
+    private static void ConfigureDesktop(HostApplicationBuilder builder, bool local)
     {
-        var access = services.GetRequiredService<ResourceAccess>();
-        if (access.IsSingleAccount)
-            return null;
-        var token = configuration["Access:Session"] ?? throw new AccessRequiredException();
-        return access.Enter(
-            services.GetRequiredService<AccountAuthority>().Authenticate(token, configuration["Access:Account"])
+        builder.Services.AddSingleton<DesktopSession>();
+        builder.Services.AddSingleton(
+            new AppearanceSettings(
+                builder.Configuration["desktop-settings"]
+                    ?? Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "LazyTuiHub",
+                        "desktop.json"
+                    )
+            )
         );
+        builder.Services.AddSingleton<DesktopAppearance>();
+        builder.Services.AddSingleton<WorkflowPageState>();
+        builder.Services.AddSingleton<PluginsPageState>();
+        if (
+            local
+            && !builder.Configuration.GetValue<bool>("demo")
+            && !builder.Configuration.GetValue<bool>("Access:Enabled")
+        )
+            builder.Services.AddHostedService<PluginTaskService>();
     }
 }

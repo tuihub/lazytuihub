@@ -41,7 +41,7 @@ public sealed class GameLibraryTests
             await SaveListing(listing with { Title = "Revised collection" });
             await Assert.ThrowsAsync<PipelineExecutionException>(() => Import());
             await Import(first);
-            app.Services.GetRequiredService<PluginRuntime>().SetEnabled("steam", false);
+            app.Services.GetRequiredService<PluginRuntime>().SetEnabled("lazytuihub.plugin.tuihub.steam", false);
         }
         await using var restarted = PluginTestHost.Create(workspace.Database, http);
         var games = restarted.Services.GetRequiredService<GameLibrary>();

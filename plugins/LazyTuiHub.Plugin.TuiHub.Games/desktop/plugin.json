@@ -1,0 +1,9 @@
+{
+  "id": "lazytuihub.plugin.tuihub.games.desktop",
+  "name": "Games",
+  "assembly": "LazyTuiHub.Plugin.TuiHub.Games.Desktop.dll",
+  "entryType": "LazyTuiHub.Games.Desktop.GameDesktopPlugin",
+  "requires": [
+    "lazytuihub.plugin.tuihub.games"
+  ]
+}

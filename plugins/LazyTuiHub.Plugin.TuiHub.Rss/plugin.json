@@ -1,0 +1,6 @@
+{
+  "id": "lazytuihub.plugin.tuihub.rss",
+  "name": "RSS Sources",
+  "assembly": "LazyTuiHub.Plugin.TuiHub.Rss.dll",
+  "entryType": "LazyTuiHub.Rss.RssPlugin"
+}

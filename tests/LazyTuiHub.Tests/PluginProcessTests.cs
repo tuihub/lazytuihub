@@ -73,7 +73,14 @@ public sealed class PluginProcessTests
                 "{\"refreshInterval\":\"00:00:07\",\"custom\":true}",
                 TestContext.Current.CancellationToken
             );
-            await workspace.SuccessAsync("plugins", "configure", "--plugin", "rss", "--file", settings);
+            await workspace.SuccessAsync(
+                "plugins",
+                "configure",
+                "--plugin",
+                "lazytuihub.plugin.tuihub.rss",
+                "--file",
+                settings
+            );
             var relations = await workspace.SuccessAsync(
                 "workflow",
                 "relations",
@@ -83,8 +90,13 @@ public sealed class PluginProcessTests
                 feed.Name.Split('/')[1]
             );
 
-            await workspace.SuccessAsync("plugins", "disable", "--plugin", "rss");
-            var disabled = await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss");
+            await workspace.SuccessAsync("plugins", "disable", "--plugin", "lazytuihub.plugin.tuihub.rss");
+            var disabled = await workspace.JsonAsync<PluginView>(
+                "plugins",
+                "inspect",
+                "--plugin",
+                "lazytuihub.plugin.tuihub.rss"
+            );
             Assert.False(disabled.Saved.Enabled);
             Assert.Equal(
                 2,
@@ -117,10 +129,19 @@ public sealed class PluginProcessTests
             Assert.DoesNotContain("rss.parse", await workspace.SuccessAsync("workflow", "nodes"));
             Assert.Contains("unavailable", await workspace.SuccessAsync("plugins", "list"));
 
-            await workspace.SuccessAsync("plugins", "enable", "--plugin", "rss");
-            var dll = Path.Combine(workspace.Plugins, "rss", "LazyTuiHub.Rss.dll");
+            await workspace.SuccessAsync("plugins", "enable", "--plugin", "lazytuihub.plugin.tuihub.rss");
+            var dll = Path.Combine(
+                workspace.Plugins,
+                "lazytuihub.plugin.tuihub.rss",
+                "LazyTuiHub.Plugin.TuiHub.Rss.dll"
+            );
             File.Move(dll, dll + ".absent");
-            var missing = await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss");
+            var missing = await workspace.JsonAsync<PluginView>(
+                "plugins",
+                "inspect",
+                "--plugin",
+                "lazytuihub.plugin.tuihub.rss"
+            );
             Assert.True(missing.Saved.Enabled);
             Assert.Equal("missing", missing.Availability);
             Assert.Equal(disabled.Saved.Declaration.Nodes.Count, missing.Saved.Declaration.Nodes.Count);
@@ -129,7 +150,12 @@ public sealed class PluginProcessTests
                 await workspace.SuccessAsync("workflow", "definition", "--pipeline-name", "rss.ingest")
             );
             File.Move(dll + ".absent", dll);
-            var restored = await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss");
+            var restored = await workspace.JsonAsync<PluginView>(
+                "plugins",
+                "inspect",
+                "--plugin",
+                "lazytuihub.plugin.tuihub.rss"
+            );
             Assert.Equal("active", restored.Activation);
             Assert.True(restored.Saved.Settings.GetProperty("custom").GetBoolean());
             var retained = JsonParser.Default.Parse<ListArticlesResponse>(
@@ -141,14 +167,31 @@ public sealed class PluginProcessTests
                 saved,
                 await workspace.SuccessAsync("workflow", "definition", "--pipeline-name", "rss.ingest")
             );
-            Assert.Equal(1, (await workspace.RunAsync("plugins", "cleanup", "--plugin", "rss")).Code);
-            Assert.Equal(1, (await workspace.RunAsync("plugins", "disable", "--plugin", "core")).Code);
+            Assert.Equal(
+                1,
+                (await workspace.RunAsync("plugins", "cleanup", "--plugin", "lazytuihub.plugin.tuihub.rss")).Code
+            );
+            Assert.Equal(
+                1,
+                (await workspace.RunAsync("plugins", "disable", "--plugin", "lazytuihub.plugin.tuihub.core")).Code
+            );
 
-            var core = Path.Combine(workspace.Plugins, "core", "LazyTuiHub.CorePlugin.dll");
+            var core = Path.Combine(
+                workspace.Plugins,
+                "lazytuihub.plugin.tuihub.core",
+                "LazyTuiHub.Plugin.TuiHub.Core.dll"
+            );
             File.Move(core, core + ".absent");
             Assert.Equal(
                 "missing",
-                (await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "core")).Availability
+                (
+                    await workspace.JsonAsync<PluginView>(
+                        "plugins",
+                        "inspect",
+                        "--plugin",
+                        "lazytuihub.plugin.tuihub.core"
+                    )
+                ).Availability
             );
             Assert.Equal(1, (await workspace.RunAsync("workflow", "plan", "--pipeline-name", "rss.ingest")).Code);
             Assert.Contains(
@@ -169,7 +212,14 @@ public sealed class PluginProcessTests
             File.Delete(Path.Combine(workspace.Plugins, "plugins.json"));
             Assert.Equal(
                 "missing",
-                (await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "rss")).Availability
+                (
+                    await workspace.JsonAsync<PluginView>(
+                        "plugins",
+                        "inspect",
+                        "--plugin",
+                        "lazytuihub.plugin.tuihub.rss"
+                    )
+                ).Availability
             );
             Assert.Equal(
                 saved,
@@ -186,22 +236,14 @@ public sealed class PluginProcessTests
     public async Task DisabledBusinessRoutesDisappearAndMissingCoreStillHostsDiagnostics()
     {
         using var workspace = new PluginWorkspace();
-        var manifestFile = Path.Combine(workspace.Plugins, "plugins.json");
-        var manifest = JsonSerializer.Deserialize<PluginSpec[]>(
-            await File.ReadAllTextAsync(manifestFile, TestContext.Current.CancellationToken),
-            PipelineStore.JsonOptions
-        )!;
+        var manifest = workspace.ReadPlugins();
         manifest = manifest
             .Select(spec => spec with { Assembly = Path.Combine(AppContext.BaseDirectory, "plugins", spec.Assembly) })
             .ToArray();
-        await File.WriteAllTextAsync(
-            manifestFile,
-            JsonSerializer.Serialize(manifest, PipelineStore.JsonOptions),
-            TestContext.Current.CancellationToken
-        );
+        await workspace.SelectPluginsAsync(manifest);
         string[] args = ["--demo", "true", "--database", workspace.Database, "--plugin-directory", workspace.Plugins];
         await using (var initial = ApplicationHost.Create(args))
-            initial.Services.GetRequiredService<PluginRuntime>().SetEnabled("rss", false);
+            initial.Services.GetRequiredService<PluginRuntime>().SetEnabled("lazytuihub.plugin.tuihub.rss", false);
         await using (var disabled = ApplicationHost.Create(args))
         {
             Assert.Null(disabled.Services.GetService<IRssApi>());
@@ -222,12 +264,10 @@ public sealed class PluginProcessTests
                 await disabled.StopAsync(CancellationToken.None);
             }
         }
-        manifest = manifest.Select(spec => spec.Id == "core" ? spec with { Assembly = "absent.dll" } : spec).ToArray();
-        await File.WriteAllTextAsync(
-            manifestFile,
-            JsonSerializer.Serialize(manifest, PipelineStore.JsonOptions),
-            TestContext.Current.CancellationToken
-        );
+        manifest = manifest
+            .Select(spec => spec.Id == "lazytuihub.plugin.tuihub.core" ? spec with { Assembly = "absent.dll" } : spec)
+            .ToArray();
+        await workspace.SelectPluginsAsync(manifest);
         await using var minimal = ApplicationHost.Create(args);
         await minimal.StartAsync(TestContext.Current.CancellationToken);
         try
@@ -237,7 +277,7 @@ public sealed class PluginProcessTests
                 minimal
                     .Services.GetRequiredService<PluginRuntime>()
                     .List()
-                    .Single(view => view.Saved.Spec.Id == "core")
+                    .Single(view => view.Saved.Spec.Id == "lazytuihub.plugin.tuihub.core")
                     .Availability
             );
             Assert.NotEmpty(minimal.Services.GetRequiredService<WorkflowRuntime>().List());
@@ -253,10 +293,14 @@ public sealed class PluginProcessTests
     public async Task UnknownNodesAndFreshMissingCoreRemainDiagnosable()
     {
         using var workspace = new PluginWorkspace();
-        File.Delete(Path.Combine(workspace.Plugins, "core", "LazyTuiHub.CorePlugin.dll"));
+        File.Delete(
+            Path.Combine(workspace.Plugins, "lazytuihub.plugin.tuihub.core", "LazyTuiHub.Plugin.TuiHub.Core.dll")
+        );
         Assert.Equal(
             "missing",
-            (await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "core")).Availability
+            (
+                await workspace.JsonAsync<PluginView>("plugins", "inspect", "--plugin", "lazytuihub.plugin.tuihub.core")
+            ).Availability
         );
         Assert.Contains("core", (await workspace.RunAsync("workflow", "plan", "--pipeline-name", "rss.ingest")).Output);
         var file = Path.Combine(workspace.DirectoryPath, "unknown.json");

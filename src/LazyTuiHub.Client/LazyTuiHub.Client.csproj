@@ -3,6 +3,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/client/LazyTuiHub.Plugin.TuiHub.Rss.Client.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/client/LazyTuiHub.Plugin.TuiHub.Articles.Client.csproj" />
+    <ProjectReference Include="../LazyTuiHub.Interaction/LazyTuiHub.Interaction.csproj" />
     <ProjectReference Include="../LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
   </ItemGroup>
 </Project>

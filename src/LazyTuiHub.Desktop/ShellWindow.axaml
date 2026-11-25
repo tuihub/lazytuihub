@@ -86,6 +86,16 @@
                     </ListBox>
                     <StackPanel x:Name="AppearanceTools" Grid.Row="2" Spacing="8">
                         <Button
+                            x:Name="OperationsButton"
+                            Classes="icon"
+                            HorizontalAlignment="Center"
+                            Click="OpenOperations"
+                            AutomationProperties.Name="Find an operation"
+                            ToolTip.Tip="Find an operation"
+                        >
+                            <PathIcon Classes="action" Data="{DynamicResource ActionIconSearch}" />
+                        </Button>
+                        <Button
                             x:Name="AppearanceButton"
                             Classes="quiet"
                             AutomationProperties.Name="Appearance"

@@ -7,6 +7,12 @@ public static class StreamNodes
     public const string Input = "input";
     public const string Output = "output";
 
+    public static void RegisterOutput<T>(NodeRegistry registry, string type, string module)
+        where T : notnull =>
+        Sink<T>(registry, type, module, (packet, context, token) =>
+            context.Run.Output?.Invoke(packet, token) ?? ValueTask.CompletedTask
+        );
+
     public static void Source<T>(
         NodeRegistry registry,
         string type,

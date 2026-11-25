@@ -15,9 +15,11 @@ The default workspace is `LazyTuiHub/workspace.db` under .NET's local applicatio
 
 In Reader, choose the + button beside Library, enter an HTTP/HTTPS feed URL and an optional name, then choose Subscribe. Select the feed and use the refresh button to retrieve articles through the RSS pipeline. Select an article to read its stored content, choose Mark read, or filter read/unread articles. Load more requests the next API page; the UI does not cap the total number of articles. With All sources selected, refresh reloads saved articles. The refresh button’s context menu also offers Reload saved articles, including changes from background refresh. Article content is displayed as selectable text, including any source markup; HTML rendering and opening external links are not implemented.
 
-Workflows shows saved definitions, the current local execution plan, and reasons a graph cannot execute. It is a read-only inspector. Use the existing JSON/CLI tools to save and run workflow definitions; this page does not submit executions or collect their required inputs.
+Open **Find an operation** beside Appearance or press Command+K on macOS or Ctrl+K on other systems. Search by action or description and fill the named fields. This includes actions such as **games · log-session** and **workflow · run**. The same workspace lists operations under `mise run run:cli -- games --help`. Use `mise run run:desktop -- --endpoint https://SERVER` to open a remote reader and session, feed and article operations.
 
-Plugins shows saved enablement separately from this startup's activation and file availability. Enable/disable changes apply after restarting. Required plugins cannot be disabled. The reader (`articles.desktop`) requires `articles`. Disabling `rss` removes subscription controls and stops fetching. Saved articles remain readable. Missing or disabled plugins retain page declarations and existing data. Ordinary retention policies continue under the storage agreement. Changing pages preserves the current page instance and its in-memory selection; selection and filters are not saved across restarts. Appearance preferences are saved separately on this device.
+Workflows shows saved definitions, the current execution plan and reasons a graph cannot execute. Open Operations to save a definition, run it once or watch its output until cancelled.
+
+Plugins shows saved enablement separately from this startup's activation and file availability. Enable/disable changes apply after restarting. Required plugins cannot be disabled. The desktop reader requires the article library. Disabling the RSS plugin removes subscription controls and stops fetching. Saved articles remain readable. Missing or disabled plugins retain page declarations and existing data. Ordinary retention policies continue under the storage agreement. Changing pages preserves the current page instance and its in-memory selection; selection and filters are not saved across restarts. Appearance preferences are saved separately on this device.
 
 ## Game library
 
@@ -51,7 +53,7 @@ Resizing keeps the existing views, selection, draft input, and loaded data. It d
 | - | - |
 | [Application host](../../src/LazyTuiHub/) | Shared service/plugin composition; a generic host for desktop mode and a web host for HTTP/CLI mode. |
 | [Desktop](../../src/LazyTuiHub.Desktop/) | Avalonia application/window, page composition, workflow/plugin inspectors, UI operation tracking, and shutdown. |
-| [Article reader plugin](../../src/LazyTuiHub.Articles.Desktop/) | Reader controls and state; IArticleApi for reading and optional IRssApi for subscriptions. |
+| [Article reader plugin](../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/) | Reader controls and state; IArticleApi for reading and optional IRssApi for subscriptions. |
 | [Plugin framework](../../src/LazyTuiHub.Plugins/) | Plain page declarations, owner identity, retained metadata, dependency activation, and cold-start enablement. |
 
 The desktop host starts the same available background tasks without starting an HTTP listener. Business and DAO code do not reference Avalonia. The desktop plugin is built as a distribution artifact and loaded dynamically; the host has no runtime reference to its implementation assembly. `AddDesktopPage` contributes a plain page declaration and a keyed Avalonia control factory. Only active plugins contribute navigation entries; factories run on the UI thread when a page is first opened. The default shared assembly context preserves contract and Avalonia type identity.

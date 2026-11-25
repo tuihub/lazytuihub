@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Interaction;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,11 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace LazyTuiHub.Plugins;
 
-public sealed partial class PluginRuntime : IDisposable
+public sealed partial class PluginRuntime : IDisposable, IPluginAvailability
 {
     private const string Present = "present";
     private const string Blocked = "blocked";
     private readonly PluginCatalog catalog;
+    private readonly Dictionary<string, CapabilityGroup> capabilities = new(StringComparer.Ordinal);
+    private readonly IReadOnlyCollection<string> hostGroups;
+    public IEnumerable<CapabilityGroup> Capabilities => capabilities.Values;
     private readonly PluginAssemblies assemblies = new();
     private readonly Dictionary<string, PluginView> observations = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PluginRegistration> configured = new(StringComparer.Ordinal);
@@ -33,9 +37,11 @@ public sealed partial class PluginRuntime : IDisposable
         SqliteDatabase database,
         IConfiguration configuration,
         string directory,
-        ResourceAccess? resourceAccess = null
+        ResourceAccess? resourceAccess = null,
+        IReadOnlyCollection<string>? hostGroups = null
     )
     {
+        this.hostGroups = hostGroups ?? [];
         this.configuration = configuration;
         this.directory = Path.GetFullPath(directory);
         catalog = new(database);
@@ -49,6 +55,8 @@ public sealed partial class PluginRuntime : IDisposable
     public void Configure(IServiceCollection services)
     {
         services.AddSingleton(access);
+        services.AddSingleton<IPluginAvailability>(this);
+        services.AddSingleton<IRetentionCleanup>(Retention);
         var specs = ReadManifest();
         foreach (var spec in specs)
             catalog.Observe(spec);
@@ -58,7 +66,9 @@ public sealed partial class PluginRuntime : IDisposable
         var pending = specs.ToDictionary(spec => spec.Id, StringComparer.Ordinal);
         while (pending.Count > 0)
         {
-            var ready = pending.Values.FirstOrDefault(spec => !(spec.Requires ?? []).Any(pending.ContainsKey));
+            var ready = pending.Values.FirstOrDefault(spec =>
+                !(spec.Requires ?? []).Any(dep => pending.ContainsKey(dep.Id))
+            );
             if (ready is null)
             {
                 foreach (var spec in pending.Values)
@@ -70,13 +80,15 @@ public sealed partial class PluginRuntime : IDisposable
         }
     }
 
-    private PluginSpec[] ReadManifest()
+    private IReadOnlyList<PluginSpec> ReadManifest()
     {
-        var path = Path.Combine(directory, "plugins.json");
         try
         {
-            return JsonSerializer.Deserialize<PluginSpec[]>(File.ReadAllText(path), PipelineStore.JsonOptions)
-                ?? throw new JsonException("The plugin manifest is empty.");
+            var problems = new List<string>();
+            var specs = PluginManifest.Read(directory, problems.Add);
+            if (problems.Count != 0)
+                DiscoveryError = string.Join(Environment.NewLine, problems);
+            return specs;
         }
         catch (Exception error) when (error is IOException or JsonException)
         {
@@ -99,10 +111,18 @@ public sealed partial class PluginRuntime : IDisposable
             Observe(spec.Id, Present, "disabled", null);
             return;
         }
-        var missing = (spec.Requires ?? []).Where(id => !configured.ContainsKey(id)).ToArray();
-        if (missing.Length > 0)
+        if (spec.Version is not null && !NuGet.Versioning.NuGetVersion.TryParse(spec.Version, out _))
         {
-            Observe(spec.Id, Present, Blocked, $"Unavailable required plugins: {string.Join(", ", missing)}");
+            Observe(spec.Id, Present, Blocked, $"Invalid declared version '{spec.Version}'.");
+            return;
+        }
+        var problems = (spec.Requires ?? [])
+            .Select(dep => dep.Problem(configured.ContainsKey(dep.Id) ? observations[dep.Id].Saved.Spec : null))
+            .OfType<string>()
+            .ToArray();
+        if (problems.Length > 0)
+        {
+            Observe(spec.Id, Present, Blocked, string.Join(Environment.NewLine, problems));
             return;
         }
         try
@@ -158,6 +178,7 @@ public sealed partial class PluginRuntime : IDisposable
                             .Daos.Problems()
                             .Concat(
                                 (observations[id].Saved.Spec.Requires ?? [])
+                                    .Select(dependency => dependency.Id)
                                     .Where(dependency => !active.Contains(dependency))
                                     .Select(dependency => $"Required plugin '{dependency}' is not active.")
                             )
@@ -180,7 +201,7 @@ public sealed partial class PluginRuntime : IDisposable
     )
     {
         var registration = configured[id];
-        var dependencies = observations[id].Saved.Spec.Requires ?? [];
+        var dependencies = (observations[id].Saved.Spec.Requires ?? []).Select(dep => dep.Id).ToArray();
         if (dependencies.Any(pending.Contains))
             return false;
         var missing = dependencies.Where(dependency => !active.Contains(dependency)).ToArray();
@@ -220,25 +241,26 @@ public sealed partial class PluginRuntime : IDisposable
         if (endpoints is not null)
             registration.MapEndpoints?.Invoke(endpoints);
         ValidateContributions(registration);
+        var groups = registration.Capabilities.Values.Select(create => create(services)).ToArray();
         Workflows.Register(id, nodes);
         Retention.Observe(registration);
         catalog.Declare(id, Declaration(registration, nodes));
         endpoints?.Commit();
         Daos.Publish(id, registration.DaoServices);
+        foreach (var group in groups)
+            capabilities.Add(group.Name, group);
         active.Add(id);
         Observe(id, Present, "active", null);
     }
 
     private void ValidateContributions(PluginRegistration registration)
     {
-        _ = registration.Commands.ToDictionary(command => command.Name, StringComparer.Ordinal);
         _ = registration.Tasks.ToDictionary(task => task.Id, StringComparer.Ordinal);
         _ = registration.Pages.ToDictionary(page => page.Id, StringComparer.Ordinal);
         Daos.Validate(registration.DaoServices);
-        var duplicate = active
-            .SelectMany(owner => configured[owner].Commands)
-            .Select(command => command.Name)
-            .Intersect(registration.Commands.Select(command => command.Name), StringComparer.Ordinal)
+        var duplicate = capabilities
+            .Keys.Concat(hostGroups)
+            .Intersect(registration.Capabilities.Keys, StringComparer.Ordinal)
             .FirstOrDefault();
         if (duplicate is not null)
             throw new InvalidOperationException($"Command already registered: {duplicate}.");
@@ -256,7 +278,7 @@ public sealed partial class PluginRuntime : IDisposable
                 ))
                 .ToArray(),
             registration.DataTypes.ToArray(),
-            registration.Commands.Select(command => command.Name).ToArray(),
+            registration.Capabilities.Keys.ToArray(),
             registration.Tasks.Select(task => new DeclaredTask(task.Id, task.Workflows.ToArray())).ToArray(),
             registration.Hooks.Cleanup is not null,
             registration.Hooks.Uninstall is not null
@@ -293,19 +315,12 @@ public sealed partial class PluginRuntime : IDisposable
 
     public void SetSettings(string id, JsonElement settings) => catalog.SetSettings(id, settings);
 
-    public PluginCommand Command(string name)
+    public string UnavailableGroup(string name)
     {
-        var commands = active
-            .SelectMany(id => configured[id].Commands)
-            .Where(command => string.Equals(command.Name, name, StringComparison.Ordinal))
-            .ToArray();
-        if (commands.Length == 1)
-            return commands[0];
-        var owner = List()
-            .FirstOrDefault(view => view.Saved.Declaration.Commands.Contains(name, StringComparer.Ordinal));
-        throw new InvalidOperationException(
-            $"Command '{name}' is unavailable; plugin '{owner?.Saved.Spec.Id ?? "unknown"}': {owner?.Reason}"
-        );
+        var owner = List().FirstOrDefault(p => p.Saved.Declaration.Commands.Contains(name, StringComparer.Ordinal));
+        return owner is null
+            ? $"Unknown operation group '{name}'."
+            : $"Group '{name}' is unavailable; plugin '{owner.Saved.Spec.Id}': {owner.Reason}";
     }
 
     public async Task InvokeHookAsync(string id, string operation, IServiceProvider services, CancellationToken token)

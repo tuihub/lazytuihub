@@ -161,6 +161,7 @@ test('format checking fails without rewriting and format:code can repair the sou
 test('renamed product clones fail while tests and generated files are excluded', async (t) => {
     const cwd = await directory(t);
     await mkdir(path.join(cwd, 'src'));
+    await mkdir(path.join(cwd, 'plugins'));
     await mkdir(path.join(cwd, 'tests'));
     await writeFile(path.join(cwd, '.jscpd.json'), await readFile(path.join(root, '.jscpd.json')));
     const code = `namespace Fixture;
@@ -191,7 +192,7 @@ public static class Original
     const command = [path.join(root, 'node_modules/jscpd/run-jscpd.js'), '--no-colors'];
     const excluded = run(process.execPath, command, cwd);
     assert.equal(excluded.status, 0, excluded.output);
-    await writeFile(path.join(cwd, 'src/Renamed.cs'), renamed);
+    await writeFile(path.join(cwd, 'plugins/Renamed.cs'), renamed);
     const duplicated = run(process.execPath, command, cwd);
     assert.notEqual(duplicated.status, 0, duplicated.output);
     assert.match(duplicated.output, /Original\.cs/, duplicated.output);

@@ -3,7 +3,7 @@ using System.Runtime.Loader;
 
 namespace LazyTuiHub.Plugins;
 
-internal sealed class PluginAssemblies : IDisposable
+public sealed class PluginAssemblies : IDisposable
 {
     private readonly List<AssemblyDependencyResolver> resolvers = [];
 

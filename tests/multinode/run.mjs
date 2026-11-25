@@ -11,14 +11,14 @@ const project = 'lazytuihub-test-' + randomUUID().slice(0, 8);
 const artifacts = path.join(root, '.local/multinode');
 await mkdir(artifacts, {recursive: true});
 await using publish = await mkdtempDisposable(path.join(artifacts, 'publish-'));
-const platform = process.env.DOCKER_DEFAULT_PLATFORM
+const platform = process.env.TEST_APP_PLATFORM || process.env.DOCKER_DEFAULT_PLATFORM
     || execFileSync('docker', ['version', '--format', '{{.Server.Os}}/{{.Server.Arch}}'], {encoding: 'utf8'}).trim();
 const [os, arch] = platform.split('/');
 const rid = os + '-' + (arch === 'amd64' ? 'x64' : arch);
 publishHost(rid, publish.path);
 const {runtimeOptions} = JSON.parse(await readFile(path.join(publish.path, 'LazyTuiHub.runtimeconfig.json'), 'utf8'));
 const runtime = runtimeOptions.includedFrameworks.find(framework => framework.name === 'Microsoft.NETCore.App');
-const env = {...process.env, DOTNET_RUNTIME_TAG: runtime.version.split('.').slice(0, 2).join('.'), TEST_PUBLISH_DIR: publish.path,
+const env = {...process.env, TEST_APP_PLATFORM: platform, DOTNET_RUNTIME_TAG: runtime.version.split('.').slice(0, 2).join('.'), TEST_PUBLISH_DIR: publish.path,
     B_RESOURCE: 'compute.batch', WORKER_A_TOKEN: randomUUID(), WORKER_B_TOKEN: randomUUID(), WORKER_C_TOKEN: randomUUID()};
 const compose = ['compose', '-p', project, '-f', 'tests/multinode/compose.yaml'];
 const evidence = {project, cases: []};

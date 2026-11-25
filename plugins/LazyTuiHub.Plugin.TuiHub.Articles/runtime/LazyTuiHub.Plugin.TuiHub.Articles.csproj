@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../client/LazyTuiHub.Plugin.TuiHub.Articles.Client.csproj" />
+    <ProjectReference Include="../../../src/LazyTuiHub.Nodes/LazyTuiHub.Nodes.csproj" />
+    <ProjectReference Include="../../../src/LazyTuiHub.PluginSdk/LazyTuiHub.PluginSdk.csproj" />
+    <ProjectReference Include="../contracts/LazyTuiHub.Plugin.TuiHub.Articles.Contracts.csproj" />
+    <ProjectReference Include="../../../src/LazyTuiHub.Api.Hosting/LazyTuiHub.Api.Hosting.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore.Server" Version="2.85.0" />
+  </ItemGroup>
+</Project>

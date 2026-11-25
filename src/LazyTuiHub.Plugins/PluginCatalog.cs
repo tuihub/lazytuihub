@@ -85,7 +85,7 @@ internal sealed class PluginCatalog
             current.Declaration with
             {
                 DataTypes = registration.DataTypes.ToArray(),
-                Commands = registration.Commands.Select(command => command.Name).ToArray(),
+                Commands = registration.Capabilities.Keys.ToArray(),
                 Tasks = registration.Tasks.Select(task => new DeclaredTask(task.Id, task.Workflows)).ToArray(),
                 HasCleanup = registration.Hooks.Cleanup is not null,
                 HasUninstall = registration.Hooks.Uninstall is not null,

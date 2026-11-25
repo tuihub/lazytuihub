@@ -18,7 +18,13 @@ public sealed partial class ShellWindow
             ShowAppearance();
             return this;
         }
-        var replacement = new ShellWindow(host, Pages.SelectedIndex)
+        return ReplaceWindow(Pages.SelectedIndex);
+    }
+
+    private ShellWindow ReplaceWindow(int selectedPage)
+    {
+        var app = (DesktopApp)Application.Current!;
+        var replacement = new ShellWindow(host, selectedPage)
         {
             Width = Width,
             Height = Height,

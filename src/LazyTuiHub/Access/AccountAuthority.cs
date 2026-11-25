@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using LazyTuiHub.Dao;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Interaction;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 
@@ -63,7 +64,7 @@ internal sealed class AccountAuthority
         transaction.Commit();
     }
 
-    public LoginResult Login(string name, string password)
+    public IssuedSession Login(string name, string password)
     {
         using var connection = database.Open();
         User user;
@@ -282,6 +283,4 @@ internal sealed class AccountAuthority
     private sealed record User(string Id, string Account, string PasswordHash);
 
     private sealed record Session(string Id, string Account);
-
-    internal sealed record LoginResult(string Token, string Account, DateTimeOffset Expires);
 }

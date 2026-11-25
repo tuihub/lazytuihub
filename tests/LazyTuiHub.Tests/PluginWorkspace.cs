@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using LazyTuiHub.Framework;
+using LazyTuiHub.Plugins;
 using Xunit;
 
 namespace LazyTuiHub.Tests;
@@ -21,6 +22,35 @@ internal sealed class PluginWorkspace : IDisposable
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.Copy(file, target);
         }
+    }
+
+    public PluginSpec[] ReadPlugins() => PluginManifest.Read(Plugins, Assert.Fail).ToArray();
+
+    public Task WriteManifestAsync(PluginSpec spec)
+    {
+        var folder = Path.Combine(Plugins, spec.Id);
+        Directory.CreateDirectory(folder);
+        var assembly = Path.GetRelativePath(folder, Path.GetFullPath(spec.Assembly, Plugins));
+        return File.WriteAllTextAsync(
+            Path.Combine(folder, "plugin.json"),
+            JsonSerializer.Serialize(spec with { Assembly = assembly }, PipelineStore.JsonOptions),
+            TestContext.Current.CancellationToken
+        );
+    }
+
+    public async Task SelectPluginsAsync(IEnumerable<PluginSpec> specs)
+    {
+        var selected = new List<PluginSelection>();
+        foreach (var spec in specs)
+        {
+            await WriteManifestAsync(spec);
+            selected.Add(new(spec.Id, spec.Required));
+        }
+        await File.WriteAllTextAsync(
+            Path.Combine(Plugins, "plugins.json"),
+            JsonSerializer.Serialize(selected, PipelineStore.JsonOptions),
+            TestContext.Current.CancellationToken
+        );
     }
 
     public async Task<(int Code, string Output, string Error)> RunAsync(

@@ -3,7 +3,7 @@ using LazyTuiHub.Framework;
 
 namespace LazyTuiHub.Plugins;
 
-public sealed class RetentionRuntime
+public sealed class RetentionRuntime : IRetentionCleanup
 {
     private readonly DaoRegistry daos;
     private readonly RetentionCatalog catalog;
@@ -42,6 +42,8 @@ public sealed class RetentionRuntime
     }
 
     public void SetEnabled(string owner, DaoTable table, bool enabled) => catalog.SetEnabled(owner, table, enabled);
+
+    void IRetentionCleanup.Clean(DateTimeOffset now, CancellationToken token) => Clean(now, token);
 
     public IReadOnlyList<RetentionView> Clean(DateTimeOffset now, CancellationToken token = default)
     {

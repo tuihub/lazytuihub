@@ -5,12 +5,13 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../plugins/*/tests/*.cs" />
     <EmbeddedResource Include="Fixtures/review-cover.png" LogicalName="review-cover.png" />
     <ProjectReference Include="../../src/LazyTuiHub/LazyTuiHub.csproj" />
-    <ProjectReference Include="../../src/LazyTuiHub.Articles/LazyTuiHub.Articles.csproj" />
-    <ProjectReference Include="../../src/LazyTuiHub.Games/LazyTuiHub.Games.csproj" />
-    <ProjectReference Include="../../src/LazyTuiHub.Rss/LazyTuiHub.Rss.csproj" />
-    <ProjectReference Include="../../src/LazyTuiHub.Articles.Desktop/LazyTuiHub.Articles.Desktop.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/runtime/LazyTuiHub.Plugin.TuiHub.Articles.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Games/runtime/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Rss/runtime/LazyTuiHub.Plugin.TuiHub.Rss.csproj" />
+    <ProjectReference Include="../../plugins/LazyTuiHub.Plugin.TuiHub.Articles/desktop/LazyTuiHub.Plugin.TuiHub.Articles.Desktop.csproj" />
     <PackageReference Include="Avalonia.Headless" Version="12.1.6" />
     <PackageReference Include="xunit.v3" Version="4.0.3" />
   </ItemGroup>

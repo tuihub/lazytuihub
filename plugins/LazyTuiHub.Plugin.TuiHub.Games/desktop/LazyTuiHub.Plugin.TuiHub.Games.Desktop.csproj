@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Views require injected services and use compiled InitializeComponent, never URI-based construction. -->
+    <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/LazyTuiHub.Desktop/LazyTuiHub.Desktop.csproj" />
+    <ProjectReference Include="../runtime/LazyTuiHub.Plugin.TuiHub.Games.csproj" />
+  </ItemGroup>
+</Project>

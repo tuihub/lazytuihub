@@ -1,0 +1,265 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LazyTuiHub.Games.Desktop"
+    xmlns:sdk="clr-namespace:LazyTuiHub.Games;assembly=LazyTuiHub.Plugin.TuiHub.Games.Sdk"
+    xmlns:g="clr-namespace:LazyTuiHub.Games;assembly=LazyTuiHub.Plugin.TuiHub.Games"
+    x:Class="LazyTuiHub.Games.Desktop.GameInspector"
+    x:DataType="local:GamePageModel"
+>
+    <Grid RowDefinitions="Auto,*">
+        <Button
+            x:Name="Back"
+            Classes="quiet"
+            HorizontalAlignment="Left"
+            Margin="14,10"
+            Click="BackClick"
+            AutomationProperties.Name="Back to games"
+        >
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <PathIcon
+                    Classes="action inline"
+                    Data="{DynamicResource ActionIconBack}"
+                /><TextBlock Text="Games" />
+            </StackPanel>
+        </Button>
+        <Button
+            x:Name="CloseDetail"
+            Classes="icon"
+            HorizontalAlignment="Right"
+            Margin="14,8"
+            Click="BackClick"
+            ToolTip.Tip="Close details"
+            AutomationProperties.Name="Close details"
+        >
+            <PathIcon Classes="action" Data="{DynamicResource ActionIconClose}" />
+        </Button>
+        <ScrollViewer x:Name="Body" Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="20,4,20,24" Spacing="20">
+                <Grid x:Name="Hero" ColumnDefinitions="134,*" ColumnSpacing="18">
+                    <local:GamePoster
+                        Title="{Binding Selected.Entry.Title}"
+                        Identity="{Binding Selected.Entry.Id}"
+                        Url="{Binding Cover}"
+                        VerticalAlignment="Top"
+                    />
+                    <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock
+                            Classes="headline"
+                            Text="{Binding Selected.Entry.Title}"
+                            TextWrapping="Wrap"
+                        />
+                        <TextBlock
+                            Classes="caption"
+                            Text="{Binding Alias}"
+                            TextWrapping="Wrap"
+                            IsVisible="{Binding !!Alias}"
+                        />
+                        <TextBlock
+                            Classes="caption"
+                            Text="{Binding Released}"
+                            IsVisible="{Binding !!Released}"
+                        />
+                        <TextBlock
+                            Classes="item-title"
+                            Text="{Binding Developers}"
+                            TextWrapping="Wrap"
+                            IsVisible="{Binding !!Developers}"
+                        />
+                        <TextBlock
+                            Classes="metadata"
+                            Text="{Binding Publishers,StringFormat='Published by {0}'}"
+                            TextWrapping="Wrap"
+                            MaxLines="3"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip.Tip="{Binding Publishers}"
+                            IsVisible="{Binding !!Publishers}"
+                        />
+                        <ItemsControl ItemsSource="{Binding Selected.Entry.Categories}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel><ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border
+                                        Padding="6,2"
+                                        Background="{DynamicResource SelectionBrush}"
+                                        CornerRadius="{DynamicResource RowRadius}"
+                                        Margin="0,0,4,4"
+                                    >
+                                        <TextBlock Text="{Binding}" Classes="metadata" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+                <Border
+                    IsVisible="{Binding CanEdit}"
+                    Padding="0,0,0,12"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="0,0,0,1"
+                >
+                    <WrapPanel>
+                        <Button
+                            x:Name="Identify"
+                            Classes="secondary"
+                            Content="Identify"
+                            Click="IdentifyClick"
+                        /><Button
+                            x:Name="Edit"
+                            Classes="secondary"
+                            Margin="8,0,0,0"
+                            Content="Edit info"
+                            Click="EditClick"
+                        /><Button
+                            x:Name="Fill"
+                            Classes="secondary"
+                            Margin="8,0,0,0"
+                            Content="Auto-fill"
+                            ToolTip.Tip="Fill from installed catalogs"
+                            Click="FillClick"
+                        />
+                    </WrapPanel>
+                </Border>
+                <SelectableTextBlock
+                    Classes="reading"
+                    MaxWidth="480"
+                    HorizontalAlignment="Left"
+                    Text="{Binding Description}"
+                    TextWrapping="Wrap"
+                    IsVisible="{Binding !!Description}"
+                />
+                <StackPanel Spacing="8" IsVisible="{Binding HasInstalls}">
+                    <TextBlock Text="Installed on devices" Classes="section" />
+                    <ItemsControl ItemsSource="{Binding Installs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="g:GameAvailability">
+                                <Border
+                                    Background="{DynamicResource PageBackground}"
+                                    CornerRadius="{DynamicResource RowRadius}"
+                                    Padding="12,10"
+                                    Margin="0,3"
+                                >
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                        <StackPanel>
+                                            <TextBlock
+                                                Text="{Binding Label}"
+                                                Classes="item-title"
+                                                TextWrapping="Wrap"
+                                            /><TextBlock
+                                                Text="{Binding Status}"
+                                                Classes="metadata"
+                                            /><SelectableTextBlock
+                                                Text="{Binding Location}"
+                                                TextWrapping="NoWrap"
+                                                TextTrimming="CharacterEllipsis"
+                                                Classes="metadata"
+                                                ToolTip.Tip="{Binding Location}"
+                                                AutomationProperties.Name="{Binding Location}"
+                                            />
+                                        </StackPanel>
+                                        <Button
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Classes="quiet"
+                                            Content="Reassign"
+                                            Click="Reassign"
+                                            IsVisible="{Binding $parent[local:GameInspector].((local:GamePageModel)DataContext).CanMove}"
+                                        />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="8" IsVisible="{Binding HasCollections}">
+                    <TextBlock Text="Online collections" Classes="section" />
+                    <ItemsControl ItemsSource="{Binding Collections}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="g:GameAvailability">
+                                <Border
+                                    Background="{DynamicResource PageBackground}"
+                                    CornerRadius="{DynamicResource RowRadius}"
+                                    Padding="12,10"
+                                    Margin="0,3"
+                                >
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                        <StackPanel>
+                                            <TextBlock
+                                                Text="{Binding Label}"
+                                                Classes="item-title"
+                                            /><StackPanel Orientation="Horizontal" Spacing="7">
+                                                <TextBlock
+                                                    Text="{Binding Provider,Converter={x:Static local:GameNames.Platform}}"
+                                                    Classes="metadata"
+                                                /><TextBlock
+                                                    Text="{Binding Status}"
+                                                    Classes="caption"
+                                                />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Classes="quiet"
+                                            Content="Reassign"
+                                            Click="Reassign"
+                                            IsVisible="{Binding $parent[local:GameInspector].((local:GamePageModel)DataContext).CanMove}"
+                                        />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <Expander Header="Metadata sources" IsVisible="{Binding HasSources}">
+                    <StackPanel Spacing="8">
+                        <ItemsControl ItemsSource="{Binding Selected.Sources}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="sdk:GameMetadata">
+                                    <TextBlock Classes="caption">
+                                        <Run Text="{Binding Provider,Converter={x:Static local:GameNames.Platform}}" /><Run Text=" · " /><Run Text="{Binding ExternalId}" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding Selected.Fields}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="g:GameField">
+                                    <Grid ColumnDefinitions="*,*">
+                                        <TextBlock
+                                            Classes="metadata"
+                                            Text="{Binding Name}"
+                                        /><TextBlock
+                                            Grid.Column="1"
+                                            Classes="caption"
+                                            Text="{Binding Source}"
+                                        />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
+                <Expander Header="Play sessions" IsVisible="{Binding HasSessions}">
+                    <ItemsControl ItemsSource="{Binding Selected.Sessions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="g:GameSession">
+                                <StackPanel>
+                                    <TextBlock
+                                        Text="{Binding Device}"
+                                        Classes="item-title"
+                                    /><TextBlock Classes="caption">
+                                        <Run Text="{Binding Start,StringFormat='{}{0:g}'}" /><Run Text=" · " /><Run Text="{Binding Duration}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

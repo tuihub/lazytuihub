@@ -5,13 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace LazyTuiHub.Desktop;
 
-public sealed partial class PluginsPage : UserControl
+public sealed partial class PluginsPage : UserControl, IWorkspaceView
 {
-    private readonly PluginRuntime runtime;
+    private readonly PluginOperations runtime;
     private readonly PluginsPageState state;
     private readonly ILogger<PluginsPage> logger;
 
-    public PluginsPage(PluginRuntime runtime, PluginsPageState state, ILogger<PluginsPage> logger)
+    public PluginsPage(PluginOperations runtime, PluginsPageState state, ILogger<PluginsPage> logger)
     {
         this.runtime = runtime;
         this.state = state;
@@ -27,9 +27,16 @@ public sealed partial class PluginsPage : UserControl
         Status.Text = state.Status ?? runtime.DiscoveryError;
     }
 
+    public Task RefreshAsync(IReadOnlySet<string> changedGroups)
+    {
+        if (changedGroups.Contains("plugins"))
+            Reload(state.Selected);
+        return Task.CompletedTask;
+    }
+
     private void Reload(string? selected = null)
     {
-        var plugins = runtime.List();
+        var plugins = runtime.Status();
         PluginCount.Text = $"{plugins.Count} known plugins";
         Plugins.ItemsSource = plugins;
         Plugins.SelectedItem = plugins.FirstOrDefault(plugin =>

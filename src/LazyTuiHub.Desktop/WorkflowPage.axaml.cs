@@ -5,12 +5,12 @@ using LazyTuiHub.Plugins;
 
 namespace LazyTuiHub.Desktop;
 
-public sealed partial class WorkflowPage : UserControl
+public sealed partial class WorkflowPage : UserControl, IWorkspaceView
 {
-    private readonly WorkflowRuntime workflows;
+    private readonly WorkflowOperations workflows;
     private readonly WorkflowPageState state;
 
-    public WorkflowPage(WorkflowRuntime workflows, WorkflowPageState state)
+    public WorkflowPage(WorkflowOperations workflows, WorkflowPageState state)
     {
         this.workflows = workflows;
         this.state = state;
@@ -21,7 +21,21 @@ public sealed partial class WorkflowPage : UserControl
             if (change.Property == AdaptivePane.DetailOpenProperty)
                 state.DetailOpen = Pane.DetailOpen;
         };
-        var definitions = workflows.List();
+        Reload();
+        PlanTabs.SelectedIndex = state.Tab;
+        PlanTabs.SelectionChanged += (_, _) => state.Tab = PlanTabs.SelectedIndex;
+    }
+
+    public Task RefreshAsync(IReadOnlySet<string> changedGroups)
+    {
+        if (changedGroups.Contains("workflow"))
+            Reload();
+        return Task.CompletedTask;
+    }
+
+    private void Reload()
+    {
+        var definitions = workflows.Saved();
         WorkflowCount.Text = $"{definitions.Count} saved workflows";
         EmptyWorkflows.IsVisible = definitions.Count == 0;
         Definitions.ItemsSource = definitions;
@@ -29,8 +43,6 @@ public sealed partial class WorkflowPage : UserControl
         Definitions.SelectedItem = definitions.FirstOrDefault(item =>
             string.Equals(item.Name, state.Selected, StringComparison.Ordinal)
         ) ?? (definitions.Count == 0 ? null : definitions[0]);
-        PlanTabs.SelectedIndex = state.Tab;
-        PlanTabs.SelectionChanged += (_, _) => state.Tab = PlanTabs.SelectedIndex;
     }
 
     private async void SelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -44,7 +56,7 @@ public sealed partial class WorkflowPage : UserControl
         WorkflowDescription description;
         try
         {
-            description = await workflows.DescribeAsync(definition, CancellationToken.None);
+            description = await workflows.Describe(definition.Name, CancellationToken.None);
         }
         catch (Exception error) when (error is AccessRequiredException or AccessDeniedException or KeyNotFoundException)
         {

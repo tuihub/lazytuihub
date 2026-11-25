@@ -2,19 +2,13 @@ using LazyTuiHub.Cli;
 using Microsoft.Extensions.Configuration;
 
 using var options = new ConfigurationManager();
-options.AddEnvironmentVariables().AddCommandLine(args);
-using var stop = new CancellationTokenSource();
-Console.CancelKeyPress += (_, args) =>
-{
-    args.Cancel = true;
-    stop.Cancel();
-};
 try
 {
-    return await RemoteConsole.RunAsync(options, stop.Token);
+    options.AddEnvironmentVariables().AddCommandLine(ConsoleArguments.Parse(args));
 }
-catch (OperationCanceledException) when (stop.IsCancellationRequested)
+catch (ArgumentException error)
 {
-    const int interrupted = 130;
-    return interrupted;
+    await Console.Error.WriteLineAsync(error.Message);
+    return 1;
 }
+return await CapabilityConsole.UntilCancelledAsync(token => RemoteConsole.RunAsync(options, token));

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../contracts/LazyTuiHub.Plugin.TuiHub.Articles.Contracts.csproj" />
+    <ProjectReference Include="../../../src/LazyTuiHub.Api/LazyTuiHub.Api.csproj" />
+    <ProjectReference Include="../../../src/LazyTuiHub.Interaction/LazyTuiHub.Interaction.csproj" />
+  </ItemGroup>
+</Project>

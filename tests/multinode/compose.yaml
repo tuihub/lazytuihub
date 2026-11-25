@@ -1,5 +1,6 @@
 x-application: &application
   image: mcr.microsoft.com/dotnet/runtime-deps:${DOTNET_RUNTIME_TAG}
+  platform: ${TEST_APP_PLATFORM}
   working_dir: /app
   volumes: ["${TEST_PUBLISH_DIR}:/app:ro"]
 x-worker: &worker

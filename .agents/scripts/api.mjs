@@ -7,28 +7,35 @@ import {parse} from 'yaml';
 import {renderApiDocs, updateApiDocs} from './api-docs.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const protoRoot = path.join(root, 'src/LazyTuiHub.Api/Protos');
 const project = path.join(root, 'src/LazyTuiHub.Api/LazyTuiHub.Api.csproj');
 const mode = process.argv[2];
 
 try {
     if (!['lint', 'generate', 'check'].includes(mode)) throw new Error('Use lint, generate, or check.');
-    const files = (await Array.fromAsync(glob('**/*.proto', {cwd: protoRoot}))).sort();
+    const roots = ['src/LazyTuiHub.Api/Protos', ...await Array.fromAsync(glob('plugins/*/contracts/Protos', {cwd: root}))];
+    const sources = [];
+    for (const directory of roots) {
+        for await (const file of glob('**/*.proto', {cwd: path.join(root, directory)})) {
+            sources.push({name: file.split(path.sep).join('/'), path: path.posix.join(directory.split(path.sep).join('/'), file.split(path.sep).join('/'))});
+        }
+    }
+    sources.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+    const files = sources.map(source => source.name);
     const common = run('dotnet', ['msbuild', project, '-nologo', '-getProperty:PkgGoogle_Api_CommonProtos'], true);
     const protoc = run('mise', ['where', 'protoc'], true);
-    const include = [protoRoot, path.join(common, 'content/protos'), path.join(protoc, 'include')]
+    const include = [...roots.map(directory => path.join(root, directory)), path.join(common, 'content/protos'), path.join(protoc, 'include')]
         .flatMap(directory => ['-I', directory]);
     if (mode === 'lint') {
         run('api-linter', ['--set-exit-status', ...include, ...files]);
     } else {
-        await generate(files, include);
+        await generate(files, include, sources);
     }
 } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
 }
 
-async function generate(files, include) {
+async function generate(files, include, sources) {
     const temporary = await mkdtemp(path.join(os.tmpdir(), 'lazytuihub-api-'));
     try {
         const openapi = path.join(temporary, 'openapi.yaml');
@@ -39,11 +46,16 @@ async function generate(files, include) {
             ...files,
         ]);
         const {clients, ...settings} = JSON.parse(await readFile(path.join(root, '.agents/api/nswag.json'), 'utf8'));
+        const endpoints = clients.map(client => ({...client, directory: 'src/LazyTuiHub.Client'}));
+        for await (const settingsFile of glob('plugins/*/client/http-client.json', {cwd: root})) {
+            const client = JSON.parse(await readFile(path.join(root, settingsFile), 'utf8'));
+            endpoints.push({...client, directory: path.dirname(settingsFile)});
+        }
         const document = parse(await readFile(openapi, 'utf8'));
         const sdk = JSON.parse(await readFile(path.join(root, 'global.json'), 'utf8')).sdk.version;
         const configuration = path.join(temporary, 'nswag.json');
         const artifacts = [[openapi, 'src/LazyTuiHub.Api/Generated/openapi.yaml']];
-        for (const {service, ...clientSettings} of clients) {
+        for (const {service, directory, ...clientSettings} of endpoints) {
             const client = path.join(temporary, `${clientSettings.className}.g.cs`);
             const selected = {...document, paths: Object.fromEntries(Object.entries(document.paths).filter(([, operations]) =>
                 Object.values(operations).some(operation => operation.operationId?.startsWith(`${service}_`))))};
@@ -53,9 +65,9 @@ async function generate(files, include) {
                 codeGenerators: {openApiToCSharpClient: {...settings, ...clientSettings, output: client}},
             }));
             run('dotnet', ['nswag', 'run', configuration]);
-            artifacts.push([client, `src/LazyTuiHub.Client/Generated/${clientSettings.className}.g.cs`]);
+            artifacts.push([client, path.join(directory, `Generated/${clientSettings.className}.g.cs`)]);
         }
-        const pages = await renderApiDocs(document, files);
+        const pages = await renderApiDocs(document, sources);
         for (const [source, destination] of artifacts) {
             const content = (await readFile(source, 'utf8')).replaceAll('\r\n', '\n');
             const output = path.join(root, destination);
@@ -75,7 +87,7 @@ async function generate(files, include) {
 
 function run(command, args, capture = false) {
     const result = spawnSync(command, args, {
-        cwd: command === 'protoc' || command === 'api-linter' ? protoRoot : root,
+        cwd: root,
         encoding: 'utf8',
         stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
     });

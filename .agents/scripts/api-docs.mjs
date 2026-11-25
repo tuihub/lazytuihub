@@ -41,7 +41,7 @@ export async function renderApiDocs(document, sources) {
         '## Models',
         models.map(name => `- [${name}](models/${name}.md)`).join('\n'),
         '## Source declarations',
-        sources.map(source => `- [${source}](../../src/LazyTuiHub.Api/Protos/${source})`).join('\n'),
+        sources.map(source => `- [${source.name}](../../${source.path})`).join('\n'),
     ].filter(Boolean).join('\n\n') + '\n');
 
     for (const [filename, content] of pages) {

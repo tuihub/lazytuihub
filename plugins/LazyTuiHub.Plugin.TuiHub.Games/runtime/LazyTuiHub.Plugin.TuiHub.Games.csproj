@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../sdk/LazyTuiHub.Plugin.TuiHub.Games.Sdk.csproj" />
+    <ProjectReference Include="../../../src/LazyTuiHub.PluginSdk/LazyTuiHub.PluginSdk.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

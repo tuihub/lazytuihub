@@ -6,5 +6,7 @@ public sealed record PluginSpec(
     string Assembly,
     string EntryType,
     bool Required = false,
-    string[]? Requires = null
+    PluginDependency[]? Requires = null,
+    bool RemotePage = false,
+    string? Version = null
 );
